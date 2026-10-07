@@ -20,8 +20,8 @@
 }
 
 .dashboard .status-badge.connected {
-  background: rgba(37, 211, 102, 0.1);
-  color: var(--primary-text);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  color: var(--success-text);
 }
 
 .dashboard .status-badge.disconnected {
@@ -222,8 +222,8 @@
 }
 
 .dashboard .status-pill.ready {
-  background: rgba(37, 211, 102, 0.1);
-  color: var(--primary-text);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  color: var(--success-text);
 }
 
 .dashboard .status-pill.initializing,

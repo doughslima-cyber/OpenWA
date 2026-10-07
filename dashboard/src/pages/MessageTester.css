@@ -148,8 +148,8 @@
 }
 
 .message-tester .response-status.success {
-  background: rgba(37, 211, 102, 0.1);
-  color: var(--primary-text);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  color: var(--success-text);
 }
 
 .message-tester .response-status.error {
@@ -515,8 +515,8 @@
 }
 
 .message-tester .batch-badge.completed {
-  background: rgba(37, 211, 102, 0.12);
-  color: var(--primary-text);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  color: var(--success-text);
 }
 
 .message-tester .batch-badge.failed {

@@ -1,0 +1,26 @@
+/* OpenMsg brand tokens. Imported after App.css so these override the upstream OpenWA palette
+   while App.css stays untouched, which keeps upstream merges free of brand conflicts. */
+:root {
+  --primary: #4f46e5; /* Indigo 600: white on it is 6.29:1, so filled buttons pass AA */
+  /* Unlike the old green, the brand indigo is dark enough to serve as text on light surfaces:
+     6.29:1 on white, 5.03:1 on --primary-soft over --bg-light, the tightest surface it lands on. */
+  --primary-text: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-soft: rgba(79, 70, 229, 0.12);
+}
+
+/* Indigo 600 is 2.33:1 on Slate 800, so dark text and icons switch to Indigo 300:
+   7.34:1 on Slate 800 and 6.38:1 on a 20 percent brand tint over it. Fills keep --primary. */
+[data-theme='dark'] {
+  --primary-text: #a5b4fc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --primary-text: #a5b4fc;
+  }
+}
+
+.brand-logo {
+  color: var(--primary-text);
+}

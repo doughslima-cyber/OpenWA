@@ -6,7 +6,7 @@
     }
   },
   "common": {
-    "appName": "OpenWA",
+    "appName": "OpenMsg",
     "updateAvailable": "v{{version}} available",
     "loading": "Loading...",
     "cancel": "Cancel",
@@ -216,7 +216,7 @@
     "connectionError": "Unable to connect to server. Please try again.",
     "help": "Need help?",
     "viewDocs": "View Documentation",
-    "footer": "Made with ❤️ by Yudhi Armyndharis and the OpenWA Community",
+    "footer": "OpenMsg · built on OpenWA, made with ❤️ by Yudhi Armyndharis and the community",
     "version": "v{{version}} · {{date}}"
   },
   "dashboard": {

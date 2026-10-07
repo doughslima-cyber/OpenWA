@@ -26,6 +26,8 @@ import { useTheme } from '../hooks/useTheme';
 import { useRole, type UserRole } from '../hooks/useRole';
 import { languageOptions, resolveSupportedLanguage, rtlLanguages, type SupportedLanguage } from '../i18n';
 import { healthApi, infraApi } from '../services/api';
+import { BRAND } from '../brand';
+import { BrandLogo } from './BrandLogo';
 import './Layout.css';
 
 interface LayoutProps {
@@ -171,8 +173,8 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
             {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="mobile-brand">
-            <img src="/openwa_logo.webp" alt="OpenWA" className="sidebar-logo" />
-            <span className="brand-name">{t('common.appName')}</span>
+            <BrandLogo className="sidebar-logo" />
+            <span className="brand-name">{BRAND.name}</span>
           </div>
           <div style={{ width: 40 }} />
         </header>
@@ -184,10 +186,10 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
         className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''} ${isMobileOpen ? 'open' : ''}`}
       >
         <div className="sidebar-header">
-          <img src="/openwa_logo.webp" alt="OpenWA" className="sidebar-logo" />
+          <BrandLogo className="sidebar-logo" />
           {!isCollapsed && (
             <div className="sidebar-brand">
-              <span className="brand-name">{t('common.appName')}</span>
+              <span className="brand-name">{BRAND.name}</span>
               <span className="brand-version">v{version}</span>
               {update && (
                 <a className="brand-update" href={update.url} target="_blank" rel="noopener noreferrer">
