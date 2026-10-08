@@ -7,6 +7,11 @@ OpenWA provides official n8n community nodes for integrating WhatsApp automation
 **Repository:** https://github.com/rmyndharis/OpenWA-n8n
 **npm Package:** `@rmyndharis/n8n-nodes-openwa`
 
+For this fork's campaign replies, see the [OpenMsg campaign reply guide](./examples/openmsg-campaign-replies.md)
+(Portuguese). It documents the inactive draft built with native Webhook and HTTP Request nodes, credential
+setup, verified tests, and the remaining activation requirements. Unlike the community trigger described below,
+this draft does not register an OpenMsg webhook automatically.
+
 ## Architecture
 
 ```
