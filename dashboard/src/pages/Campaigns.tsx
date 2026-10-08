@@ -30,7 +30,15 @@ import {
   type CampaignSummary,
   type RecipientStatus,
 } from '../services/campaigns';
-import { CAMPAIGN_MAX_RECIPIENTS, parseCampaignRecipients } from '../utils/campaignRecipients';
+import { CAMPAIGN_MAX_RECIPIENTS, readCampaignRecipients } from '../utils/campaignRecipients';
+import {
+  columnLetter,
+  columnValues,
+  guessPhoneColumn,
+  parseDelimited,
+  type RecipientTable,
+} from '../utils/recipientTable';
+import { readXlsx } from '../utils/xlsx';
 import { BULK_RECIPIENTS_FILE_MAX_BYTES } from '../utils/bulkRecipients';
 import { PageHeader } from '../components/PageHeader';
 import { Modal } from '../components/Modal';
@@ -63,6 +71,27 @@ interface FormState {
 
 const emptyForm: FormState = { name: '', recipients: '', text: '' };
 
+/** A loaded file with more than one column, waiting for the operator to say which holds the phone. */
+interface FileTable {
+  fileName: string;
+  rows: RecipientTable;
+  column: number;
+  header: boolean;
+}
+
+/** Rows of the loaded file shown under the column picker. */
+const PREVIEW_ROWS = 5;
+
+function readFile(file: File, as: 'text' | 'buffer'): Promise<string | ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => (reader.result === null ? reject(new Error('empty')) : resolve(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error('read failed'));
+    if (as === 'text') reader.readAsText(file);
+    else reader.readAsArrayBuffer(file);
+  });
+}
+
 export function Campaigns() {
   const { t, i18n } = useTranslation();
   useDocumentTitle(t('campaigns.title'));
@@ -92,6 +121,9 @@ export function Campaigns() {
   const [confirmingStart, setConfirmingStart] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState('');
+  // On by default: the gateway serves a Brazilian operation, where lists usually omit the 55.
+  const [addBrazilCode, setAddBrazilCode] = useState(true);
+  const [fileTable, setFileTable] = useState<FileTable | null>(null);
   const [cancelling, setCancelling] = useState<CancelTarget | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const sortedCampaigns = useMemo(() => newestFirst(campaigns), [campaigns]);
@@ -101,7 +133,11 @@ export function Campaigns() {
     setOpenId(null);
   }, [sessionId]);
 
-  const accepted = useMemo(() => parseCampaignRecipients(form.recipients), [form.recipients]);
+  const read = useMemo(
+    () => readCampaignRecipients(form.recipients, { addBrazilCode }),
+    [form.recipients, addBrazilCode],
+  );
+  const accepted = read.ids;
   const tooMany = accepted.length > CAMPAIGN_MAX_RECIPIENTS;
   const canStart =
     accepted.length > 0 &&
@@ -121,6 +157,7 @@ export function Campaigns() {
   const openCreate = () => {
     setForm(emptyForm);
     setFormError('');
+    setFileTable(null);
     setConfirmingStart(false);
     setCreating(true);
   };
@@ -131,26 +168,51 @@ export function Campaigns() {
     setCreating(false);
   };
 
-  const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
+  const appendRecipients = (values: string[]) => {
+    if (values.length === 0) return;
+    setForm(prev => ({
+      ...prev,
+      recipients: (prev.recipients.trim() ? `${prev.recipients.trimEnd()}\n` : '') + values.join('\n'),
+    }));
+  };
+
+  const handleFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    // Refused before reading, as on the Message Tester: FileReader would hold the whole file as a string.
+    setFormError('');
+    // Refused before reading, as on the Message Tester: FileReader would hold the whole file in memory.
     if (file.size > BULK_RECIPIENTS_FILE_MAX_BYTES) {
       setFormError(t('campaigns.form.fileTooLarge'));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = reader.result;
-      if (typeof text !== 'string' || !text.trim()) return;
-      setForm(prev => ({
-        ...prev,
-        recipients: (prev.recipients.trim() ? `${prev.recipients.trimEnd()}\n` : '') + text.trim(),
-      }));
-    };
-    reader.onerror = () => setFormError(t('campaigns.form.fileReadError'));
-    reader.readAsText(file);
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.xls')) {
+      setFormError(t('campaigns.form.xlsUnsupported'));
+      return;
+    }
+    let rows: RecipientTable;
+    try {
+      rows = name.endsWith('.xlsx')
+        ? await readXlsx((await readFile(file, 'buffer')) as ArrayBuffer)
+        : parseDelimited((await readFile(file, 'text')) as string);
+    } catch {
+      setFormError(t('campaigns.form.fileReadError'));
+      return;
+    }
+    if (rows.length === 0) return;
+    // One column needs no choice; a header cell in it has no digits and is dropped by the parser.
+    if (Math.max(...rows.map(row => row.length)) <= 1) {
+      appendRecipients(columnValues(rows, 0, false));
+      return;
+    }
+    setFileTable({ fileName: file.name, rows, ...guessPhoneColumn(rows) });
+  };
+
+  const applyFileColumn = () => {
+    if (!fileTable) return;
+    appendRecipients(columnValues(fileTable.rows, fileTable.column, fileTable.header));
+    setFileTable(null);
   };
 
   const handleStart = async () => {
@@ -360,11 +422,82 @@ export function Campaigns() {
               id="campaign-file"
               className="campaigns-file-input"
               type="file"
-              accept=".csv,.txt,text/csv,text/plain"
-              onChange={handleFile}
+              accept=".csv,.txt,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              onChange={e => void handleFile(e)}
             />
           </div>
           <p className="campaigns-hint">{t('campaigns.form.recipientsHint')}</p>
+
+          {fileTable && (
+            <section className="campaigns-column-picker" aria-label={t('campaigns.form.columnPickerTitle')}>
+              <p className="campaigns-column-title">
+                {t('campaigns.form.columnPickerTitle')} <strong>{fileTable.fileName}</strong>
+              </p>
+              <div className="campaigns-column-controls">
+                <label htmlFor="campaign-column">{t('campaigns.form.phoneColumn')}</label>
+                <select
+                  id="campaign-column"
+                  value={fileTable.column}
+                  onChange={e => setFileTable({ ...fileTable, column: Number(e.target.value) })}
+                >
+                  {Array.from({ length: Math.max(...fileTable.rows.map(row => row.length)) }, (_, i) => (
+                    <option key={i} value={i}>
+                      {fileTable.header && fileTable.rows[0][i]
+                        ? `${columnLetter(i)} — ${fileTable.rows[0][i]}`
+                        : columnLetter(i)}
+                    </option>
+                  ))}
+                </select>
+                <span className="campaigns-checkbox-row">
+                  <input
+                    id="campaign-header"
+                    type="checkbox"
+                    checked={fileTable.header}
+                    onChange={e => setFileTable({ ...fileTable, header: e.target.checked })}
+                  />
+                  <label htmlFor="campaign-header">{t('campaigns.form.firstRowHeader')}</label>
+                </span>
+              </div>
+              <div className="campaigns-preview-wrap">
+                <table className="campaigns-preview">
+                  <tbody>
+                    {fileTable.rows.slice(0, PREVIEW_ROWS + (fileTable.header ? 1 : 0)).map((row, r) => (
+                      <tr key={r} className={fileTable.header && r === 0 ? 'campaigns-preview-header' : undefined}>
+                        {row.map((cell, c) => (
+                          <td key={c} className={c === fileTable.column ? 'campaigns-preview-selected' : undefined}>
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="campaigns-column-actions">
+                <button type="button" className="btn-secondary" onClick={() => setFileTable(null)}>
+                  {t('campaigns.form.discardFile')}
+                </button>
+                <button type="button" className="btn-primary" onClick={applyFileColumn}>
+                  {t('campaigns.form.useColumn', {
+                    total: columnValues(fileTable.rows, fileTable.column, fileTable.header).length,
+                  })}
+                </button>
+              </div>
+            </section>
+          )}
+
+          <div className="campaigns-checkbox-row">
+            <input
+              id="campaign-brazil-code"
+              type="checkbox"
+              checked={addBrazilCode}
+              onChange={e => setAddBrazilCode(e.target.checked)}
+            />
+            <label htmlFor="campaign-brazil-code">{t('campaigns.form.addBrazilCode')}</label>
+          </div>
+          {addBrazilCode && read.withBrazilCode > 0 && (
+            <p className="campaigns-hint">{t('campaigns.form.brazilCodeAdded', { total: read.withBrazilCode })}</p>
+          )}
 
           <label htmlFor="campaign-text">{t('campaigns.form.text')}</label>
           <textarea

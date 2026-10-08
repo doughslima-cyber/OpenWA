@@ -1292,11 +1292,19 @@
       "recipientsHint": "One per line, or separated by commas, semicolons or tabs. Groups and duplicates are ignored.",
       "recipientsCount": "Numbers accepted: {{total}}",
       "tooMany": "At most {{max}} numbers per campaign ({{total}} now)",
-      "loadFile": "Load .csv or .txt",
+      "loadFile": "Load .csv, .txt or .xlsx",
       "fileTooLarge": "The file is too large (max 2 MB)",
       "fileReadError": "Could not read the file",
       "text": "Message",
-      "start": "Start"
+      "start": "Start",
+      "xlsUnsupported": "Old .xls files are not supported; save the sheet as .xlsx or .csv",
+      "columnPickerTitle": "Choose the phone column in",
+      "phoneColumn": "Phone column",
+      "firstRowHeader": "First row is a header",
+      "discardFile": "Discard",
+      "useColumn": "Use this column ({{total}} entries)",
+      "addBrazilCode": "Add 55 (Brazil) to numbers written without a country code",
+      "brazilCodeAdded": "Numbers that got the 55: {{total}}"
     },
     "confirmStart": {
       "title": "Start the campaign?",

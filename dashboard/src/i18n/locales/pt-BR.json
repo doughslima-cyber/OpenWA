@@ -1292,11 +1292,19 @@
       "recipientsHint": "Um por linha, ou separados por vírgula, ponto e vírgula ou tab. Grupos e repetidos são ignorados.",
       "recipientsCount": "Números aceitos: {{total}}",
       "tooMany": "No máximo {{max}} números por campanha ({{total}} agora)",
-      "loadFile": "Carregar .csv ou .txt",
+      "loadFile": "Carregar .csv, .txt ou .xlsx",
       "fileTooLarge": "O arquivo é grande demais (máx. 2 MB)",
       "fileReadError": "Não foi possível ler o arquivo",
       "text": "Mensagem",
-      "start": "Iniciar"
+      "start": "Iniciar",
+      "xlsUnsupported": "Arquivos .xls antigos não são aceitos; salve a planilha como .xlsx ou .csv",
+      "columnPickerTitle": "Escolha a coluna do telefone em",
+      "phoneColumn": "Coluna do telefone",
+      "firstRowHeader": "A primeira linha é cabeçalho",
+      "discardFile": "Descartar",
+      "useColumn": "Usar esta coluna ({{total}} linhas)",
+      "addBrazilCode": "Adicionar 55 (Brasil) a números sem código do país",
+      "brazilCodeAdded": "Números que receberam o 55: {{total}}"
     },
     "confirmStart": {
       "title": "Iniciar a campanha?",

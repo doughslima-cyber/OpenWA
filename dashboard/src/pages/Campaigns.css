@@ -382,3 +382,75 @@
     padding: 1rem;
   }
 }
+
+.campaigns-page .campaigns-column-picker {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-light);
+}
+
+.campaigns-page .campaigns-column-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+.campaigns-page .campaigns-column-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.campaigns-page .modal .campaigns-column-controls label,
+.campaigns-page .modal .campaigns-checkbox-row label {
+  display: inline;
+  margin: 0;
+  font-weight: 500;
+}
+
+.campaigns-page .campaigns-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.campaigns-page .campaigns-column-controls .campaigns-checkbox-row {
+  margin-top: 0;
+}
+
+.campaigns-page .campaigns-preview-wrap {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+}
+
+.campaigns-page .campaigns-preview {
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  width: 100%;
+}
+
+.campaigns-page .campaigns-preview td {
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.campaigns-page .campaigns-preview-header td {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.campaigns-page .campaigns-preview td.campaigns-preview-selected {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+.campaigns-page .campaigns-column-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}

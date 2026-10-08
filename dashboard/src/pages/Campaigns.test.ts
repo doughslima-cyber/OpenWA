@@ -214,20 +214,124 @@ test('C4 an operator fills the form, confirms the session and total, and sees th
   assert.match(row.textContent ?? '', /Running/);
 });
 
+const loadInput = () => rtl.screen.getByLabelText('Load .csv, .txt or .xlsx') as HTMLInputElement;
+
+function pick(name: string, content: BlobPart, type: string): void {
+  rtl.fireEvent.change(loadInput(), { target: { files: [new window.File([content], name, { type })] } });
+}
+
 test('C5 a .csv or .txt file loads its numbers into the recipient box', async () => {
   renderCampaigns();
   await openForm();
-  const input = rtl.screen.getByLabelText('Load .csv or .txt') as HTMLInputElement;
+  const input = loadInput();
   assert.equal(input.type, 'file');
   assert.match(input.accept, /\.csv/);
   assert.match(input.accept, /\.txt/);
-  const file = new window.File(['nome;telefone\nAna;5511988887777\nBia;5511977776666\n'], 'lista.csv', {
-    type: 'text/csv',
-  });
-  rtl.fireEvent.change(input, { target: { files: [file] } });
+  assert.match(input.accept, /\.xlsx/);
+
+  // A one-column .txt goes straight into the box.
+  pick('lista.txt', '5511988887777\n5511977776666\n', 'text/plain');
+  await rtl.screen.findByText('Numbers accepted: 2');
+
+  // A .csv with several columns waits for the operator to confirm which one holds the phone.
+  pick('lista.csv', 'nome;telefone\nAna;5511966665555\nBia;5511955554444\n', 'text/csv');
+  await rtl.screen.findByRole('region', { name: 'Choose the phone column in' });
+  assert.equal(rtl.screen.getByText('Numbers accepted: 2').textContent, 'Numbers accepted: 2');
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: 'Use this column (2 entries)' }));
+  await rtl.screen.findByText('Numbers accepted: 4');
+  assert.match((rtl.screen.getByLabelText('Numbers') as HTMLTextAreaElement).value, /5511955554444/);
+});
+
+test('a CSV with a CPF column takes only the phone column the operator confirms', async () => {
+  renderCampaigns();
+  await openForm();
+  pick(
+    'clientes.csv',
+    'Nome,CPF,Celular,CEP\n"Silva, Ana",12345678909,+55 11 98888-7777,01310100\nBia,98765432100,+55 11 97777-6666,04538133\n',
+    'text/csv',
+  );
+
+  const column = (await rtl.screen.findByLabelText('Phone column')) as HTMLSelectElement;
+  assert.equal(column.value, '2');
+  assert.equal(column.selectedOptions[0].textContent, 'C — Celular');
+  assert.equal((rtl.screen.getByLabelText('First row is a header') as HTMLInputElement).checked, true);
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: 'Use this column (2 entries)' }));
 
   await rtl.screen.findByText('Numbers accepted: 2');
-  assert.match((rtl.screen.getByLabelText('Numbers') as HTMLTextAreaElement).value, /5511977776666/);
+  const box = (rtl.screen.getByLabelText('Numbers') as HTMLTextAreaElement).value;
+  assert.doesNotMatch(box, /12345678909|98765432100|01310100/);
+});
+
+test('the operator can pick another column, and Discard adds nothing', async () => {
+  renderCampaigns();
+  await openForm();
+  pick('a.csv', 'Nome;Fixo;Celular\nAna;1133334444;11988887777\n', 'text/csv');
+  const column = (await rtl.screen.findByLabelText('Phone column')) as HTMLSelectElement;
+  rtl.fireEvent.change(column, { target: { value: '1' } });
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: 'Use this column (1 entries)' }));
+  await rtl.waitFor(() =>
+    assert.equal((rtl.screen.getByLabelText('Numbers') as HTMLTextAreaElement).value, '1133334444'),
+  );
+
+  pick('b.csv', 'Nome;Celular\nBia;11977776666\n', 'text/csv');
+  await rtl.screen.findByLabelText('Phone column');
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: 'Discard' }));
+  assert.equal(rtl.screen.queryByLabelText('Phone column'), null);
+  assert.equal((rtl.screen.getByLabelText('Numbers') as HTMLTextAreaElement).value, '1133334444');
+});
+
+test('an .xlsx file loads its first sheet through the column picker', async () => {
+  const { buildXlsx } = await import('../test-helpers/xlsx-fixture.ts');
+  renderCampaigns();
+  await openForm();
+  const bytes = buildXlsx([
+    ['Cliente', 'WhatsApp'],
+    ['Ana', { n: '5511988887777' }],
+    ['Bia', { n: '5511977776666' }],
+  ]);
+  pick('lista.xlsx', bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+  const column = (await rtl.screen.findByLabelText('Phone column')) as HTMLSelectElement;
+  assert.equal(column.selectedOptions[0].textContent, 'B — WhatsApp');
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: 'Use this column (2 entries)' }));
+  await rtl.screen.findByText('Numbers accepted: 2');
+});
+
+test('an old .xls file is refused with a message', async () => {
+  renderCampaigns();
+  await openForm();
+  pick('lista.xls', 'binary', 'application/vnd.ms-excel');
+  const alert = await rtl.screen.findByRole('alert');
+  assert.equal(alert.textContent, 'Old .xls files are not supported; save the sheet as .xlsx or .csv');
+});
+
+test('55 is added to national numbers by default, and not once the operator turns it off', async () => {
+  renderCampaigns();
+  await openForm();
+  fill('Name', 'Outubro');
+  fill('Message', 'Olá!');
+  fill('Numbers', '(11) 98888-7777\n5511977776666');
+  const option = rtl.screen.getByLabelText(
+    'Add 55 (Brazil) to numbers written without a country code',
+  ) as HTMLInputElement;
+  assert.equal(option.checked, true);
+  assert.ok(rtl.screen.getByText('Numbers that got the 55: 1'));
+
+  rtl.fireEvent.click(startButton());
+  rtl.fireEvent.click(await rtl.screen.findByRole('button', { name: 'Start sending' }));
+  await rtl.waitFor(() => assert.equal(createBodies.length, 1));
+  assert.deepEqual(createBodies[0].recipients, ['5511988887777@c.us', '5511977776666@c.us']);
+
+  await openForm();
+  fill('Name', 'Novembro');
+  fill('Message', 'Olá!');
+  fill('Numbers', '(11) 98888-7777');
+  rtl.fireEvent.click(rtl.screen.getByLabelText('Add 55 (Brazil) to numbers written without a country code'));
+  assert.equal(rtl.screen.queryByText(/Numbers that got the 55/), null);
+  rtl.fireEvent.click(startButton());
+  rtl.fireEvent.click(await rtl.screen.findByRole('button', { name: 'Start sending' }));
+  await rtl.waitFor(() => assert.equal(createBodies.length, 2));
+  assert.deepEqual(createBodies[1].recipients, ['11988887777@c.us']);
 });
 
 test('C8 Start stays disabled while no entry is a phone number', async () => {

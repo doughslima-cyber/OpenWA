@@ -84,9 +84,18 @@ com muitos clientes sem que o WhatsApp restrinja ou derrube o número.
 ### Criar uma campanha
 
 1. Abra **Campanhas**, escolha a sessão e clique **Nova campanha** (operador ou admin).
-2. Dê um nome, cole os números ou carregue um arquivo `.csv` ou `.txt`, e escreva a mensagem. Vale um número por
-   linha ou separados por vírgula, ponto e vírgula ou tab; espaços, parênteses, hífens e o `+` são ignorados.
-   Grupos e números repetidos ficam de fora. O limite é de 5 000 números por campanha.
+2. Dê um nome, cole os números ou carregue uma planilha (`.xlsx`, `.csv` ou `.txt`, até 2 MB), e escreva a
+   mensagem. Vale um número por linha ou separados por vírgula, ponto e vírgula ou tab; espaços, parênteses,
+   hífens e o `+` são ignorados. Grupos e números repetidos ficam de fora. O limite é de 5 000 números por
+   campanha.
+   - **Planilha com várias colunas:** o painel mostra as primeiras linhas e pede a coluna do telefone. Ele já
+     sugere a coluna cujo cabeçalho fala em telefone, celular ou WhatsApp, ou a que tem mais células com cara de
+     telefone. Só essa coluna entra; CPF, CEP e outros códigos ficam de fora. No `.xlsx` vale a primeira aba.
+     Arquivos `.xls` antigos não são lidos: salve como `.xlsx` ou `.csv`.
+   - **Código do país:** com a opção **Adicionar 55 (Brasil)** marcada (o padrão), um número brasileiro sem o 55
+     (DDD + 8 dígitos, ou DDD + 9 dígitos começando com 9) recebe o 55, e o painel mostra quantos foram ajustados.
+     Um número escrito com `+` nunca é alterado. A API (`POST .../campaigns`) não faz esse ajuste: quem a chama
+     manda o número completo.
 3. Clique **Iniciar** e confirme no diálogo, que mostra a sessão e o total de números.
 
 Cada sessão tem no máximo uma campanha em andamento.
@@ -190,15 +199,15 @@ git merge upstream/main
 
 O fork foi feito para gerar poucos conflitos: quase tudo o que é dele está em arquivos próprios.
 
-| Arquivos só do OpenMsg (sem conflito)                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------ |
-| `dashboard/src/brand.ts`, `brand.css`, `components/BrandLogo.tsx`                                                        |
-| `dashboard/src/pages/Users.*`, `pages/Account.*`, `services/users.ts`, `hooks/useUsers.ts`                               |
-| `dashboard/src/pages/Campaigns.*`, `services/campaigns.ts`, `hooks/useCampaigns.ts`, `utils/campaignRecipients.*`        |
-| `src/modules/auth/users.*`, `auth-login.controller.*`, `password-hash.ts`, `entities/user*.entity.ts`, `dto/user.dto.ts` |
-| `src/modules/campaign/` (inteiro)                                                                                        |
-| `src/database/migrations-main/1791000000000-CreateUserTables.ts`                                                         |
-| `src/database/migrations/1791100000000-AddCampaigns.ts`                                                                  |
+| Arquivos só do OpenMsg (sem conflito)                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------- |
+| `dashboard/src/brand.ts`, `brand.css`, `components/BrandLogo.tsx`                                                                       |
+| `dashboard/src/pages/Users.*`, `pages/Account.*`, `services/users.ts`, `hooks/useUsers.ts`                                              |
+| `dashboard/src/pages/Campaigns.*`, `services/campaigns.ts`, `hooks/useCampaigns.ts`, `utils/{campaignRecipients,recipientTable,xlsx}.*` |
+| `src/modules/auth/users.*`, `auth-login.controller.*`, `password-hash.ts`, `entities/user*.entity.ts`, `dto/user.dto.ts`                |
+| `src/modules/campaign/` (inteiro)                                                                                                       |
+| `src/database/migrations-main/1791000000000-CreateUserTables.ts`                                                                        |
+| `src/database/migrations/1791100000000-AddCampaigns.ts`                                                                                 |
 
 Os conflitos, quando aparecerem, devem cair em arquivos do projeto original que o fork alterou pontualmente:
 `Login.tsx`, `App.tsx`, `Layout.tsx`, `auth.module.ts`, `app.module.ts`, `src/database/data-source.ts` e os

@@ -23,7 +23,7 @@ text paced out to a list of numbers, with the reply tagged on `message.received`
   `services/users.ts`, `hooks/useUsers.ts`; campaigns in `src/modules/campaign/` (its reply hook is a
   `message:received` handler, not an edit to `message-projector.service.ts`), the migration
   `src/database/migrations/1791100000000-AddCampaigns.ts`, and on the dashboard `pages/Campaigns.*`,
-  `services/campaigns.ts`, `hooks/useCampaigns.ts`, `utils/campaignRecipients.*`. Edit upstream files only where a
+  `services/campaigns.ts`, `hooks/useCampaigns.ts`, `utils/{campaignRecipients,recipientTable,xlsx}.*`. Edit upstream files only where a
   hook point is unavoidable, and keep that edit small.
 - **Colors go through tokens.** Use `var(--primary)`, `--primary-text`, `--primary-hover`, `--primary-soft`;
   `brand.css` overrides them. Positive statuses (connected, active, success) use `--success` / `--success-text`,
