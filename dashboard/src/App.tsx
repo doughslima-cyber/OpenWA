@@ -10,7 +10,9 @@ import { RoleProvider } from './components/RoleProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { API_BASE_URL } from './services/api';
 import { clearActorState, isUserRole, resolveStartupValidation } from './utils/authLifecycle';
+import { clearSignedInUser, signOut } from './services/users';
 import './App.css';
+import './brand.css';
 
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -23,6 +25,8 @@ const ApiKeys = lazy(() => import('./pages/ApiKeys').then(m => ({ default: m.Api
 const MessageTester = lazy(() => import('./pages/MessageTester').then(m => ({ default: m.MessageTester })));
 const Infrastructure = lazy(() => import('./pages/Infrastructure').then(m => ({ default: m.Infrastructure })));
 const Plugins = lazy(() => import('./pages/Plugins'));
+const Users = lazy(() => import('./pages/Users').then(m => ({ default: m.Users })));
+const Account = lazy(() => import('./pages/Account').then(m => ({ default: m.Account })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,6 +63,10 @@ function AppContent() {
   };
 
   const handleLogout = useCallback(() => {
+    // A sign-in key is deleted on the gateway; any other key is left alone by /auth/logout.
+    const signedInKey = sessionStorage.getItem('openwa_api_key');
+    if (signedInKey) void signOut(signedInKey);
+    clearSignedInUser();
     setApiKey('');
     setIsAuthenticated(false);
     setRole(null);
@@ -125,6 +133,8 @@ function AppContent() {
               <Route path="webhooks" element={<Webhooks />} />
               <Route path="templates" element={<Templates />} />
               {role === 'admin' && !scoped && <Route path="api-keys" element={<ApiKeys />} />}
+              {role === 'admin' && !scoped && <Route path="users" element={<Users />} />}
+              <Route path="account" element={<Account />} />
               {role === 'admin' && <Route path="logs" element={<Logs />} />}
               <Route path="message-tester" element={<MessageTester />} />
               {role === 'admin' && !scoped && <Route path="infrastructure" element={<Infrastructure />} />}

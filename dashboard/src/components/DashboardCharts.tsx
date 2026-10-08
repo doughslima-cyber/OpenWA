@@ -20,6 +20,7 @@ import { useStatsMessagesQuery } from '../hooks/queries';
 import type { MessageType, StatsPeriod } from '../services/api';
 import { formatTick } from '../utils/chartTicks';
 import { messageTypeLabelKey } from '../utils/enumLabels';
+import { BRAND } from '../brand';
 import './DashboardCharts.css';
 
 const PERIODS: StatsPeriod[] = ['24h', '7d', '30d'];
@@ -119,8 +120,8 @@ export function DashboardCharts() {
               <AreaChart data={timeSeries} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gSent" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#25d366" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#25d366" stopOpacity={0} />
+                    <stop offset="5%" stopColor={BRAND.chartColor} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={BRAND.chartColor} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="gReceived" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
@@ -136,7 +137,7 @@ export function DashboardCharts() {
                   type="monotone"
                   dataKey="sent"
                   name={t('dashboard.charts.sent')}
-                  stroke="#25d366"
+                  stroke={BRAND.chartColor}
                   fill="url(#gSent)"
                   strokeWidth={2}
                 />
@@ -187,7 +188,12 @@ export function DashboardCharts() {
                     tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
                   />
                   <Tooltip />
-                  <Bar dataKey="count" name={t('dashboard.charts.messages')} fill="#25d366" radius={[0, 4, 4, 0]} />
+                  <Bar
+                    dataKey="count"
+                    name={t('dashboard.charts.messages')}
+                    fill={BRAND.chartColor}
+                    radius={[0, 4, 4, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}

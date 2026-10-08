@@ -7,6 +7,10 @@
   <strong>Open Source WhatsApp API Gateway</strong>
 </p>
 
+> **OpenMsg fork.** This repository is the OpenMsg fork of OpenWA: its own branding, and email/password
+> sign-in with user management in the dashboard. What differs from upstream, and how this fork is deployed,
+> is in [OPENMSG.md](OPENMSG.md).
+
 <p align="center">
   <a href="#-features">Features</a> •
   <a href="#-quick-start">Quick Start</a> •
@@ -38,7 +42,7 @@ Built on a **pluggable architecture**, OpenWA lets you select database engines (
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | 🔓 **100% Open Source**       | No licensing fees, no feature locks, full source code access                                                                             |
 | 🏗️ **Pluggable Architecture** | Swap adapters for database, storage, and cache via config                                                                                |
-| 🖥️ **Full Dashboard**         | Modern React UI for session, webhook, and API key management                                                                             |
+| 🖥️ **Full Dashboard**         | Modern React UI for sessions, webhooks, users and API keys, with email/password sign-in                                                  |
 | 🔹 **Multi-Session Ready**    | Run multiple WhatsApp sessions concurrently on one instance                                                                              |
 | 🐳 **Docker Native**          | Production-ready with zero configuration                                                                                                 |
 | 🧩 **Official Plugins**       | Chatwoot, Typebot & more as sandboxed plugins on the Integration Fabric — [OpenWA-plugins](https://github.com/rmyndharis/OpenWA-plugins) |
@@ -189,10 +193,15 @@ docker compose -f docker-compose.dev.yml up -d
 # Swagger: http://localhost:2785/api/docs
 ```
 
-**Your API key.** The first boot generates an admin API key, prints it once in the log and stores it at
-`/app/data/.api-key` inside the container. Read it with `docker exec openwa-api cat /app/data/.api-key`,
-then use it to sign in to the dashboard and as the `X-API-Key` header wherever this README shows
-`YOUR_API_KEY`. Later boots log only a masked prefix. See [API Key](docs/README.md#api-key).
+**Signing in.** The dashboard signs in with email and password. Before the first boot, set `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` (at least 10 characters) in the `.env` next to the compose file to create the first admin user.
+That password is temporary: the first sign-in asks for one of your own. Add the rest of the team under **Users**.
+See [Dashboard Sign-in](docs/04-security-design.md#dashboard-sign-in).
+
+**Your API key.** The first boot also generates an admin API key for API clients, prints it once in the log and
+stores it at `/app/data/.api-key` inside the container. Read it with `docker exec openwa-api cat /app/data/.api-key`
+and send it as the `X-API-Key` header wherever this README shows `YOUR_API_KEY`. Later boots log only a masked
+prefix. See [API Key](docs/README.md#api-key).
 
 > **Using Podman instead of Docker?**
 > Podman rootless mode requires the socket to be running and `DOCKER_HOST` to be set:

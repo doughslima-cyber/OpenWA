@@ -6,7 +6,7 @@
     }
   },
   "common": {
-    "appName": "OpenWA",
+    "appName": "OpenMsg",
     "updateAvailable": "v{{version}} available",
     "loading": "Loading...",
     "cancel": "Cancel",
@@ -47,7 +47,10 @@
     "refresh": "Refresh",
     "errorGeneric": "An error occurred",
     "unknownError": "Unknown error",
-    "retry": "Retry"
+    "retry": "Retry",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "edit": "Edit"
   },
   "theme": {
     "light": "Light",
@@ -68,7 +71,9 @@
     "messageTester": "Message Tester",
     "infrastructure": "Infrastructure",
     "plugins": "Plugins",
-    "logs": "Logs"
+    "logs": "Logs",
+    "users": "Users",
+    "account": "My account"
   },
   "chats": {
     "media": {
@@ -216,8 +221,20 @@
     "connectionError": "Unable to connect to server. Please try again.",
     "help": "Need help?",
     "viewDocs": "View Documentation",
-    "footer": "Made with ❤️ by Yudhi Armyndharis and the OpenWA Community",
-    "version": "v{{version}} · {{date}}"
+    "footer": "OpenMsg · built on OpenWA, made with ❤️ by Yudhi Armyndharis and the community",
+    "version": "v{{version}} · {{date}}",
+    "email": "Email",
+    "emailPlaceholder": "you@company.com",
+    "password": "Password",
+    "passwordPlaceholder": "Your password",
+    "credentialsRequired": "Enter your email and password",
+    "invalidCredentials": "Invalid email or password",
+    "tooManyAttempts": "Too many attempts. Wait a few minutes and try again.",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "forgotHint": "Forgot your password? Ask an administrator to reset it.",
+    "choosePasswordHint": "Your password is temporary. Choose your own password to continue.",
+    "choosePasswordSubmit": "Save password and sign in"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1165,5 +1182,74 @@
       "current": "This session"
     },
     "loading": "Searching…"
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "People who sign in to the dashboard with email and password",
+    "addBtn": "Add user",
+    "you": "you",
+    "empty": "No users yet",
+    "loadError": "Could not load users",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "lastLogin": "Last sign-in",
+      "actions": "Actions"
+    },
+    "form": {
+      "createTitle": "New user",
+      "editTitle": "Edit user",
+      "name": "Name",
+      "namePlaceholder": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "newPassword": "New password",
+      "passwordHint": "At least 10 characters",
+      "newPasswordHint": "Leave blank to keep the current password",
+      "passwordTooShort": "The password needs at least 10 characters",
+      "requiredFields": "Fill in name, email and password",
+      "role": "Role",
+      "active": "Can sign in",
+      "temporaryHint": "This password is temporary: the user chooses their own at the next sign-in."
+    },
+    "confirmDelete": {
+      "title": "Delete user",
+      "message": "Delete <strong>{{name}}</strong>? They are signed out immediately.",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "created": "User created",
+      "updated": "User updated",
+      "deleted": "User deleted",
+      "saveError": "Could not save the user",
+      "deleteError": "Could not delete the user"
+    },
+    "errors": {
+      "EMAIL_TAKEN": "A user with this email already exists",
+      "SELF_LOCKOUT": "You cannot remove your own admin access",
+      "LAST_ADMIN": "At least one active administrator must remain"
+    },
+    "temporaryBadge": "temporary password",
+    "temporaryHint": "This user will choose their own password at the next sign-in."
+  },
+  "account": {
+    "title": "My account",
+    "subtitle": "Your profile and password",
+    "profile": "Profile",
+    "noProfile": "Profile not available for this session.",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "confirmPlaceholder": "Type the new password again",
+    "required": "Fill in the current and the new password",
+    "mismatch": "The passwords do not match",
+    "samePassword": "The new password must be different from the current one",
+    "wrongPassword": "The current password is wrong",
+    "save": "Change password",
+    "changed": "Password changed",
+    "changedHint": "Your other sessions were signed out."
   }
 }

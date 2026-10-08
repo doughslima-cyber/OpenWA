@@ -61,8 +61,8 @@
 }
 
 .infrastructure-page .status-indicator.connected {
-  background: rgba(37, 211, 102, 0.1);
-  color: var(--primary-text);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  color: var(--success-text);
 }
 
 .infrastructure-page .status-indicator.disconnected {
@@ -100,7 +100,7 @@
 
 .infrastructure-page .radio-option.selected {
   border-color: var(--primary);
-  background: rgba(37, 211, 102, 0.05);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .infrastructure-page .radio-option input {

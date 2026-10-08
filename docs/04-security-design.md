@@ -100,6 +100,51 @@ private-network proxy sidecar works). The destinations of caller-supplied URLs f
 still vetted by the SSRF guard. Reading the proxy (`GET /api/sessions/:sessionId/proxy`) returns only
 the masked host, type and a `hasCredentials` flag.
 
+### Dashboard Sign-in
+
+The dashboard signs people in with email and password; it no longer takes an API key at its login screen.
+Users live in the `users` table of the main database (`src/modules/auth/entities/user.entity.ts`). Passwords are
+stored as scrypt digests (N=16384, r=8, p=1, 16-byte random salt, parameters kept in the stored string, see
+`src/modules/auth/password-hash.ts`), never in plain text and never in an API response.
+
+A sign-in adds no second authorization path. `POST /api/auth/login` verifies the password, mints an ordinary API
+key that carries the user's role and expires after 7 days, and records in `user_sessions` which user it belongs to.
+Every later request goes through `ApiKeyGuard` like any other key, so the role hierarchy above applies unchanged.
+The dashboard keeps the key in `sessionStorage`, so closing the tab ends the session, and `POST /api/auth/logout`
+deletes the key on the gateway.
+
+```mermaid
+sequenceDiagram
+    participant D as Dashboard
+    participant L as POST /api/auth/login
+    participant U as users / user_sessions
+    participant K as api_keys
+
+    D->>L: email + password
+    L->>U: verify scrypt digest
+    alt password is temporary
+        L-->>D: passwordChangeRequired (no key)
+        D->>L: email + password + newPassword
+        L->>U: store new digest, clear the flag
+    end
+    L->>K: mint key (user's role, 7-day expiry)
+    L->>U: link key to user
+    L-->>D: apiKey + role + user
+    Note over D,K: every later request: X-API-Key through ApiKeyGuard
+```
+
+| Rule                   | Behaviour                                                                                                                                                                                                                                                                                                                                |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Temporary passwords    | A password chosen by someone else (set when an admin creates the user or resets it, or seeded from `ADMIN_PASSWORD`) is temporary (`mustChangePassword`). Signing in with it answers `passwordChangeRequired` and mints **no key**; the user must choose their own to get one, so whoever set it never holds a working session for them. |
+| Ending sessions        | Changing a user's role, deactivating them, resetting or changing their password, or deleting them deletes their other sign-in keys at once.                                                                                                                                                                                              |
+| Brute force            | Failed sign-ins are limited to 5 per email and 20 per client IP in 15 minutes (`429`); an unknown email costs the same scrypt work as a wrong password. Wrong current passwords on `POST /api/auth/me/password` are limited to 5 per user. Failures are audited as `user_login_failed`.                                                  |
+| Lockout guards         | An admin cannot demote, deactivate or delete themselves, and the last active admin user cannot be removed (`409`).                                                                                                                                                                                                                       |
+| Bootstrap and recovery | `ADMIN_EMAIL` / `ADMIN_PASSWORD` seed the first admin while no user exists; `ADMIN_PASSWORD_RESET=true` restores that account for one boot (see [Runbook: Dashboard Password Recovery](./11-operational-runbooks.md#runbook-dashboard-password-recovery)).                                                                               |
+
+API keys created on the API Keys page are unaffected: they stay the credential for integrations (n8n, MCP clients,
+scripts). Each sign-in also shows there as a key named `Login: <email>`, which an admin can revoke to end that
+session.
+
 ## 4.3 IP Whitelisting
 
 IP whitelisting adds an extra security layer by restricting API key access to specific IP addresses.

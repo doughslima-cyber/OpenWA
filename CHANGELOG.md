@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sign in to the dashboard with email and password. Each sign-in mints an expiring API key with the user's role, and a password set by someone else must be replaced before a key is issued.
+- Manage dashboard users (admin only) and change your own password under My account; seed the first admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 - Allow chat-restricted API keys to subscribe to chat WebSocket events.
 - Allow chat-restricted MCP keys to read and send within their chat allowlist using the REST authorization rules.
 - Carry `chatId` in `message.ack` and `message.failed` payloads so a webhook `chatId` filter scopes delivery events per chat.
@@ -21,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add optional 24-hour idempotency keys to twelve single-recipient send routes.
 
 - Add opt-in archive-only chat media with dashboard previews.
+
+### Changed
+
+- The dashboard login screen no longer accepts an API key; API keys stay the credential for API clients and integrations.
+- Rebrand the dashboard as OpenMsg (logo, favicon, title, indigo palette).
 
 ### Fixed
 

@@ -6,7 +6,7 @@
     }
   },
   "common": {
-    "appName": "OpenWA",
+    "appName": "OpenMsg",
     "updateAvailable": "v{{version}} disponível",
     "loading": "Carregando...",
     "cancel": "Cancelar",
@@ -49,7 +49,10 @@
     "unknownError": "Erro desconhecido",
     "showApiKey": "Mostrar chave API",
     "hideApiKey": "Ocultar chave API",
-    "retry": "Tentar novamente"
+    "retry": "Tentar novamente",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
+    "edit": "Editar"
   },
   "theme": {
     "light": "Claro",
@@ -70,7 +73,9 @@
     "infrastructure": "Infraestrutura",
     "plugins": "Plugins",
     "logs": "Registros",
-    "templates": "Modelos"
+    "templates": "Modelos",
+    "users": "Usuários",
+    "account": "Minha conta"
   },
   "chats": {
     "media": {
@@ -221,8 +226,20 @@
     "connectionError": "Não foi possível conectar ao servidor. Por favor, tente novamente.",
     "help": "Precisa de ajuda?",
     "viewDocs": "Ver documentação",
-    "footer": "Feito com ❤️ por Yudhi Armyndharis e a comunidade OpenWA",
-    "version": "v{{version}} · {{date}}"
+    "footer": "OpenMsg · baseado no OpenWA, feito com ❤️ por Yudhi Armyndharis e comunidade",
+    "version": "v{{version}} · {{date}}",
+    "email": "E-mail",
+    "emailPlaceholder": "voce@empresa.com",
+    "password": "Senha",
+    "passwordPlaceholder": "Sua senha",
+    "credentialsRequired": "Informe e-mail e senha",
+    "invalidCredentials": "E-mail ou senha inválidos",
+    "tooManyAttempts": "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+    "signIn": "Entrar",
+    "signingIn": "Entrando...",
+    "forgotHint": "Esqueceu a senha? Peça a um administrador para redefini-la.",
+    "choosePasswordHint": "Sua senha é provisória. Defina sua própria senha para continuar.",
+    "choosePasswordSubmit": "Salvar senha e entrar"
   },
   "dashboard": {
     "title": "Painel",
@@ -879,7 +896,7 @@
       "postgres": "PostgreSQL",
       "postgresDesc": "Banco de dados para produção",
       "useBuiltIn": "Usar contêiner PostgreSQL integrado",
-      "builtInDesc": "OpenWA gerenciará um contêiner PostgreSQL para você",
+      "builtInDesc": "O OpenMsg gerenciará um contêiner PostgreSQL para você",
       "dbName": "Nome do banco de dados",
       "schema": "Esquema",
       "schemaDesc": "Esquema do PostgreSQL (ignorado para SQLite). Padrão 'public'. O esquema já deve existir.",
@@ -914,7 +931,7 @@
       "enable": "Habilitar Redis",
       "enableDesc": "Usado para cache, filas BullMQ, contadores de limite de taxa e distribuição de WebSocket entre vários nós",
       "useBuiltIn": "Usar contêiner Redis integrado",
-      "builtInDesc": "OpenWA gerenciará um contêiner Redis para você",
+      "builtInDesc": "O OpenMsg gerenciará um contêiner Redis para você",
       "queueTitle": "Habilitar sistema de filas BullMQ",
       "queueDesc": "Use filas de mensagens para entrega confiável de mensagens e webhooks",
       "statsTitle": "Estatísticas das filas",
@@ -936,7 +953,7 @@
       "s3": "Amazon S3",
       "s3Desc": "Armazenamento em nuvem (compatível com S3)",
       "useBuiltIn": "Usar contêiner MinIO integrado",
-      "builtInDesc": "OpenWA gerenciará um contêiner MinIO (compatível com S3) para você",
+      "builtInDesc": "O OpenMsg gerenciará um contêiner MinIO (compatível com S3) para você",
       "storagePath": "Caminho de armazenamento",
       "bucket": "Nome do bucket",
       "region": "Região",
@@ -988,7 +1005,7 @@
       "importFailed": "Não foi possível importar os dados",
       "importOk": "Dados importados",
       "importConfirm": "A importação IRÁ SUBSTITUIR todos os dados atuais pelo backup ({{rows}} linhas). Isso não pode ser desfeito. Continuar?",
-      "invalidFile": "Esse arquivo não é um backup de dados válido do OpenWA.",
+      "invalidFile": "Esse arquivo não é um backup de dados válido do OpenMsg.",
       "importTooLarge": "O backup excede o limite da requisição. Aumente BODY_SIZE_LIMIT no servidor e tente novamente."
     },
     "statusLoadError": "Não foi possível carregar o status atual da infraestrutura. Atualize para tentar novamente.",
@@ -1022,7 +1039,7 @@
     "uninstallConfirm": "Desinstalar \"{{name}}\"? Isso remove seus arquivos.",
     "empty": {
       "title": "Nenhum plugin encontrado",
-      "description": "Instale plugins para ampliar a funcionalidade do OpenWA"
+      "description": "Instale plugins para ampliar a funcionalidade do OpenMsg"
     },
     "config": {
       "title": "Configurar {{name}}",
@@ -1171,5 +1188,74 @@
       "current": "Esta sessão"
     },
     "loading": "Pesquisando…"
+  },
+  "users": {
+    "title": "Usuários",
+    "subtitle": "Pessoas que entram no painel com e-mail e senha",
+    "addBtn": "Adicionar usuário",
+    "you": "você",
+    "empty": "Nenhum usuário ainda",
+    "loadError": "Não foi possível carregar os usuários",
+    "columns": {
+      "name": "Nome",
+      "email": "E-mail",
+      "role": "Papel",
+      "status": "Status",
+      "lastLogin": "Último acesso",
+      "actions": "Ações"
+    },
+    "form": {
+      "createTitle": "Novo usuário",
+      "editTitle": "Editar usuário",
+      "name": "Nome",
+      "namePlaceholder": "Nome completo",
+      "email": "E-mail",
+      "password": "Senha",
+      "newPassword": "Nova senha",
+      "passwordHint": "Mínimo de 10 caracteres",
+      "newPasswordHint": "Deixe em branco para manter a senha atual",
+      "passwordTooShort": "A senha precisa ter pelo menos 10 caracteres",
+      "requiredFields": "Preencha nome, e-mail e senha",
+      "role": "Papel",
+      "active": "Pode entrar no painel",
+      "temporaryHint": "Esta senha é provisória: a pessoa define a própria no próximo acesso."
+    },
+    "confirmDelete": {
+      "title": "Excluir usuário",
+      "message": "Excluir <strong>{{name}}</strong>? A pessoa é desconectada na hora.",
+      "confirm": "Excluir"
+    },
+    "toast": {
+      "created": "Usuário criado",
+      "updated": "Usuário atualizado",
+      "deleted": "Usuário excluído",
+      "saveError": "Não foi possível salvar o usuário",
+      "deleteError": "Não foi possível excluir o usuário"
+    },
+    "errors": {
+      "EMAIL_TAKEN": "Já existe um usuário com este e-mail",
+      "SELF_LOCKOUT": "Você não pode remover o seu próprio acesso de administrador",
+      "LAST_ADMIN": "É preciso manter pelo menos um administrador ativo"
+    },
+    "temporaryBadge": "senha provisória",
+    "temporaryHint": "A pessoa vai definir a própria senha no próximo acesso."
+  },
+  "account": {
+    "title": "Minha conta",
+    "subtitle": "Seu perfil e sua senha",
+    "profile": "Perfil",
+    "noProfile": "Perfil indisponível para esta sessão.",
+    "changePassword": "Trocar senha",
+    "currentPassword": "Senha atual",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Confirme a nova senha",
+    "confirmPlaceholder": "Digite a nova senha de novo",
+    "required": "Preencha a senha atual e a nova senha",
+    "mismatch": "As senhas não conferem",
+    "samePassword": "A nova senha precisa ser diferente da atual",
+    "wrongPassword": "A senha atual está incorreta",
+    "save": "Trocar senha",
+    "changed": "Senha alterada",
+    "changedHint": "Suas outras sessões foram encerradas."
   }
 }

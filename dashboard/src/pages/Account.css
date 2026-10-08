@@ -1,0 +1,104 @@
+.account-page {
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.account-page .page-header {
+  margin-bottom: 2rem;
+}
+
+.account-page .account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.account-page .account-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
+}
+
+.account-page .account-card h2 {
+  font-size: 1.0625rem;
+  margin-bottom: 1.25rem;
+}
+
+.account-page .account-profile {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.75rem 1.5rem;
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.account-page .account-profile dt {
+  color: var(--text-muted);
+}
+
+.account-page .account-profile dd {
+  margin: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.account-page .account-role-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.account-page .account-muted {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.account-page .account-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.account-page .account-form label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.account-page .account-form input {
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.account-page .account-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.account-page .account-error {
+  margin: 0 0 1rem;
+  color: var(--error-text);
+  font-size: 0.875rem;
+}
+
+.account-page .account-form .btn-primary {
+  align-self: flex-start;
+}
+
+@media (max-width: 640px) {
+  .account-page {
+    padding: 1rem;
+  }
+}

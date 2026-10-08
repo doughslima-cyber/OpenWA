@@ -1260,7 +1260,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-white);
-  color: var(--primary);
+  color: var(--primary-text);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;

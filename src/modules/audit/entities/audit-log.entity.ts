@@ -72,6 +72,15 @@ export enum AuditAction {
   INFRA_DATA_IMPORTED = 'infra_data_imported',
   INFRA_STORAGE_EXPORTED = 'infra_storage_exported',
   INFRA_STORAGE_IMPORTED = 'infra_storage_imported',
+
+  // Dashboard user events (email/password sign-in and admin user management)
+  USER_LOGIN = 'user_login',
+  USER_LOGIN_FAILED = 'user_login_failed',
+  USER_LOGOUT = 'user_logout',
+  USER_PASSWORD_CHANGED = 'user_password_changed',
+  USER_CREATED = 'user_created',
+  USER_UPDATED = 'user_updated',
+  USER_DELETED = 'user_deleted',
 }
 
 export enum AuditSeverity {

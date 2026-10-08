@@ -3,9 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Languages } from 'lucide-react';
 import { GithubIcon } from '../components/GithubIcon';
 import { CustomSelect } from '../components/CustomSelect';
+import { BrandLogo } from '../components/BrandLogo';
 import { languageOptions, resolveSupportedLanguage, type SupportedLanguage } from '../i18n';
-import { API_BASE_URL } from '../services/api';
+import { signIn, SignInError, storeSignedInUser } from '../services/users';
 import './Login.css';
+
+const PASSWORD_MIN = 10;
 
 interface LoginProps {
   onLogin: (apiKey: string, role?: string, engineType?: string, scoped?: boolean) => void;
@@ -13,10 +16,16 @@ interface LoginProps {
 
 export function Login({ onLogin }: LoginProps) {
   const { t, i18n } = useTranslation();
-  const [apiKey, setApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  // Set once the gateway answers that the password is temporary: the form then asks for the
+  // user's own password and repeats the sign-in with it.
+  const [mustChoose, setMustChoose] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const currentLang = resolveSupportedLanguage(i18n.resolvedLanguage || i18n.language);
 
   const changeLanguage = (language: SupportedLanguage) => {
@@ -25,43 +34,44 @@ export function Login({ onLogin }: LoginProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // The stored key is matched against key prefixes elsewhere, so a pasted space must not reach it.
-    const key = apiKey.trim();
-    if (!key) {
-      setError(t('login.apiKeyRequired'));
+    if (!email.trim() || !password) {
+      setError(t('login.credentialsRequired'));
       return;
+    }
+    if (mustChoose) {
+      if (newPassword.length < PASSWORD_MIN) {
+        setError(t('users.form.passwordTooShort'));
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setError(t('account.mismatch'));
+        return;
+      }
     }
     setIsLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/validate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': key,
-        },
-      });
-
-      if (response.ok) {
-        // The validate body already carries the key's role — hand it up so the app can set it
-        // directly instead of re-validating the same key a second time.
-        const data: { role?: string; engineType?: string; scoped?: unknown } = await response.json().catch(() => ({}));
-        onLogin(
-          key,
-          data.role,
-          typeof data.engineType === 'string' ? data.engineType : undefined,
-          data.scoped === true,
-        );
-      } else {
-        // A 5xx, or a body that is not the gateway's JSON (a proxy error page while it restarts), says
-        // nothing about the key; a refusal keeps the gateway's reason (expired, revoked, rate limited).
-        const errorData: { message?: unknown } = await response.json().catch(() => ({}));
-        const reason = response.status < 500 && typeof errorData.message === 'string' ? errorData.message : '';
-        setError(reason || t(response.status === 401 ? 'login.invalidKey' : 'login.connectionError'));
+      const result = await signIn(email.trim(), password, mustChoose ? newPassword : undefined);
+      if (result.passwordChangeRequired) {
+        setMustChoose(true);
+        return;
       }
-    } catch {
-      setError(t('login.connectionError'));
+      storeSignedInUser(result.user);
+      onLogin(result.apiKey, result.role, result.engineType, result.scoped);
+    } catch (err) {
+      const code = err instanceof SignInError ? err.code : 'NETWORK';
+      setError(
+        t(
+          code === 'INVALID_CREDENTIALS'
+            ? 'login.invalidCredentials'
+            : code === 'TOO_MANY_ATTEMPTS'
+              ? 'login.tooManyAttempts'
+              : code === 'SAME_PASSWORD'
+                ? 'account.samePassword'
+                : 'login.connectionError',
+        ),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +81,7 @@ export function Login({ onLogin }: LoginProps) {
     <div className="login-container">
       <div className="login-card">
         <div className="login-logo">
-          <img src="/openwa_logo.webp" alt="OpenWA" className="logo-icon" />
+          <BrandLogo className="logo-icon" />
           <span className="version-info">
             {t('login.version', {
               version: __APP_VERSION__,
@@ -93,40 +103,90 @@ export function Login({ onLogin }: LoginProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
-          <div className="input-group">
-            <label htmlFor="apiKey">{t('login.apiKey')}</label>
+          {mustChoose && (
+            <p className="login-notice" role="status">
+              {t('login.choosePasswordHint')}
+            </p>
+          )}
+          <div className="input-group" hidden={mustChoose}>
+            <label htmlFor="email">{t('login.email')}</label>
             <div className="input-wrapper">
               <input
-                id="apiKey"
-                type={showKey ? 'text' : 'password'}
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                placeholder={t('login.apiKeyPlaceholder')}
+                id="email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder={t('login.emailPlaceholder')}
+                className={error ? 'error' : ''}
+              />
+            </div>
+          </div>
+
+          <div className="input-group" hidden={mustChoose}>
+            <label htmlFor="password">{t('login.password')}</label>
+            <div className="input-wrapper">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder={t('login.passwordPlaceholder')}
                 className={error ? 'error' : ''}
               />
               <button
                 type="button"
                 className="toggle-visibility"
-                onClick={() => setShowKey(!showKey)}
-                aria-label={showKey ? t('common.hideApiKey') : t('common.showApiKey')}
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? t('common.hidePassword') : t('common.showPassword')}
               >
-                {showKey ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-            {error && <span className="error-message">{error}</span>}
+            {error && !mustChoose && <span className="error-message">{error}</span>}
           </div>
 
+          {mustChoose && (
+            <>
+              <div className="input-group">
+                <label htmlFor="new-password">{t('account.newPassword')}</label>
+                <div className="input-wrapper">
+                  <input
+                    id="new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder={t('users.form.passwordHint')}
+                    className={error ? 'error' : ''}
+                  />
+                </div>
+              </div>
+              <div className="input-group">
+                <label htmlFor="confirm-password">{t('account.confirmPassword')}</label>
+                <div className="input-wrapper">
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder={t('account.confirmPlaceholder')}
+                    className={error ? 'error' : ''}
+                  />
+                </div>
+                {error && <span className="error-message">{error}</span>}
+              </div>
+            </>
+          )}
+
           <button type="submit" className="connect-btn" disabled={isLoading}>
-            {isLoading ? t('login.connecting') : t('login.connect')}
+            {isLoading ? t('login.signingIn') : mustChoose ? t('login.choosePasswordSubmit') : t('login.signIn')}
           </button>
         </form>
 
-        <p className="login-help">
-          {t('login.help')}{' '}
-          <a href="https://docs.open-wa.org" target="_blank" rel="noopener noreferrer">
-            {t('login.viewDocs')}
-          </a>
-        </p>
+        <p className="login-help">{t('login.forgotHint')}</p>
       </div>
 
       <footer className="login-footer">

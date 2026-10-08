@@ -69,7 +69,7 @@
 
 .login-container .login-language:focus-within {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .login-container .login-form {
@@ -78,6 +78,20 @@
 
 .login-container .input-group {
   margin-bottom: 1.5rem;
+}
+
+.login-container .input-group[hidden] {
+  display: none;
+}
+
+.login-container .login-notice {
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .login-container .input-group label {
@@ -107,7 +121,7 @@
 .login-container .input-wrapper input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 .login-container .input-wrapper input.error {

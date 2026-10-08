@@ -25,6 +25,7 @@ export const METRICS_BEARER_SCHEME = 'metrics-bearer';
 // global X-API-Key requirement applied below would otherwise make the spec claim they need a
 // key. Mirror the @Public() decorators: add a path here when you add one there.
 export const PUBLIC_PATHS = [
+  '/api/auth/login',
   '/api/health',
   '/api/health/live',
   '/api/health/ready',

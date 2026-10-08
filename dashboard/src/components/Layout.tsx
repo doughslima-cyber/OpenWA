@@ -7,6 +7,8 @@ import {
   MessageSquare,
   Webhook,
   Key,
+  Users,
+  UserRound,
   FileText,
   ClipboardList,
   LogOut,
@@ -26,6 +28,8 @@ import { useTheme } from '../hooks/useTheme';
 import { useRole, type UserRole } from '../hooks/useRole';
 import { languageOptions, resolveSupportedLanguage, rtlLanguages, type SupportedLanguage } from '../i18n';
 import { healthApi, infraApi } from '../services/api';
+import { BRAND } from '../brand';
+import { BrandLogo } from './BrandLogo';
 import './Layout.css';
 
 interface LayoutProps {
@@ -41,12 +45,14 @@ const allNavItems = [
   { to: '/webhooks', icon: Webhook, key: 'webhooks' as const, adminOnly: false },
   { to: '/templates', icon: ClipboardList, key: 'templates' as const, adminOnly: false },
   { to: '/api-keys', icon: Key, key: 'apiKeys' as const, adminOnly: true, unscopedOnly: true },
+  { to: '/users', icon: Users, key: 'users' as const, adminOnly: true, unscopedOnly: true },
   { to: '/message-tester', icon: Send, key: 'messageTester' as const, adminOnly: false },
   // Backend /infra/* is ADMIN-only; hide the nav item from non-admins (UX + defense-in-depth).
   { to: '/infrastructure', icon: Server, key: 'infrastructure' as const, adminOnly: true, unscopedOnly: true },
   { to: '/plugins', icon: Puzzle, key: 'plugins' as const, adminOnly: true, unscopedOnly: true },
   // Backend /audit is ADMIN-only too.
   { to: '/logs', icon: FileText, key: 'logs' as const, adminOnly: true },
+  { to: '/account', icon: UserRound, key: 'account' as const, adminOnly: false },
 ];
 
 const themeIcons = { light: Sun, dark: Moon, system: Monitor };
@@ -171,8 +177,8 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
             {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="mobile-brand">
-            <img src="/openwa_logo.webp" alt="OpenWA" className="sidebar-logo" />
-            <span className="brand-name">{t('common.appName')}</span>
+            <BrandLogo className="sidebar-logo" />
+            <span className="brand-name">{BRAND.name}</span>
           </div>
           <div style={{ width: 40 }} />
         </header>
@@ -184,10 +190,10 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
         className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobile ? 'mobile' : ''} ${isMobileOpen ? 'open' : ''}`}
       >
         <div className="sidebar-header">
-          <img src="/openwa_logo.webp" alt="OpenWA" className="sidebar-logo" />
+          <BrandLogo className="sidebar-logo" />
           {!isCollapsed && (
             <div className="sidebar-brand">
-              <span className="brand-name">{t('common.appName')}</span>
+              <span className="brand-name">{BRAND.name}</span>
               <span className="brand-version">v{version}</span>
               {update && (
                 <a className="brand-update" href={update.url} target="_blank" rel="noopener noreferrer">

@@ -952,6 +952,44 @@ curl -v https://api.your-domain.com/api/health
 
 ---
 
+### Runbook: Dashboard Password Recovery
+
+**Trigger:** A user cannot sign in to the dashboard (forgotten password), or no admin user can sign in
+
+**Impact:** That user is blocked; with no admin, so is user management. The API and integrations keep working
+on their API keys.
+
+**Steps:**
+
+1. If another admin can sign in: **Users → edit the user → New password**. The new password is temporary (the
+   user chooses their own at the next sign-in) and the user's open sessions end at once.
+2. If no admin can sign in, restore an admin account from the environment:
+
+```bash
+# In the .env next to docker-compose.yml. Single quotes keep $ and # literal; at least 10 characters.
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD='a-temporary-password'
+ADMIN_PASSWORD_RESET=true
+
+# Recreate the API container so it reads the new values
+docker compose up -d openwa-api
+
+# Confirm
+docker compose logs openwa-api | grep UsersService
+#   "Admin admin@example.com restored from ADMIN_PASSWORD_RESET; unset it now"
+#   or "Admin user admin@example.com created from ADMIN_EMAIL" when that email had no account
+#   "ADMIN_PASSWORD is shorter than 10 characters" means nothing changed: lengthen it and repeat
+```
+
+3. Sign in with that password; the dashboard asks for a new one.
+4. Remove `ADMIN_PASSWORD_RESET` and `ADMIN_PASSWORD` from `.env` and run `docker compose up -d openwa-api` again.
+   While the flag stays on, every boot resets that account to the password in `.env`.
+
+**Verification:** the user signs in and reaches the dashboard, and **Users** lists them without the
+"temporary password" badge.
+
+---
+
 ### Runbook: Disk Space Low
 
 **Trigger:** Disk usage > 90%
