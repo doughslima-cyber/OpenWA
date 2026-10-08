@@ -15747,6 +15747,434 @@
         ]
       }
     },
+    "/api/sessions/{sessionId}/campaigns": {
+      "post": {
+        "operationId": "CampaignsController_create",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCampaignDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Campaign created and running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignCreatedDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid name or text, or the list holds no phone number (`CAMPAIGN_NO_RECIPIENTS`) or more than 5000 (`CAMPAIGN_TOO_MANY_RECIPIENTS`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The calling key is restricted with `allowedChats`: a campaign reaches numbers outside any chat allowlist, so a chat-restricted key is refused. Also returned for a key below the route's role. Also returned when the API key's role, session or chat scope, or IP allow-list does not allow this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No session with this id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The session already has a running campaign (`CAMPAIGN_ALREADY_RUNNING`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create and start a campaign: one text to a list of numbers, paced over days",
+        "tags": [
+          "campaigns"
+        ]
+      },
+      "get": {
+        "operationId": "CampaignsController_list",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The calling key is restricted with `allowedChats`: a campaign reaches numbers outside any chat allowlist, so a chat-restricted key is refused. Also returned for a key below the route's role. Also returned when the API key's role, session or chat scope, or IP allow-list does not allow this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No session with this id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List the session's campaigns, newest first",
+        "tags": [
+          "campaigns"
+        ]
+      }
+    },
+    "/api/sessions/{sessionId}/campaigns/{campaignId}": {
+      "get": {
+        "operationId": "CampaignsController_findOne",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaignId",
+            "required": true,
+            "in": "path",
+            "description": "Campaign ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The calling key is restricted with `allowedChats`: a campaign reaches numbers outside any chat allowlist, so a chat-restricted key is refused. Also returned for a key below the route's role. Also returned when the API key's role, session or chat scope, or IP allow-list does not allow this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such campaign in this session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a campaign, its counts and why it is waiting",
+        "tags": [
+          "campaigns"
+        ]
+      }
+    },
+    "/api/sessions/{sessionId}/campaigns/{campaignId}/recipients": {
+      "get": {
+        "operationId": "CampaignsController_recipients",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaignId",
+            "required": true,
+            "in": "path",
+            "description": "Campaign ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Only recipients in this status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "sending",
+                "sent",
+                "failed",
+                "replied",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Page size",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "Rows to skip",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRecipientPageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown status, or limit outside 1-100, or a negative offset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The calling key is restricted with `allowedChats`: a campaign reaches numbers outside any chat allowlist, so a chat-restricted key is refused. Also returned for a key below the route's role. Also returned when the API key's role, session or chat scope, or IP allow-list does not allow this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such campaign in this session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List a campaign's recipients in list order, filtered by status and paged",
+        "tags": [
+          "campaigns"
+        ]
+      }
+    },
+    "/api/sessions/{sessionId}/campaigns/{campaignId}/cancel": {
+      "post": {
+        "operationId": "CampaignsController_cancel",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaignId",
+            "required": true,
+            "in": "path",
+            "description": "Campaign ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignCancelledDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The calling key is restricted with `allowedChats`: a campaign reaches numbers outside any chat allowlist, so a chat-restricted key is refused. Also returned for a key below the route's role. Also returned when the API key's role, session or chat scope, or IP allow-list does not allow this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such campaign in this session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The campaign is already completed or cancelled (`CAMPAIGN_NOT_RUNNING`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cancel a running campaign; recipients not yet sent are cancelled",
+        "tags": [
+          "campaigns"
+        ]
+      }
+    },
     "/api/sessions/{sessionId}/catalog": {
       "get": {
         "operationId": "CatalogController_getCatalog",
@@ -25374,6 +25802,335 @@
           "base64",
           "mimetype",
           "bytes"
+        ]
+      },
+      "CreateCampaignDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name shown in the campaign list",
+            "example": "October follow-up",
+            "maxLength": 100
+          },
+          "text": {
+            "type": "string",
+            "description": "Text sent to every recipient",
+            "example": "Hi! We have news about your order.",
+            "maxLength": 4096
+          },
+          "recipients": {
+            "description": "Phone numbers, as typed or as read from a .csv/.txt file. An entry may hold several numbers separated by line breaks, commas, semicolons or tabs; spaces, parentheses, hyphens and a leading plus are ignored. Accepted: at least 6 digits, or `<digits>@c.us` / `<digits>@s.whatsapp.net`; groups, lids and channels are dropped. Duplicates count once; at most 5000 accepted.",
+            "example": [
+              "+55 (11) 98888-7777",
+              "5511977776666"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "text",
+          "recipients"
+        ]
+      },
+      "CampaignCreatedDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "total": {
+            "type": "number",
+            "description": "Distinct accepted recipients"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "total"
+        ]
+      },
+      "CampaignCountsDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "pending": {
+            "type": "number"
+          },
+          "sending": {
+            "type": "number"
+          },
+          "sent": {
+            "type": "number"
+          },
+          "failed": {
+            "type": "number"
+          },
+          "replied": {
+            "type": "number"
+          },
+          "cancelled": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "pending",
+          "sending",
+          "sent",
+          "failed",
+          "replied",
+          "cancelled"
+        ]
+      },
+      "CampaignSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "counts": {
+            "description": "Recipients by current status; the buckets sum to total",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignCountsDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "counts",
+          "createdAt",
+          "completedAt"
+        ]
+      },
+      "CampaignWaitingDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "pacing",
+              "restricted",
+              "disconnected"
+            ],
+            "description": "`pacing`: the session send allowance is spent until nextAttemptAt; `restricted`: WhatsApp restricts the account; `disconnected`: the session is not ready"
+          },
+          "nextAttemptAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "reason",
+          "nextAttemptAt"
+        ]
+      },
+      "CampaignDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "counts": {
+            "description": "Recipients by current status; the buckets sum to total",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignCountsDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "text": {
+            "type": "string"
+          },
+          "waiting": {
+            "nullable": true,
+            "description": "Why a running campaign is not sending right now; null while it sends or once it ended",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignWaitingDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "counts",
+          "createdAt",
+          "completedAt",
+          "text",
+          "waiting"
+        ]
+      },
+      "CampaignRecipientErrorDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SEND_FAILED",
+            "description": "SEND_FAILED, SEND_BLOCKED or SEND_INTERRUPTED"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "CampaignRecipientDto": {
+        "type": "object",
+        "properties": {
+          "chatId": {
+            "type": "string",
+            "example": "5511988887777@c.us"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "sending",
+              "sent",
+              "failed",
+              "replied",
+              "cancelled"
+            ]
+          },
+          "sentAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "repliedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignRecipientErrorDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "chatId",
+          "status",
+          "sentAt",
+          "repliedAt",
+          "error"
+        ]
+      },
+      "CampaignRecipientPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampaignRecipientDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Recipients matching the filter"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ]
+      },
+      "CampaignCancelledDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "completed",
+              "cancelled"
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CampaignCountsDto"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "counts"
         ]
       },
       "CatalogDto": {
