@@ -47,6 +47,7 @@ const dataEntities = [
   join(repoRoot, 'src/modules/integration/**/*.entity{.ts,.js}'),
   join(repoRoot, 'src/modules/status-store/**/*.entity{.ts,.js}'),
   join(repoRoot, 'src/modules/automation/**/*.entity{.ts,.js}'),
+  join(repoRoot, 'src/modules/campaign/**/*.entity{.ts,.js}'),
 ];
 
 const connection = (database: string): DataSourceOptions => ({
