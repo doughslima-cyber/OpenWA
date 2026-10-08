@@ -1,12 +1,35 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { AlertCircle, AlertTriangle, Loader2, Megaphone, Plus, Upload, XCircle } from 'lucide-react';
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Loader2,
+  Megaphone,
+  Plus,
+  Upload,
+  XCircle,
+} from 'lucide-react';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
 import { useToast } from '../hooks/useToast';
 import { useSessionsQuery } from '../hooks/queries';
-import { useCampaignsQuery, useCancelCampaignMutation, useCreateCampaignMutation } from '../hooks/useCampaigns';
-import type { CampaignSummary } from '../services/campaigns';
+import {
+  useCampaignQuery,
+  useCampaignRecipientsQuery,
+  useCampaignsQuery,
+  useCancelCampaignMutation,
+  useCreateCampaignMutation,
+} from '../hooks/useCampaigns';
+import {
+  RECIPIENT_STATUSES,
+  type CampaignDetail,
+  type CampaignSummary,
+  type RecipientStatus,
+} from '../services/campaigns';
 import { CAMPAIGN_MAX_RECIPIENTS, parseCampaignRecipients } from '../utils/campaignRecipients';
 import { BULK_RECIPIENTS_FILE_MAX_BYTES } from '../utils/bulkRecipients';
 import { PageHeader } from '../components/PageHeader';
@@ -15,6 +38,22 @@ import './Campaigns.css';
 
 const NAME_MAX = 100;
 const TEXT_MAX = 4096;
+/** Recipients per page on the campaign screen: the API's default page size. */
+export const RECIPIENTS_PAGE_SIZE = 50;
+
+/** The campaign the operator is about to cancel: from the list or from its own screen. */
+type CancelTarget = Pick<CampaignSummary, 'id' | 'name'>;
+
+/** `HH:MM` in the browser's time zone, as criterion 21 writes the next attempt. */
+function hourMinute(iso: string): string {
+  const date = new Date(iso);
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Newest first, whatever order the rows arrive in. */
+function newestFirst(rows: CampaignSummary[]): CampaignSummary[] {
+  return [...rows].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+}
 
 interface FormState {
   name: string;
@@ -53,7 +92,14 @@ export function Campaigns() {
   const [confirmingStart, setConfirmingStart] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState('');
-  const [cancelling, setCancelling] = useState<CampaignSummary | null>(null);
+  const [cancelling, setCancelling] = useState<CancelTarget | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const sortedCampaigns = useMemo(() => newestFirst(campaigns), [campaigns]);
+
+  // A campaign belongs to one session: switching sessions goes back to that session's list.
+  useEffect(() => {
+    setOpenId(null);
+  }, [sessionId]);
 
   const accepted = useMemo(() => parseCampaignRecipients(form.recipients), [form.recipients]);
   const tooMany = accepted.length > CAMPAIGN_MAX_RECIPIENTS;
@@ -133,6 +179,17 @@ export function Campaigns() {
 
   const formatDate = (iso: string) => new Date(iso).toLocaleString(i18n.resolvedLanguage || i18n.language);
 
+  const renderCancelButton = (campaign: CancelTarget) => (
+    <button
+      className="btn-icon"
+      onClick={() => setCancelling({ id: campaign.id, name: campaign.name })}
+      aria-label={t('campaigns.cancelAria', { name: campaign.name })}
+      title={t('campaigns.cancelBtn')}
+    >
+      <XCircle size={16} />
+    </button>
+  );
+
   if (loadingSessions) {
     return (
       <div className="campaigns-page campaigns-page--loading">
@@ -173,75 +230,86 @@ export function Campaigns() {
         }
       />
 
-      <div className="campaigns-table-container">
-        {sessionsFailed || campaignsError ? (
-          <div className="campaigns-empty" role="alert">
-            <AlertCircle size={48} strokeWidth={1} />
-            <h3>{t('campaigns.loadError')}</h3>
-            <p>{(sessionsError ?? campaignsError)?.message}</p>
-            {campaignsError && (
-              <button className="btn-secondary" onClick={() => void refetch()}>
-                {t('common.retry')}
-              </button>
-            )}
-          </div>
-        ) : loadingCampaigns && sessionId ? (
-          <div className="campaigns-empty">
-            <Loader2 className="animate-spin" size={32} />
-          </div>
-        ) : campaigns.length === 0 ? (
-          <div className="campaigns-empty">
-            <Megaphone size={48} strokeWidth={1} />
-            <h3>{t(sessions.length === 0 ? 'campaigns.noSessions' : 'campaigns.empty')}</h3>
-          </div>
-        ) : (
-          <table className="campaigns-table">
-            <thead>
-              <tr>
-                <th>{t('campaigns.columns.name')}</th>
-                <th>{t('campaigns.columns.status')}</th>
-                <th>{t('campaigns.columns.sent')}</th>
-                <th>{t('campaigns.columns.failed')}</th>
-                <th>{t('campaigns.columns.replied')}</th>
-                <th>{t('campaigns.columns.createdAt')}</th>
-                {canWrite && <th className="campaigns-actions-col">{t('campaigns.columns.actions')}</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {campaigns.map(campaign => (
-                <tr key={campaign.id}>
-                  <td className="campaigns-name">{campaign.name}</td>
-                  <td>
-                    <span className={`campaigns-status campaigns-status--${campaign.status}`}>
-                      {t(`campaigns.status.${campaign.status}`)}
-                    </span>
-                  </td>
-                  <td>
-                    {campaign.counts.sent + campaign.counts.replied}/{campaign.counts.total}
-                  </td>
-                  <td>{campaign.counts.failed}</td>
-                  <td>{campaign.counts.replied}</td>
-                  <td className="campaigns-muted">{formatDate(campaign.createdAt)}</td>
-                  {canWrite && (
-                    <td className="campaigns-actions-col">
-                      {campaign.status === 'running' && (
-                        <button
-                          className="btn-icon"
-                          onClick={() => setCancelling(campaign)}
-                          aria-label={t('campaigns.cancelAria', { name: campaign.name })}
-                          title={t('campaigns.cancelBtn')}
-                        >
-                          <XCircle size={16} />
-                        </button>
-                      )}
-                    </td>
-                  )}
+      {openId && sessionId ? (
+        <CampaignScreen
+          sessionId={sessionId}
+          campaignId={openId}
+          canWrite={canWrite}
+          onBack={() => setOpenId(null)}
+          onCancel={campaign => setCancelling({ id: campaign.id, name: campaign.name })}
+          formatDate={formatDate}
+        />
+      ) : (
+        <div className="campaigns-table-container">
+          {sessionsFailed || campaignsError ? (
+            <div className="campaigns-empty" role="alert">
+              <AlertCircle size={48} strokeWidth={1} />
+              <h3>{t('campaigns.loadError')}</h3>
+              <p>{(sessionsError ?? campaignsError)?.message}</p>
+              {campaignsError && (
+                <button className="btn-secondary" onClick={() => void refetch()}>
+                  {t('common.retry')}
+                </button>
+              )}
+            </div>
+          ) : loadingCampaigns && sessionId ? (
+            <div className="campaigns-empty">
+              <Loader2 className="animate-spin" size={32} />
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="campaigns-empty">
+              <Megaphone size={48} strokeWidth={1} />
+              <h3>{t(sessions.length === 0 ? 'campaigns.noSessions' : 'campaigns.empty')}</h3>
+            </div>
+          ) : (
+            <table className="campaigns-table">
+              <thead>
+                <tr>
+                  <th>{t('campaigns.columns.name')}</th>
+                  <th>{t('campaigns.columns.status')}</th>
+                  <th>{t('campaigns.columns.sent')}</th>
+                  <th>{t('campaigns.columns.failed')}</th>
+                  <th>{t('campaigns.columns.replied')}</th>
+                  <th>{t('campaigns.columns.createdAt')}</th>
+                  {canWrite && <th className="campaigns-actions-col">{t('campaigns.columns.actions')}</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {sortedCampaigns.map(campaign => (
+                  <tr key={campaign.id}>
+                    <td className="campaigns-name">
+                      <button
+                        type="button"
+                        className="campaigns-link"
+                        onClick={() => setOpenId(campaign.id)}
+                        title={t('campaigns.openAria', { name: campaign.name })}
+                      >
+                        {campaign.name}
+                      </button>
+                    </td>
+                    <td>
+                      <span className={`campaigns-status campaigns-status--${campaign.status}`}>
+                        {t(`campaigns.status.${campaign.status}`)}
+                      </span>
+                    </td>
+                    <td>
+                      {campaign.counts.sent + campaign.counts.replied}/{campaign.counts.total}
+                    </td>
+                    <td>{campaign.counts.failed}</td>
+                    <td>{campaign.counts.replied}</td>
+                    <td className="campaigns-muted">{formatDate(campaign.createdAt)}</td>
+                    {canWrite && (
+                      <td className="campaigns-actions-col">
+                        {campaign.status === 'running' && renderCancelButton(campaign)}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
       {creating && !confirmingStart && (
         <Modal
@@ -382,6 +450,224 @@ export function Campaigns() {
           </p>
         </Modal>
       )}
+    </div>
+  );
+}
+
+interface CampaignScreenProps {
+  sessionId: string;
+  campaignId: string;
+  canWrite: boolean;
+  onBack: () => void;
+  onCancel: (campaign: CampaignDetail) => void;
+  formatDate: (iso: string) => string;
+}
+
+/**
+ * One campaign: counters by status, why it is not sending, and its recipients filtered by status and
+ * paged. Read again every 5 s while it runs (useCampaignQuery), so progress shows without a reload.
+ */
+function CampaignScreen({ sessionId, campaignId, canWrite, onBack, onCancel, formatDate }: CampaignScreenProps) {
+  const { t } = useTranslation();
+  const [status, setStatus] = useState<RecipientStatus | ''>('');
+  const [offset, setOffset] = useState(0);
+  const { data: campaign, isLoading, error, refetch } = useCampaignQuery(sessionId, campaignId);
+  const running = campaign?.status === 'running';
+  const recipientQuery = useMemo(
+    () => ({ ...(status ? { status } : {}), limit: RECIPIENTS_PAGE_SIZE, offset }),
+    [status, offset],
+  );
+  const {
+    data: page,
+    isLoading: loadingRecipients,
+    error: recipientsError,
+  } = useCampaignRecipientsQuery(sessionId, campaignId, recipientQuery, running);
+
+  const backButton = (
+    <button type="button" className="btn-secondary campaigns-back" onClick={onBack}>
+      <ArrowLeft size={16} />
+      {t('campaigns.detail.back')}
+    </button>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="campaigns-detail">
+        {backButton}
+        <div className="campaigns-empty">
+          <Loader2 className="animate-spin" size={32} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !campaign) {
+    return (
+      <div className="campaigns-detail">
+        {backButton}
+        <div className="campaigns-empty" role="alert">
+          <AlertCircle size={48} strokeWidth={1} />
+          <h3>{t('campaigns.detail.loadError')}</h3>
+          <p>{error?.message}</p>
+          <button className="btn-secondary" onClick={() => void refetch()}>
+            {t('common.retry')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  let waitText: string | null = null;
+  if (running && campaign.waiting) {
+    const { reason, nextAttemptAt } = campaign.waiting;
+    if (reason !== 'pacing') waitText = t(`campaigns.waiting.${reason}`);
+    else if (nextAttemptAt) waitText = t('campaigns.waiting.pacing', { time: hourMinute(nextAttemptAt) });
+    else waitText = t('campaigns.waiting.pacingNoTime');
+  }
+
+  const total = page?.total ?? 0;
+  const items = page?.items ?? [];
+  const from = total === 0 ? 0 : offset + 1;
+  const to = offset + items.length;
+
+  return (
+    <div className="campaigns-detail">
+      {backButton}
+
+      <section className="campaigns-card campaigns-detail-header">
+        <div>
+          <h2 className="campaigns-detail-title">{campaign.name}</h2>
+          <p className="campaigns-muted">{t('campaigns.detail.createdAt', { date: formatDate(campaign.createdAt) })}</p>
+        </div>
+        <div className="campaigns-detail-actions">
+          <span className={`campaigns-status campaigns-status--${campaign.status}`}>
+            {t(`campaigns.status.${campaign.status}`)}
+          </span>
+          {canWrite && running && (
+            <button
+              className="btn-danger"
+              onClick={() => onCancel(campaign)}
+              aria-label={t('campaigns.cancelAria', { name: campaign.name })}
+            >
+              <XCircle size={16} />
+              {t('campaigns.cancelBtn')}
+            </button>
+          )}
+        </div>
+      </section>
+
+      {waitText && (
+        <p className="campaigns-waiting" role="status">
+          <Clock size={16} />
+          {waitText}
+        </p>
+      )}
+
+      <dl className="campaigns-counters">
+        <div className="campaigns-counter">
+          <dt>{t('campaigns.detail.total')}</dt>
+          <dd data-testid="campaign-count-total">{campaign.counts.total}</dd>
+        </div>
+        {RECIPIENT_STATUSES.map(key => (
+          <div key={key} className={`campaigns-counter campaigns-counter--${key}`}>
+            <dt>{t(`campaigns.recipientStatus.${key}`)}</dt>
+            <dd data-testid={`campaign-count-${key}`}>{campaign.counts[key]}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="campaigns-card campaigns-detail-text">
+        <span className="campaigns-detail-label">{t('campaigns.detail.message')}</span>
+        <p>{campaign.text}</p>
+      </div>
+
+      <section className="campaigns-card">
+        <div className="campaigns-recipients-toolbar">
+          <h3>{t('campaigns.detail.recipients')}</h3>
+          <select
+            aria-label={t('campaigns.detail.filter')}
+            value={status}
+            onChange={event => {
+              setStatus(event.target.value as RecipientStatus | '');
+              setOffset(0);
+            }}
+          >
+            <option value="">{t('campaigns.detail.allStatuses')}</option>
+            {RECIPIENT_STATUSES.map(key => (
+              <option key={key} value={key}>
+                {t(`campaigns.recipientStatus.${key}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {recipientsError ? (
+          <div className="campaigns-empty" role="alert">
+            <p>{recipientsError.message}</p>
+          </div>
+        ) : loadingRecipients ? (
+          <div className="campaigns-empty">
+            <Loader2 className="animate-spin" size={24} />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="campaigns-empty">
+            <p>{t('campaigns.detail.empty')}</p>
+          </div>
+        ) : (
+          <div className="campaigns-table-scroll">
+            <table className="campaigns-table">
+              <thead>
+                <tr>
+                  <th>{t('campaigns.detail.columns.number')}</th>
+                  <th>{t('campaigns.detail.columns.status')}</th>
+                  <th>{t('campaigns.detail.columns.sentAt')}</th>
+                  <th>{t('campaigns.detail.columns.repliedAt')}</th>
+                  <th>{t('campaigns.detail.columns.error')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(item => (
+                  <tr key={item.chatId}>
+                    <td className="campaigns-number">{item.chatId.split('@')[0]}</td>
+                    <td>
+                      <span className={`campaigns-status campaigns-status--r-${item.status}`}>
+                        {t(`campaigns.recipientStatus.${item.status}`)}
+                      </span>
+                    </td>
+                    <td className="campaigns-muted">{item.sentAt ? formatDate(item.sentAt) : '-'}</td>
+                    <td className="campaigns-muted">{item.repliedAt ? formatDate(item.repliedAt) : '-'}</td>
+                    <td className="campaigns-error-code" title={item.error?.message}>
+                      {item.error?.code ?? '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="campaigns-pager">
+          <span className="campaigns-muted">{t('campaigns.detail.range', { from, to, total })}</span>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setOffset(Math.max(0, offset - RECIPIENTS_PAGE_SIZE))}
+            disabled={offset === 0}
+          >
+            <ChevronLeft size={16} />
+            {t('campaigns.detail.previous')}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setOffset(offset + RECIPIENTS_PAGE_SIZE)}
+            disabled={offset + RECIPIENTS_PAGE_SIZE >= total}
+          >
+            {t('campaigns.detail.next')}
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

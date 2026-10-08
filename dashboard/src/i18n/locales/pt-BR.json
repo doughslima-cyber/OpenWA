@@ -1320,6 +1320,42 @@
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "Uma campanha aceita no máximo 5000 números",
       "CAMPAIGN_ALREADY_RUNNING": "Esta sessão já tem uma campanha em andamento",
       "CAMPAIGN_NOT_RUNNING": "Esta campanha não está mais em andamento"
+    },
+    "openAria": "Abrir {{name}}",
+    "detail": {
+      "back": "Todas as campanhas",
+      "loadError": "Não foi possível carregar a campanha",
+      "createdAt": "Criada em {{date}}",
+      "message": "Mensagem",
+      "total": "Total",
+      "recipients": "Destinatários",
+      "filter": "Filtrar por status",
+      "allStatuses": "Todos",
+      "empty": "Nenhum destinatário com este status",
+      "previous": "Anterior",
+      "next": "Próxima",
+      "range": "{{from}}–{{to}} de {{total}}",
+      "columns": {
+        "number": "Número",
+        "status": "Status",
+        "sentAt": "Enviada em",
+        "repliedAt": "Respondeu em",
+        "error": "Código de erro"
+      }
+    },
+    "recipientStatus": {
+      "pending": "Pendente",
+      "sending": "Enviando",
+      "sent": "Enviada",
+      "failed": "Falhou",
+      "replied": "Respondeu",
+      "cancelled": "Cancelada"
+    },
+    "waiting": {
+      "pacing": "Aguardando a cota de envio (próxima tentativa às {{time}})",
+      "pacingNoTime": "Aguardando a cota de envio",
+      "restricted": "A sessão está com restrição do WhatsApp",
+      "disconnected": "A sessão não está conectada"
     }
   }
 }

@@ -1320,6 +1320,42 @@
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
       "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+    },
+    "openAria": "Open {{name}}",
+    "detail": {
+      "back": "All campaigns",
+      "loadError": "Could not load the campaign",
+      "createdAt": "Created {{date}}",
+      "message": "Message",
+      "total": "Total",
+      "recipients": "Recipients",
+      "filter": "Filter by status",
+      "allStatuses": "All",
+      "empty": "No recipients with this status",
+      "previous": "Previous",
+      "next": "Next",
+      "range": "{{from}}–{{to}} of {{total}}",
+      "columns": {
+        "number": "Number",
+        "status": "Status",
+        "sentAt": "Sent at",
+        "repliedAt": "Replied at",
+        "error": "Error code"
+      }
+    },
+    "recipientStatus": {
+      "pending": "Pending",
+      "sending": "Sending",
+      "sent": "Sent",
+      "failed": "Failed",
+      "replied": "Replied",
+      "cancelled": "Cancelled"
+    },
+    "waiting": {
+      "pacing": "Waiting for the send allowance (next attempt at {{time}})",
+      "pacingNoTime": "Waiting for the send allowance",
+      "restricted": "The session is restricted by WhatsApp",
+      "disconnected": "The session is not connected"
     }
   }
 }
