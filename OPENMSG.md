@@ -126,6 +126,20 @@ uma campanha e assumem o atendimento. As mensagens seguintes do mesmo cliente ch
 Para isso funcionar, a sessão precisa de um webhook assinando `message.received` que aponte para o fluxo do Hermes
 ou do n8n. As rotas da API estão em [docs/06 §6.4.18](docs/06-api-specification.md#6418-campaigns-openmsg).
 
+Para ligar o n8n (ou o Hermes) a uma sessão:
+
+1. No fluxo, crie um nó **Webhook** (método `POST`) e copie a URL de produção dele.
+2. No OpenMsg, em **Webhooks**, crie um webhook na sessão com essa URL e o evento `message.received`. Um segredo
+   é opcional; com ele, o OpenMsg assina cada entrega (cabeçalho `X-OpenWA-Signature`) e o fluxo pode conferir.
+3. No fluxo, trate a resposta de campanha pelo campo `campaign` do corpo: se ele existe, a mensagem é a primeira
+   resposta daquele cliente à campanha `campaign.name`.
+4. Se o fluxo for responder pelo OpenMsg, crie em **Chaves API** uma chave só para ele, com papel **operador**, e
+   use-a no cabeçalho `X-API-Key` das chamadas de envio.
+
+Use a URL pública do n8n. Um endereço interno da VM (`http://n8n:5678/...`) só funciona se o `openwa-api`
+estiver na mesma rede Docker que o n8n e o host estiver em `SSRF_ALLOWED_HOSTS`; sem isso o gateway recusa endereços
+privados como destino de webhook.
+
 ## Implantação
 
 O OpenMsg roda com o `docker-compose.yml` do projeto numa VM Oracle Cloud Always Free (Ampere A1, ARM64), publicado
@@ -168,6 +182,7 @@ services:
 | `TRUSTED_PROXIES`                           | Sub-rede da `openwa-network`, para o OpenMsg ver o IP real de quem acessa |
 | `TUNNEL_TOKEN`                              | Token do túnel `openmsg` na Cloudflare (Zero Trust → Networks → Tunnels)  |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`             | Cria o primeiro admin. Apague `ADMIN_PASSWORD` depois do primeiro acesso. |
+| `SEND_PACING_ENABLED=true`                  | Liga o anti-banimento (cotas diárias e disjuntor), com as cotas padrão    |
 
 No Compose, ponha a senha entre aspas simples (`ADMIN_PASSWORD='...'`). Sem aspas, um `$` ou um ` #` na senha
 cortam o valor sem aviso.
@@ -225,9 +240,11 @@ Nunca renomeie nem apague um arquivo de `src/database/migrations-main/`: o banco
 ## Pendências conhecidas
 
 - Os 13 idiomas além de português e inglês mostram em inglês os textos novos do OpenMsg.
-- O anti-banimento (`SEND_PACING_ENABLED`) não está ligado no `.env` da VM. Sem ele, a campanha não tem cota
-  diária e só respeita o intervalo entre mensagens. Ligar vale para todo envio da sessão, inclusive as respostas do
-  Hermes e do n8n.
+- O anti-banimento está ligado na VM desde 08/10/2026 (`SEND_PACING_ENABLED=true`, cotas padrão). Ele vale para todo
+  envio da sessão, inclusive as respostas do Hermes e do n8n: quem passa da cota recebe HTTP 429 com
+  `code: SEND_PACING_LIMITED`.
+- A sessão da VM ainda não tem webhook: nenhuma mensagem recebida chega ao Hermes ou ao n8n, e a resposta a uma
+  campanha aparece só em **Conversas**. A integração com o n8n está em andamento.
 - Não há como excluir uma campanha: a lista de números fica guardada até a sessão ser excluída.
 - Não há recuperação de senha por e-mail; o caminho é sempre um admin ou o `.env` da VM.
 - Algumas falhas de teste no Windows (permissões de arquivo, quebras de linha) acontecem também no OpenWA original
