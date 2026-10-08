@@ -27,6 +27,7 @@ const Infrastructure = lazy(() => import('./pages/Infrastructure').then(m => ({ 
 const Plugins = lazy(() => import('./pages/Plugins'));
 const Users = lazy(() => import('./pages/Users').then(m => ({ default: m.Users })));
 const Account = lazy(() => import('./pages/Account').then(m => ({ default: m.Account })));
+const Campaigns = lazy(() => import('./pages/Campaigns').then(m => ({ default: m.Campaigns })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -137,6 +138,7 @@ function AppContent() {
               <Route path="account" element={<Account />} />
               {role === 'admin' && <Route path="logs" element={<Logs />} />}
               <Route path="message-tester" element={<MessageTester />} />
+              <Route path="campaigns" element={<Campaigns />} />
               {role === 'admin' && !scoped && <Route path="infrastructure" element={<Infrastructure />} />}
               {role === 'admin' && !scoped && <Route path="plugins" element={<Plugins />} />}
               <Route path="*" element={<Navigate to="/" replace />} />

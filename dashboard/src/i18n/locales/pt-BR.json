@@ -75,7 +75,8 @@
     "logs": "Registros",
     "templates": "Modelos",
     "users": "Usuários",
-    "account": "Minha conta"
+    "account": "Minha conta",
+    "campaigns": "Campanhas"
   },
   "chats": {
     "media": {
@@ -1257,5 +1258,68 @@
     "save": "Trocar senha",
     "changed": "Senha alterada",
     "changedHint": "Suas outras sessões foram encerradas."
+  },
+  "campaigns": {
+    "title": "Campanhas",
+    "subtitle": "Envie uma mensagem para uma lista de números, no ritmo que protege a conta",
+    "sessionSelect": "Sessão",
+    "noSessions": "Nenhuma sessão ainda",
+    "newBtn": "Nova campanha",
+    "empty": "Nenhuma campanha nesta sessão",
+    "loadError": "Não foi possível carregar as campanhas",
+    "cancelBtn": "Cancelar",
+    "cancelAria": "Cancelar {{name}}",
+    "columns": {
+      "name": "Nome",
+      "status": "Status",
+      "sent": "Enviadas",
+      "failed": "Falhas",
+      "replied": "Respostas",
+      "createdAt": "Criada em",
+      "actions": "Ações"
+    },
+    "status": {
+      "running": "Em andamento",
+      "completed": "Concluída",
+      "cancelled": "Cancelada"
+    },
+    "form": {
+      "title": "Nova campanha",
+      "name": "Nome",
+      "namePlaceholder": "Retorno de outubro",
+      "recipients": "Números",
+      "recipientsPlaceholder": "+55 11 98888-7777",
+      "recipientsHint": "Um por linha, ou separados por vírgula, ponto e vírgula ou tab. Grupos e repetidos são ignorados.",
+      "recipientsCount": "Números aceitos: {{total}}",
+      "tooMany": "No máximo {{max}} números por campanha ({{total}} agora)",
+      "loadFile": "Carregar .csv ou .txt",
+      "fileTooLarge": "O arquivo é grande demais (máx. 2 MB)",
+      "fileReadError": "Não foi possível ler o arquivo",
+      "text": "Mensagem",
+      "start": "Iniciar"
+    },
+    "confirmStart": {
+      "title": "Iniciar a campanha?",
+      "message": "Enviar a mensagem para <strong>{{total}}</strong> números pela sessão <strong>{{session}}</strong>? O envio segue a cota diária da sessão e pode levar vários dias.",
+      "confirm": "Iniciar envio"
+    },
+    "confirmCancel": {
+      "title": "Cancelar a campanha?",
+      "message": "Os números de <strong>{{name}}</strong> que ainda não receberam não vão receber a mensagem. Não dá para desfazer.",
+      "confirm": "Cancelar campanha",
+      "keep": "Manter"
+    },
+    "toast": {
+      "created": "Campanha iniciada",
+      "createError": "Não foi possível iniciar a campanha",
+      "cancelled": "Campanha cancelada",
+      "cancelError": "Não foi possível cancelar a campanha"
+    },
+    "errors": {
+      "CAMPAIGN_NO_RECIPIENTS": "Nenhuma das entradas é um número de telefone",
+      "CAMPAIGN_TOO_MANY_RECIPIENTS": "Uma campanha aceita no máximo 5000 números",
+      "CAMPAIGN_ALREADY_RUNNING": "Esta sessão já tem uma campanha em andamento",
+      "CAMPAIGN_NOT_RUNNING": "Esta campanha não está mais em andamento"
+    }
   }
 }

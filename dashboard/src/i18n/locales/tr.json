@@ -73,7 +73,8 @@
     "plugins": "Eklentiler",
     "logs": "Kayıtlar (Logs)",
     "users": "Users",
-    "account": "My account"
+    "account": "My account",
+    "campaigns": "Campaigns"
   },
   "chats": {
     "media": {
@@ -1251,5 +1252,68 @@
     "save": "Change password",
     "changed": "Password changed",
     "changedHint": "Your other sessions were signed out."
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "subtitle": "Send one message to a list of numbers, at a pace that protects the account",
+    "sessionSelect": "Session",
+    "noSessions": "No sessions yet",
+    "newBtn": "New campaign",
+    "empty": "No campaigns in this session",
+    "loadError": "Could not load the campaigns",
+    "cancelBtn": "Cancel",
+    "cancelAria": "Cancel {{name}}",
+    "columns": {
+      "name": "Name",
+      "status": "Status",
+      "sent": "Sent",
+      "failed": "Failed",
+      "replied": "Replied",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "running": "Running",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "form": {
+      "title": "New campaign",
+      "name": "Name",
+      "namePlaceholder": "October follow-up",
+      "recipients": "Numbers",
+      "recipientsPlaceholder": "+55 11 98888-7777",
+      "recipientsHint": "One per line, or separated by commas, semicolons or tabs. Groups and duplicates are ignored.",
+      "recipientsCount": "Numbers accepted: {{total}}",
+      "tooMany": "At most {{max}} numbers per campaign ({{total}} now)",
+      "loadFile": "Load .csv or .txt",
+      "fileTooLarge": "The file is too large (max 2 MB)",
+      "fileReadError": "Could not read the file",
+      "text": "Message",
+      "start": "Start"
+    },
+    "confirmStart": {
+      "title": "Start the campaign?",
+      "message": "Send the message to <strong>{{total}}</strong> numbers through the session <strong>{{session}}</strong>? Sending follows the session's daily allowance and may take several days.",
+      "confirm": "Start sending"
+    },
+    "confirmCancel": {
+      "title": "Cancel the campaign?",
+      "message": "Numbers in <strong>{{name}}</strong> that have not been sent yet will not receive the message. This cannot be undone.",
+      "confirm": "Cancel campaign",
+      "keep": "Keep running"
+    },
+    "toast": {
+      "created": "Campaign started",
+      "createError": "Could not start the campaign",
+      "cancelled": "Campaign cancelled",
+      "cancelError": "Could not cancel the campaign"
+    },
+    "errors": {
+      "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
+      "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
+      "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+    }
   }
 }
