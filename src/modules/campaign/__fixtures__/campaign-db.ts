@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { Session, SessionStatus } from '../../session/entities/session.entity';
 import { Message } from '../../message/entities/message.entity';
+import { LidMapping } from '../../../engine/identity/lid-mapping.entity';
 import { Campaign } from '../entities/campaign.entity';
 import { CampaignRecipient, type RecipientStatus } from '../entities/campaign-recipient.entity';
 
@@ -14,7 +15,7 @@ export async function createCampaignDataSource(database = ':memory:'): Promise<D
   const ds = new DataSource({
     type: 'better-sqlite3',
     database,
-    entities: [Session, Message, Campaign, CampaignRecipient],
+    entities: [Session, Message, LidMapping, Campaign, CampaignRecipient],
     synchronize: true,
   });
   await ds.initialize();

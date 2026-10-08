@@ -7,6 +7,7 @@ import { Campaign } from './entities/campaign.entity';
 import { CampaignRecipient } from './entities/campaign-recipient.entity';
 import { CampaignsService } from './campaigns.service';
 import { CampaignRunner } from './campaign-runner.service';
+import { CampaignReplyService } from './campaign-reply.service';
 import { CampaignsController } from './campaigns.controller';
 
 /**
@@ -17,6 +18,6 @@ import { CampaignsController } from './campaigns.controller';
 @Module({
   imports: [TypeOrmModule.forFeature([Campaign, CampaignRecipient, Session], 'data'), SessionModule, MessageModule],
   controllers: [CampaignsController],
-  providers: [CampaignsService, CampaignRunner],
+  providers: [CampaignsService, CampaignRunner, CampaignReplyService],
 })
 export class CampaignModule {}
