@@ -263,7 +263,7 @@ export class CampaignRunner implements OnApplicationBootstrap, OnModuleDestroy {
     const engine = this.engines.get(sessionId);
     if (!engine) {
       settle?.();
-      await this.unclaim(recipient.id);
+      await this.unclaim(recipient.id, campaign.id);
       await this.setWait(campaign.id, state, 'disconnected', null);
       return { done: false, delayMs: this.timing.idlePollMs };
     }
@@ -280,7 +280,7 @@ export class CampaignRunner implements OnApplicationBootstrap, OnModuleDestroy {
       // back to pending and the campaign waits for the session.
       if (error instanceof EngineNotReadyError || error instanceof EngineThrottledError) {
         settle?.();
-        await this.unclaim(recipient.id);
+        await this.unclaim(recipient.id, campaign.id);
         await this.setWait(campaign.id, state, 'disconnected', null);
         return { done: false, delayMs: this.timing.idlePollMs };
       }
@@ -346,9 +346,27 @@ export class CampaignRunner implements OnApplicationBootstrap, OnModuleDestroy {
     return result.affected === 1;
   }
 
-  /** Give a claimed recipient back, for a send that provably never reached the engine. */
-  private async unclaim(recipientId: string): Promise<void> {
-    await this.recipients.update({ id: recipientId, status: 'sending' }, { status: 'pending', claimedAt: null });
+  /**
+   * Give a claimed recipient back, for a send that provably never reached the engine. Only while the
+   * campaign runs: a cancel that landed during the engine call closed every pending row already, so a row
+   * handed back then would stay pending forever. It ends failed instead, as an in-flight send must.
+   */
+  private async unclaim(recipientId: string, campaignId: string): Promise<void> {
+    const returned = await this.recipients
+      .createQueryBuilder()
+      .update(CampaignRecipient)
+      .set({ status: 'pending', claimedAt: null })
+      .where('"id" = :recipientId AND "status" = :sending', { recipientId, sending: 'sending' })
+      .andWhere(`EXISTS (SELECT 1 FROM "campaigns" c WHERE c."id" = :campaignId AND c."status" = :running)`, {
+        campaignId,
+        running: 'running',
+      })
+      .execute();
+    if (returned.affected) return;
+    await this.finishRecipient(recipientId, 'failed', {
+      errorCode: 'SEND_FAILED',
+      errorMessage: 'The session disconnected while the campaign was being cancelled; the message was not sent',
+    });
   }
 
   private async finishRecipient(

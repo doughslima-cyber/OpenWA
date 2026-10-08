@@ -6,6 +6,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { HookManager } from '../../core/hooks';
 import { EngineRefusedError } from '../../common/errors/engine-refused.error';
+import { EngineNotReadyError } from '../../common/errors/engine-not-ready.error';
 import type { EngineRegistry } from '../../engine/engine-registry.service';
 import type { MessageService } from '../message/message.service';
 import { Message, MessageDirection } from '../message/entities/message.entity';
@@ -495,5 +496,35 @@ describe('CampaignRunner', () => {
     expect(h.calls).toHaveLength(1);
     expect(await statusesOf(ds, campaign.id)).toEqual(['sent', 'cancelled', 'cancelled']);
     expect((await ds.getRepository(Campaign).findOneByOrFail({ id: campaign.id })).status).toBe('cancelled');
+  });
+  it('C43 a send in the engine that fails with a dropped socket after the cancel ends failed, not pending', async () => {
+    const campaign = await seedCampaign(ds, sessionId, ['111111@c.us', '222222@c.us']);
+    let drop!: () => void;
+    let entered!: () => void;
+    const inEngine = new Promise<void>(resolve => (entered = resolve));
+    const h = buildRunner(ds, {
+      send: () =>
+        new Promise((_resolve, reject) => {
+          drop = () => reject(new EngineNotReadyError());
+          entered();
+        }),
+    });
+    const service = new CampaignsService(
+      ds.getRepository(Campaign),
+      ds.getRepository(CampaignRecipient),
+      ds.getRepository(Session),
+      h.runner,
+    );
+
+    h.runner.start(campaign.id);
+    await inEngine;
+    await service.cancel(sessionId, campaign.id);
+    drop();
+    await h.runner.whenStopped(campaign.id);
+
+    const rows = await recipientsOf(ds, campaign.id);
+    expect(rows.map(r => r.status)).toEqual(['failed', 'cancelled']);
+    expect(rows[0].errorCode).toBe('SEND_FAILED');
+    expect(h.calls).toHaveLength(1);
   });
 });
