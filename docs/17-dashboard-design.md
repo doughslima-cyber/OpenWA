@@ -82,10 +82,12 @@ flowchart TB
         WEBHOOKS[Webhooks /webhooks]
         TEMPLATES[Templates /templates]
         TESTER[Message Tester /message-tester]
+        ACCOUNT[My account /account]
     end
 
     subgraph "Admin-only"
         APIKEYS[API Keys /api-keys]
+        USERS[Users /users]
         INFRA[Infrastructure /infrastructure]
         PLUGINS[Plugins /plugins]
         LOGS[Logs /logs]
@@ -100,7 +102,7 @@ flowchart TB
 
 The route table lives in `src/App.tsx`; the sidebar items in `src/components/Layout.tsx`. Routes
 guarded by `role === 'admin'` are only mounted (and only shown in the sidebar) for an admin key —
-a non-admin hitting the path falls through to the `*` redirect. API Keys, Infrastructure and Plugins
+a non-admin hitting the path falls through to the `*` redirect. API Keys, Users, Infrastructure and Plugins
 also need a key not restricted to selected sessions (`role === 'admin' && !scoped`, with `scoped`
 from `POST /api/auth/validate`), because their routes refuse a session-scoped key; `/logs` is
 mounted for any admin key.
@@ -116,10 +118,16 @@ mounted for any admin key.
 /message-tester    → Message Tester (ad-hoc send-* + check-number)
 /logs              → Activity / Audit Logs            [admin only]
 /api-keys          → API Keys Management              [admin, unscoped key only]
+/users             → Dashboard users (create / role / reset password / deactivate) [admin, unscoped key only]
+/account           → My account (profile + change own password)
 /infrastructure    → Infrastructure status & config   [admin, unscoped key only]
 /plugins           → Plugins (install / enable / configure) [admin, unscoped key only]
 *                  → redirect to /
 ```
+
+Before any of these, the login screen asks for email and password (`POST /api/auth/login`). When the
+password is temporary, the same screen asks for a password of the user's own and repeats the sign-in with it. The
+returned key, role and user are kept in `sessionStorage`; see [Dashboard Sign-in](./04-security-design.md#dashboard-sign-in).
 
 > There is **no Settings page** and no `/sessions/:id`, `/sessions/:id/chat`, or `/webhooks/:id`
 > route. Theme (light/dark/system) is a one-click toggle in the sidebar footer (`Layout.tsx`),

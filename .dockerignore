@@ -41,7 +41,9 @@ _docs/
 .superpowers/
 .worktrees/
 .wwebjs_cache/
+AGENTS.md
 CLAUDE.md
+OPENMSG.md
 docs/plans/
 docs/superpowers/
 

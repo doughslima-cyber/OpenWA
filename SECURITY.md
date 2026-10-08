@@ -39,7 +39,8 @@ Please include, where possible:
 ## Hardening notes for operators
 
 OpenWA already ships several hardening measures: API-key auth with roles
-(ADMIN / OPERATOR / VIEWER), optional outbound webhook SSRF protection, a production
+(ADMIN / OPERATOR / VIEWER), dashboard sign-in with email and password (scrypt-hashed, rate-limited,
+with temporary passwords that must be replaced before a key is issued), optional outbound webhook SSRF protection, a production
 CORS policy (wildcard origins refused in production), request body-size limits, a
 non-root application container, path-containment checks on storage import/export,
 and a Docker socket-proxy as the sole gateway to the Docker daemon.

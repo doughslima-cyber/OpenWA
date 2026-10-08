@@ -34,7 +34,7 @@ OpenWA today is **multi-session, not multi-tenant**. What already exists and is 
 | Per-request ALS actor stamping (audit attribution)                                                                | `request-context.ts`                                                                                        | Audit gains `tenantId` at the same point                                                                                         |
 
 **The gaps** (what makes it not multi-tenant today): no tenant entity, no named users or
-memberships, dashboard identity is the API key itself, all branding is global (engine device name,
+memberships (dashboard users carry one global role, see docs/04 §4.2), all branding is global (engine device name,
 dashboard theme/logo/title), storage/backups/quota are global, and there is no tenant-scoped audit
 boundary.
 
@@ -184,8 +184,8 @@ as today.
    (they become keys of the default tenant).
 2. Ship behind `MULTITENANCY_ENABLED=true` (default **off**): when off, the tenant layer is a
    no-op pass-through to the default tenant and behavior is byte-identical to today.
-3. Dashboard gains user login as an _additional_ method; API-key login stays supported
-   indefinitely.
+3. Dashboard user login (email and password, docs/04 §4.2) gains tenant memberships and a tenant
+   switcher; API keys stay supported indefinitely for API clients.
 
 ## 28.14 Security model & test matrix
 
