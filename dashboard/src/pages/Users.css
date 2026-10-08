@@ -1,0 +1,214 @@
+.users-page {
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.users-page.users-page--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.users-page .page-header {
+  margin-bottom: 2rem;
+}
+
+.users-page .users-table-container {
+  background: var(--bg-white);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  width: 100%;
+  overflow-x: auto;
+}
+
+.users-page .users-table {
+  width: 100%;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+}
+
+.users-page .users-table th {
+  background: var(--bg-light);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.users-page .users-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+
+.users-page .users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.users-page .users-table tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+
+.users-page .users-name {
+  font-weight: 500;
+}
+
+.users-page .users-you {
+  margin-inline-start: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+.users-page .users-temporary {
+  margin-inline-start: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  color: var(--warning-text);
+}
+
+.users-page .users-muted {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.users-page .users-role,
+.users-page .users-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.users-page .users-role {
+  background: var(--bg-light);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.users-page .users-role--admin {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  border-color: transparent;
+}
+
+.users-page .users-status.is-active {
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  color: var(--success-text);
+}
+
+.users-page .users-status.is-inactive {
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color: var(--text-muted);
+}
+
+.users-page .users-actions-col {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.users-page .users-actions-col .btn-icon {
+  margin-inline-start: 0.25rem;
+}
+
+.users-page .users-actions-col .btn-icon:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.users-page .users-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.users-page .users-empty h3 {
+  color: var(--text-primary);
+}
+
+/* Create/edit modal (rendered inside the page, so scoped here). */
+.users-page .users-role-hint {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.users-page .users-active-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.users-page .users-active-row input {
+  width: auto;
+  margin: 0;
+}
+
+.users-page .users-active-row label {
+  margin: 0;
+}
+
+.users-page .users-form-error {
+  margin: 0;
+  color: var(--error-text);
+  font-size: 0.875rem;
+}
+
+.users-page .confirm-modal {
+  max-width: 400px;
+}
+
+.users-page .confirm-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.users-page .confirm-warning-icon {
+  color: var(--warning-text);
+}
+
+.users-page .confirm-message {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.users-page .confirm-message strong {
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .users-page {
+    padding: 1rem;
+  }
+
+  .users-page .users-table th,
+  .users-page .users-table td {
+    padding: 0.75rem;
+  }
+}

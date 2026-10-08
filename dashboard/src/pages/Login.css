@@ -80,6 +80,20 @@
   margin-bottom: 1.5rem;
 }
 
+.login-container .input-group[hidden] {
+  display: none;
+}
+
+.login-container .login-notice {
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 .login-container .input-group label {
   display: block;
   font-size: 0.875rem;

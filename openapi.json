@@ -96,7 +96,14 @@
                 "infra_data_exported",
                 "infra_data_imported",
                 "infra_storage_exported",
-                "infra_storage_imported"
+                "infra_storage_imported",
+                "user_login",
+                "user_login_failed",
+                "user_logout",
+                "user_password_changed",
+                "user_created",
+                "user_updated",
+                "user_deleted"
               ],
               "type": "string"
             }
@@ -586,6 +593,426 @@
         "summary": "Validate an API key",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "AuthLoginController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in with an expiring API key, or passwordChangeRequired: the password is temporary and no key was minted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, or newPassword equals the temporary password (code SAME_PASSWORD)."
+          },
+          "401": {
+            "description": "Invalid email or password, or the user is deactivated."
+          },
+          "429": {
+            "description": "Too many failed sign-in attempts from this client or for this email."
+          }
+        },
+        "summary": "Sign in with email and password",
+        "tags": [
+          "auth"
+        ],
+        "security": []
+      }
+    },
+    "/api/auth/me/password": {
+      "post": {
+        "operationId": "AuthLoginController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password changed; the other sign-ins of this user end."
+          },
+          "400": {
+            "description": "Validation failed, the current password is wrong (code WRONG_PASSWORD), or the new one equals it (SAME_PASSWORD).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The calling key was not minted by a sign-in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many wrong current passwords for this user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Change the signed-in user password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "AuthLoginController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Signed out. A key not minted by a sign-in is left untouched."
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sign out: delete the calling sign-in key",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/users": {
+      "get": {
+        "operationId": "UsersController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "All dashboard users (password hashes are never returned).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List dashboard users (admin only)",
+        "tags": [
+          "users"
+        ]
+      },
+      "post": {
+        "operationId": "UsersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, or the body carries a field the DTO does not declare.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A user with this email already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a dashboard user (admin only)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/users/{id}": {
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, or the body carries a field the DTO does not declare.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with this id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change would remove your own admin access, or leave no active admin user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update a dashboard user (admin only)",
+        "tags": [
+          "users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User deleted and signed out everywhere."
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user with this id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The user is yourself, or the last active admin user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete a dashboard user (admin only)",
+        "tags": [
+          "users"
         ]
       }
     },
@@ -18394,6 +18821,237 @@
         "required": [
           "valid"
         ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address of the dashboard user.",
+            "example": "ana@example.com",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "description": "Password of the dashboard user.",
+            "example": "correct horse battery",
+            "maxLength": 200
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "The password the user chooses, required when a previous attempt answered passwordChangeRequired (at least 10 characters, different from the current one).",
+            "example": "my own new passphrase",
+            "minLength": 10,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "User id.",
+            "example": "0a941dac-a965-45e7-b318-74ae8be134f0"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email address the user signs in with.",
+            "example": "ana@example.com"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name.",
+            "example": "Ana Souza"
+          },
+          "role": {
+            "type": "string",
+            "description": "Role granted at sign-in.",
+            "enum": [
+              "admin",
+              "operator",
+              "viewer"
+            ]
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the user may sign in.",
+            "example": true
+          },
+          "mustChangePassword": {
+            "type": "boolean",
+            "description": "Whether the next sign-in must set a new password first.",
+            "example": false
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last successful sign-in."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the user was created."
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "role",
+          "isActive",
+          "mustChangePassword",
+          "createdAt"
+        ]
+      },
+      "LoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "passwordChangeRequired": {
+            "type": "boolean",
+            "description": "True when the password is temporary: no key was minted; repeat the call with newPassword.",
+            "example": false
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "API key for this sign-in; send it as X-API-Key. Present when passwordChangeRequired is false.",
+            "example": "owa_k1_abc123..."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the sign-in key expires."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "operator",
+              "viewer"
+            ],
+            "description": "The key's role (the user's role)."
+          },
+          "engineType": {
+            "type": "string",
+            "description": "Engine the process resolved at boot.",
+            "example": "baileys"
+          },
+          "scoped": {
+            "type": "boolean",
+            "description": "Always false: sign-in keys are never session-scoped.",
+            "example": false
+          },
+          "user": {
+            "description": "The signed-in user.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "passwordChangeRequired"
+        ]
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "description": "The current password.",
+            "example": "correct horse battery",
+            "maxLength": 200
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "The new password (at least 10 characters, different from the current one).",
+            "example": "my own new passphrase",
+            "minLength": 10,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address the user signs in with.",
+            "example": "ana@example.com",
+            "maxLength": 254
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name.",
+            "example": "Ana Souza",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "description": "Initial password (at least 10 characters).",
+            "example": "correct horse battery",
+            "minLength": 10,
+            "maxLength": 200
+          },
+          "role": {
+            "type": "string",
+            "description": "Role granted at sign-in.",
+            "enum": [
+              "admin",
+              "operator",
+              "viewer"
+            ],
+            "default": "operator"
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "password"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name.",
+            "example": "Ana Souza",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "role": {
+            "type": "string",
+            "description": "Role granted at sign-in.",
+            "enum": [
+              "admin",
+              "operator",
+              "viewer"
+            ]
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the user may sign in.",
+            "example": true
+          },
+          "password": {
+            "type": "string",
+            "description": "New password (at least 10 characters).",
+            "example": "correct horse battery",
+            "minLength": 10,
+            "maxLength": 200
+          }
+        }
       },
       "CreateSessionDto": {
         "type": "object",

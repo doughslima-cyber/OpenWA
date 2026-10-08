@@ -108,13 +108,22 @@ for (const page of ['api-keys', 'infrastructure', 'plugins']) {
 }
 
 // The startup /auth/validate for a saved key is not cancelled by a logout. If it lands after the user
-// has signed back in with another key, its answer is about a key no longer in use and must not touch
-// the new session's role.
+// has signed back in as someone else, its answer is about a key no longer in use and must not touch
+// the new session's role. Signing out also deletes the old sign-in key on the gateway.
 test('a startup validation that lands after a sign-in with another key is ignored', async () => {
   const previous = globalThis.fetch;
   let answerStale: ((res: Response) => void) | undefined;
+  const loggedOut: (string | null)[] = [];
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (url.endsWith('/api/auth/logout')) {
+      loggedOut.push(new Headers(init?.headers).get('X-API-Key'));
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
+    if (url.endsWith('/api/auth/login'))
+      return Promise.resolve(
+        jsonResponse({ apiKey: 'new-viewer-key', role: 'viewer', engineType: 'baileys', scoped: false, user: {} }),
+      );
     if (url.endsWith('/api/auth/validate')) {
       if (new Headers(init?.headers).get('X-API-Key') === 'old-admin-key')
         return new Promise<Response>(resolve => (answerStale = resolve));
@@ -134,14 +143,21 @@ test('a startup validation that lands after a sign-in with another key is ignore
       return button;
     });
     rtl.fireEvent.click(logout);
-    const input = await rtl.waitFor(() => {
-      const field = document.getElementById('apiKey');
-      assert.ok(field);
-      return field;
-    });
-    rtl.fireEvent.change(input, { target: { value: 'new-viewer-key' } });
+    assert.deepEqual(loggedOut, ['old-admin-key']);
+    // Login and the authenticated shell are lazy chunks; under a loaded parallel run they can take
+    // longer than waitFor's 1s default to resolve, so give both waits room.
+    const input = await rtl.waitFor(
+      () => {
+        const field = document.getElementById('email');
+        assert.ok(field);
+        return field;
+      },
+      { timeout: 10_000 },
+    );
+    rtl.fireEvent.change(input, { target: { value: 'bia@example.com' } });
+    rtl.fireEvent.change(document.getElementById('password')!, { target: { value: 'correct horse battery' } });
     rtl.fireEvent.submit(input.closest('form')!);
-    await rtl.waitFor(() => assert.ok(document.querySelector('a[href="/sessions"]')));
+    await rtl.waitFor(() => assert.ok(document.querySelector('a[href="/sessions"]')), { timeout: 10_000 });
     assert.equal(logsLink() === null, true, 'the Logs nav entry is shown to a viewer');
 
     assert.ok(answerStale, 'the startup validation was never sent');

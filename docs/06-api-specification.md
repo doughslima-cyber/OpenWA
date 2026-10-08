@@ -5175,6 +5175,134 @@ The key is read from the `X-API-Key` header, not the body; send an empty body. T
 
 > Implemented by `AuthValidateController` (`@Controller('auth')`), sharing the same `/api/auth` base.
 
+#### POST /api/auth/login
+
+Sign in to the dashboard with email and password. On success the gateway mints an API key with the user's role that expires after 7 days, and returns it with the user. Send that key as `X-API-Key` like any other; `POST /api/auth/logout` deletes it.
+
+A password chosen by someone else (set at creation or reset by another admin, or seeded from `ADMIN_PASSWORD`) is temporary. Signing in with it answers `{ "passwordChangeRequired": true }` and mints no key; the client repeats the call with `newPassword`, which replaces the temporary password and completes the sign-in.
+
+**Auth:** public
+
+**Request body**
+
+```json
+{ "email": "ana@example.com", "password": "correct horse battery" }
+```
+
+**Response** `200`
+
+```json
+{
+  "passwordChangeRequired": false,
+  "apiKey": "owa_k1_…",
+  "expiresAt": "2026-10-14T12:00:00.000Z",
+  "role": "admin",
+  "engineType": "baileys",
+  "scoped": false,
+  "user": { "id": "…", "email": "ana@example.com", "name": "Ana", "role": "admin", "isActive": true, "createdAt": "…" }
+}
+```
+
+Notes: the email is matched case-insensitively. An unknown email costs the same password-hash work as a wrong password. Failed attempts are limited to 20 per client IP and 5 per email in 15 minutes (a success refunds its attempt); each failure is audited as `user_login_failed`.
+
+**Errors:** `400` validation, or `SAME_PASSWORD`: `newPassword` equals the temporary password · `401` `"Invalid email or password"` (also for a deactivated user) · `429` `"Too many sign-in attempts"`
+
+#### POST /api/auth/me/password
+
+Change the password of the user the calling sign-in key belongs to. The other sign-ins of that user end; the calling key keeps working.
+
+**Auth:** API key minted by `POST /api/auth/login` (any role, unscoped)
+
+**Request body**
+
+```json
+{ "currentPassword": "correct horse battery", "newPassword": "my own new passphrase" }
+```
+
+**Response** `204`
+
+`@HttpCode(204)` — no response body.
+
+Notes: a wrong current password answers `400`, not `401`, so a client does not mistake it for an unusable key. Wrong current passwords are limited to 5 per user in 15 minutes.
+
+**Errors:** `400` validation, `WRONG_PASSWORD` or `SAME_PASSWORD` · `401` missing/invalid key · `403` the key is session-scoped or restricted with `allowedChats` · `404` the key was not minted by a sign-in · `429` `"Too many sign-in attempts"`
+
+#### POST /api/auth/logout
+
+Sign out: delete the calling sign-in key. A key that was not minted by `POST /api/auth/login` is left untouched.
+
+**Auth:** API key (any valid role, unscoped)
+
+**Response** `204`
+
+`@HttpCode(204)` — no response body.
+
+**Errors:** `401` missing/invalid key · `403` the key is session-scoped or restricted with `allowedChats`
+
+> `POST /api/auth/login` and `/logout` are implemented by `AuthLoginController` (`@Controller('auth')`). Dashboard users are managed under `/api/users`.
+
+#### GET /api/users
+
+List dashboard users, oldest first. Password hashes are never returned.
+
+**Auth:** API key (ADMIN, unscoped)
+
+**Response** `200` — an array of users (`id`, `email`, `name`, `role`, `isActive`, `lastLoginAt`, `createdAt`).
+
+**Errors:** `401` missing/invalid key · `403` key role below ADMIN, or the key is session-scoped or restricted with `allowedChats`
+
+#### POST /api/users
+
+Create a dashboard user.
+
+**Auth:** API key (ADMIN, unscoped)
+
+**Request body**
+
+```json
+{ "email": "ana@example.com", "name": "Ana", "password": "correct horse battery", "role": "operator" }
+```
+
+`password` needs at least 10 characters; `role` defaults to `operator`.
+
+**Response** `201` — the created user.
+
+**Errors:** `400` validation · `401` missing/invalid key · `403` key role below ADMIN, or the key is session-scoped or restricted with `allowedChats` · `409` `EMAIL_TAKEN`: a user with this email already exists
+
+#### PATCH /api/users/:id
+
+Update a user's `name`, `role`, `isActive` or `password`. A change to role, status or password deletes the user's other sign-in keys, so they sign in again. A password set for another user is temporary: they choose their own at the next sign-in.
+
+**Auth:** API key (ADMIN, unscoped)
+
+**Path parameters**
+
+| Name | Type          | Description |
+| ---- | ------------- | ----------- |
+| `id` | string (uuid) | User id.    |
+
+**Response** `200` — the updated user.
+
+**Errors:** `400` validation · `401` missing/invalid key · `403` key role below ADMIN, or the key is session-scoped or restricted with `allowedChats` · `404` no user with this id · `409` `SELF_LOCKOUT`: removing your own admin access, or `LAST_ADMIN`: no active admin user would remain
+
+#### DELETE /api/users/:id
+
+Delete a user and sign them out everywhere.
+
+**Auth:** API key (ADMIN, unscoped)
+
+**Path parameters**
+
+| Name | Type          | Description |
+| ---- | ------------- | ----------- |
+| `id` | string (uuid) | User id.    |
+
+**Response** `204`
+
+`@HttpCode(204)` — no response body.
+
+**Errors:** `401` missing/invalid key · `403` key role below ADMIN, or the key is session-scoped or restricted with `allowedChats` · `404` no user with this id · `409` `SELF_LOCKOUT`: deleting yourself, or `LAST_ADMIN`: the last active admin user
+
 ### 6.4.10 System (Health, Metrics, Stats, Settings, Audit)
 
 System endpoints expose operational status, Prometheus metrics, aggregate statistics, runtime settings, and the audit log. Health and metrics use non-standard auth (public / Bearer token); stats, settings and audit use the API key, with several routes gated to `ADMIN`.

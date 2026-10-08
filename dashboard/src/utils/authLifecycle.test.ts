@@ -84,7 +84,7 @@ test('isUserRole accepts exactly the three known roles', () => {
   }
 });
 
-// ── App-level auth flow: exactly one /auth/validate per sign-in ──────────────
+// ── App-level auth flow: a sign-in is one /auth/login, a reload one /auth/validate ──
 // Render smoke tests of the full App for the two entry paths (fresh sign-in, page reload with a
 // saved key). Harness mirrors Infrastructure.test.ts: jsdom globals, a fetch stub recording every
 // call, i18n catalogues awaited before render. App brings its own providers, so no wrapper here.
@@ -119,6 +119,8 @@ function installFetchStub(): void {
 
     let body: unknown = [];
     if (method === 'POST' && path === '/api/auth/validate') body = validateBody;
+    else if (method === 'POST' && path === '/api/auth/login')
+      body = { ...validateBody, apiKey: loginKey, user: { id: 'u1', email: 'ana@example.com', name: 'Ana' } };
     else if (path === '/api/stats/overview')
       body = {
         sessions: { active: 0, total: 0, byStatus: {} },
@@ -129,6 +131,13 @@ function installFetchStub(): void {
       new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }),
     );
   };
+}
+
+// The key POST /auth/login mints in the current test.
+let loginKey = 'fresh-key';
+
+function loginCallCount(): number {
+  return fetchCalls.filter(c => c.method === 'POST' && c.path === '/api/auth/login').length;
 }
 
 function validateCallCount(): number {
@@ -182,41 +191,45 @@ afterEach(() => {
   sessionStorage.clear();
   fetchCalls.length = 0;
   validateBody = { valid: true, role: 'operator', engineType: 'whatsapp-web.js' };
+  loginKey = 'fresh-key';
 });
 
-// Types a key into the login form and submits it, then waits until App has applied the role from
-// the validate response (the synchronous tail of handleLogin).
+// Fills the login form and submits it, then waits until App has applied the role from the login
+// response (the synchronous tail of handleLogin).
 async function signIn(apiKey: string): Promise<void> {
   const { screen, waitFor, fireEvent } = rtl;
-  const input = await screen.findByLabelText('API Key');
-  fireEvent.change(input, { target: { value: apiKey } });
-  fireEvent.submit(input.closest('form')!);
+  loginKey = apiKey;
+  const email = await screen.findByLabelText('Email');
+  fireEvent.change(email, { target: { value: 'ana@example.com' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'correct horse battery' } });
+  fireEvent.submit(email.closest('form')!);
   await waitFor(() => assert.ok(sessionStorage.getItem(ROLE_KEY), 'expected a role to be stored after sign-in'));
   // Give the post-login render and its effects a macrotask to fire before counting requests.
   await new Promise(resolve => setTimeout(resolve, 50));
 }
 
-test('a fresh sign-in makes exactly one /auth/validate request, feeding the role from its response', async () => {
+test('a fresh sign-in makes exactly one /auth/login request and no validate, feeding the role from it', async () => {
   rtl.render(createElement(App));
 
   await signIn('fresh-key');
 
-  // The login page's own validate is the one request; the startup re-validation effect must not
-  // re-fire on the null→key transition that storing the fresh key causes.
-  assert.equal(validateCallCount(), 1);
+  // The login response already carries the role; the startup re-validation effect must not fire on
+  // the null→key transition that storing the fresh key causes.
+  assert.equal(loginCallCount(), 1);
+  assert.equal(validateCallCount(), 0);
   assert.equal(sessionStorage.getItem(ROLE_KEY), 'operator');
   assert.equal(sessionStorage.getItem(LOGIN_KEY), 'fresh-key');
   // The engine comes from the same response: a non-admin key cannot read /infra/engines/current.
   assert.equal(sessionStorage.getItem(ENGINE_KEY), 'whatsapp-web.js');
 });
 
-test('a fresh sign-in with a role-less validate response still degrades to viewer', async () => {
+test('a fresh sign-in with a role-less login response still degrades to viewer', async () => {
   validateBody = { valid: true };
   rtl.render(createElement(App));
 
   await signIn('fresh-key');
 
-  assert.equal(validateCallCount(), 1);
+  assert.equal(loginCallCount(), 1);
   assert.equal(sessionStorage.getItem(ROLE_KEY), 'viewer');
 });
 
@@ -249,7 +262,7 @@ test('a role or scope 403 and other failures keep the key', () => {
   assert.equal(isKeyUnusable(500, undefined), false);
 });
 
-test('a fresh sign-in with a session-scoped admin key keeps the scope from the validate response', async () => {
+test('a fresh sign-in with a session-scoped admin key keeps the scope from the login response', async () => {
   validateBody = { valid: true, role: 'admin', engineType: 'baileys', scoped: true };
   rtl.render(createElement(App));
 
