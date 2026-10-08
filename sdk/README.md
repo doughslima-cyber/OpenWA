@@ -46,7 +46,7 @@ All five SDKs expose the same fluent resource surface:
 
 > ⚠️ Endpoints requiring an `OPERATOR`-level API key are noted in the inline
 > docs. Deliberately **not** exposed, matching `docs/18-sdk-design.md` exactly:
-> `auth/api-keys` (key validation itself is the `auth` row above), `users`, `audit`,
+> `auth/api-keys` (key validation itself is the `auth` row above), `users`, `campaigns`, `audit`,
 > `settings`, `stats`, `automation`, `infra`,
 > `plugins`, the `integration` management routes, `metrics`, `mcp`, `ingress`
 > and `docker`. These two lists have to agree — they did not, in both

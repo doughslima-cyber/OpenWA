@@ -1,36 +1,40 @@
 # OpenMsg
 
 O OpenMsg é um fork do [OpenWA](https://github.com/rmyndharis/OpenWA), um gateway de API para WhatsApp de código
-aberto (licença MIT). O fork mantém o gateway do projeto original e acrescenta duas coisas: uma marca própria e o
-login no painel por e-mail e senha, com gestão de usuários.
+aberto (licença MIT). O fork mantém o gateway do projeto original e acrescenta três coisas: uma marca própria, o
+login no painel por e-mail e senha, com gestão de usuários, e as campanhas de disparo espaçado para uma lista de
+números.
 
-Este documento explica o que muda em relação ao OpenWA, como funcionam usuários e senhas, como o OpenMsg está
-implantado e como trazer as atualizações do projeto original.
+Este documento explica o que muda em relação ao OpenWA, como funcionam usuários, senhas e campanhas, como o OpenMsg
+está implantado e como trazer as atualizações do projeto original.
 
 ## O que muda em relação ao OpenWA
 
-| Área             | No OpenWA                               | No OpenMsg                                                                      |
-| ---------------- | --------------------------------------- | ------------------------------------------------------------------------------- |
-| Marca do painel  | Logo, nome e verde do OpenWA            | Logo OpenMsg (anel índigo), nome OpenMsg, paleta índigo                         |
-| Login do painel  | Cola-se uma API key                     | E-mail e senha; a API key não abre mais o painel                                |
-| Pessoas          | Não existe o conceito de usuário        | Página **Usuários** (só admin) e página **Minha conta** (todos)                 |
-| Senhas           | Não se aplica                           | Senha provisória obrigatória de trocar, troca da própria senha, recuperação     |
-| API e integração | API keys com papel (admin/operador/...) | Iguais: as API keys continuam sendo a credencial do n8n, do Hermes e de scripts |
+| Área             | No OpenWA                               | No OpenMsg                                                                       |
+| ---------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| Marca do painel  | Logo, nome e verde do OpenWA            | Logo OpenMsg (anel índigo), nome OpenMsg, paleta índigo                          |
+| Login do painel  | Cola-se uma API key                     | E-mail e senha; a API key não abre mais o painel                                 |
+| Pessoas          | Não existe o conceito de usuário        | Página **Usuários** (só admin) e página **Minha conta** (todos)                  |
+| Senhas           | Não se aplica                           | Senha provisória obrigatória de trocar, troca da própria senha, recuperação      |
+| API e integração | API keys com papel (admin/operador/...) | Iguais: as API keys continuam sendo a credencial do n8n, do Hermes e de scripts  |
+| Disparo em massa | Lote de até 100 números, tudo na hora   | Página **Campanhas**: até 5 000 números, no ritmo do anti-banimento, por dias    |
+| Webhook          | `message.received` traz a mensagem      | Igual, e a primeira resposta a uma campanha traz também `campaign: { id, name }` |
 
-A API, os motores (Baileys e whatsapp-web.js), os webhooks, os plugins e o resto do gateway não mudam.
+A API, os motores (Baileys e whatsapp-web.js), os plugins e o resto do gateway não mudam; dos webhooks, só o
+`message.received` ganha um campo opcional.
 
 ## Papéis
 
 Cada usuário tem um papel. O papel vale para tudo o que a pessoa faz no painel, porque cada login gera uma chave
 com esse papel e o backend confere o papel em cada rota.
 
-| Pode...                                                                                | Visualizador | Operador | Admin |
-| -------------------------------------------------------------------------------------- | :----------: | :------: | :---: |
-| Ver sessões, conversas, contatos, grupos e mensagens                                   |      ✓       |    ✓     |   ✓   |
-| Enviar mensagens, criar e parear sessões, mexer em grupos, etiquetas, status e modelos |              |    ✓     |   ✓   |
-| Configurar webhooks da sessão e regras de automação                                    |              |    ✓     |   ✓   |
-| Chaves API, Usuários, Infraestrutura, Plugins, Registros, configurações e estatísticas |              |          |   ✓   |
-| Trocar a própria senha em **Minha conta**                                              |      ✓       |    ✓     |   ✓   |
+| Pode...                                                                                                            | Visualizador | Operador | Admin |
+| ------------------------------------------------------------------------------------------------------------------ | :----------: | :------: | :---: |
+| Ver sessões, conversas, contatos, grupos, mensagens e campanhas                                                    |      ✓       |    ✓     |   ✓   |
+| Enviar mensagens, criar e parear sessões, mexer em grupos, etiquetas, status e modelos; criar e cancelar campanhas |              |    ✓     |   ✓   |
+| Configurar webhooks da sessão e regras de automação                                                                |              |    ✓     |   ✓   |
+| Chaves API, Usuários, Infraestrutura, Plugins, Registros, configurações e estatísticas                             |              |          |   ✓   |
+| Trocar a própria senha em **Minha conta**                                                                          |      ✓       |    ✓     |   ✓   |
 
 Não é preciso criar uma API key para cada pessoa: o login cria a chave sozinho. A página **Chaves API** fica para
 as integrações, cada uma com o menor papel de que precisa.
@@ -71,6 +75,47 @@ sessões da pessoa e mantém a atual. Cinco tentativas erradas da senha atual bl
 Os detalhes técnicos estão em [docs/04 §4.2, Dashboard Sign-in](docs/04-security-design.md#dashboard-sign-in), e as
 rotas (`/api/auth/login`, `/api/auth/logout`, `/api/auth/me/password`, `/api/users`) em
 [docs/06](docs/06-api-specification.md).
+
+## Campanhas
+
+Uma campanha manda o mesmo texto para uma lista de números por uma sessão, uma mensagem por número. Serve para falar
+com muitos clientes sem que o WhatsApp restrinja ou derrube o número.
+
+### Criar uma campanha
+
+1. Abra **Campanhas**, escolha a sessão e clique **Nova campanha** (operador ou admin).
+2. Dê um nome, cole os números ou carregue um arquivo `.csv` ou `.txt`, e escreva a mensagem. Vale um número por
+   linha ou separados por vírgula, ponto e vírgula ou tab; espaços, parênteses, hífens e o `+` são ignorados.
+   Grupos e números repetidos ficam de fora. O limite é de 5 000 números por campanha.
+3. Clique **Iniciar** e confirme no diálogo, que mostra a sessão e o total de números.
+
+Cada sessão tem no máximo uma campanha em andamento.
+
+### Como o envio acontece
+
+- Uma mensagem por vez, com 3 a 5 segundos entre uma e outra.
+- O envio respeita a cota diária do anti-banimento da sessão (`SEND_PACING_*`). Quando a cota do dia acaba, a
+  campanha espera a próxima tentativa sozinha e continua no dia seguinte (a cota vira às 00:00 UTC, 21:00 em
+  Brasília).
+- Se o WhatsApp põe uma restrição na conta, ou se a sessão desconecta, a campanha para de enviar e retoma quando a
+  sessão volta a ficar pronta.
+- Um reinício do gateway não perde a campanha: ela continua do próximo número. O número que estava sendo enviado
+  na hora da queda fica como falha (`SEND_INTERRUPTED`) e não é reenviado, porque o WhatsApp pode já ter recebido.
+- Um número que o WhatsApp recusa, ou que um plugin bloqueia, vira falha (`SEND_FAILED` ou `SEND_BLOCKED`) e a
+  campanha segue para o próximo.
+
+A tela de cada campanha (clique no nome dela na lista) mostra os contadores por status, a lista de destinatários
+com filtro e paginação, e o motivo de uma campanha em andamento não estar enviando. Ela se atualiza sozinha a cada
+5 segundos. O botão **Cancelar** pede confirmação; os números que ainda não receberam não recebem mais.
+
+### A resposta do cliente
+
+Quando um destinatário responde, ele passa a **Respondeu** e o webhook `message.received` daquela primeira resposta
+traz `campaign: { "id": "...", "name": "..." }`. É por esse campo que o Hermes ou o n8n sabem que a conversa veio de
+uma campanha e assumem o atendimento. As mensagens seguintes do mesmo cliente chegam sem o campo.
+
+Para isso funcionar, a sessão precisa de um webhook assinando `message.received` que aponte para o fluxo do Hermes
+ou do n8n. As rotas da API estão em [docs/06 §6.4.18](docs/06-api-specification.md#6418-campaigns-openmsg).
 
 ## Implantação
 
@@ -149,11 +194,15 @@ O fork foi feito para gerar poucos conflitos: quase tudo o que é dele está em 
 | ------------------------------------------------------------------------------------------------------------------------ |
 | `dashboard/src/brand.ts`, `brand.css`, `components/BrandLogo.tsx`                                                        |
 | `dashboard/src/pages/Users.*`, `pages/Account.*`, `services/users.ts`, `hooks/useUsers.ts`                               |
+| `dashboard/src/pages/Campaigns.*`, `services/campaigns.ts`, `hooks/useCampaigns.ts`, `utils/campaignRecipients.*`        |
 | `src/modules/auth/users.*`, `auth-login.controller.*`, `password-hash.ts`, `entities/user*.entity.ts`, `dto/user.dto.ts` |
+| `src/modules/campaign/` (inteiro)                                                                                        |
 | `src/database/migrations-main/1791000000000-CreateUserTables.ts`                                                         |
+| `src/database/migrations/1791100000000-AddCampaigns.ts`                                                                  |
 
 Os conflitos, quando aparecerem, devem cair em arquivos do projeto original que o fork alterou pontualmente:
-`Login.tsx`, `App.tsx`, `Layout.tsx`, `auth.module.ts`, o enum de auditoria, os catálogos de tradução, as folhas de
+`Login.tsx`, `App.tsx`, `Layout.tsx`, `auth.module.ts`, `app.module.ts`, `src/database/data-source.ts` e os
+specs de migração que listam as entidades, o enum de auditoria, os catálogos de tradução, as folhas de
 estilo em que o verde virou `var(--primary)`, a documentação e o `openapi.json`. Depois de resolver um merge:
 
 ```bash
@@ -167,6 +216,10 @@ Nunca renomeie nem apague um arquivo de `src/database/migrations-main/`: o banco
 ## Pendências conhecidas
 
 - Os 13 idiomas além de português e inglês mostram em inglês os textos novos do OpenMsg.
+- O anti-banimento (`SEND_PACING_ENABLED`) não está ligado no `.env` da VM. Sem ele, a campanha não tem cota
+  diária e só respeita o intervalo entre mensagens. Ligar vale para todo envio da sessão, inclusive as respostas do
+  Hermes e do n8n.
+- Não há como excluir uma campanha: a lista de números fica guardada até a sessão ser excluída.
 - Não há recuperação de senha por e-mail; o caminho é sempre um admin ou o `.env` da VM.
 - Algumas falhas de teste no Windows (permissões de arquivo, quebras de linha) acontecem também no OpenWA original
   e não têm relação com o fork; o CI roda em Linux.

@@ -7150,6 +7150,152 @@ engine has failed, it gets the `503`.
 
 **Errors:** `400` an encoded NUL (`%00`) in the path or query, or a JSON body that does not parse · `401` signature verification failed (missing, stale, or wrong secret) · `403` `GET` verification challenge failed on a route that declares `challenge` (`verifyToken` mismatch) · `404` unknown pluginId/instanceId, or no such claimed route · `413` body over the route's `maxBodyBytes` · `415` a body in a content type no parser reads (only `application/json` and `application/x-www-form-urlencoded` are read) · `429` rate limit: the per-instance bucket (`INGRESS_INSTANCE_LIMIT`, counted only for deliveries that pass signature verification) or the per-client-IP bucket (`INGRESS_IP_LIMIT`), both per `INGRESS_INSTANCE_TTL`; the global per-IP tiers skip this route, so these two are its bounds, and `Retry-After-instance` / `Retry-After-ingress-ip` names the one that shed the request, alongside a plain `Retry-After` carrying the same delay · `503` a route declaring a `session-alive` preflight whose bound session has no running engine, or its engine has failed (a session that is starting, reconnecting, waiting for a QR scan, or disconnected but still loaded is answered with the route's ack and queued): the delivery is not persisted, so the provider's retry is treated as a new delivery, and `Retry-After` carries the delay
 
+### 6.4.18 Campaigns (OpenMsg)
+
+A campaign sends one text to a list of numbers through one session, over as many days as the session's send pacing needs (`CampaignsController`, `@Controller('sessions/:sessionId/campaigns')`; an OpenMsg fork resource, not exposed in the SDKs). The gateway sends to one recipient at a time, 3 to 5 seconds apart, inside the session's daily allowance ([Send pacing](#send-pacing-opt-in-429-send_pacing_limited)). It waits while the allowance is spent, while WhatsApp restricts the account, or while the session is not `ready`, and it resumes after a restart. A recipient that was being sent when the gateway stopped is marked `failed` with `SEND_INTERRUPTED` and never sent again. A session holds at most one `running` campaign.
+
+When a recipient answers, the first message from its number marks it `replied`, and that one `message.received` carries `campaign: { id, name }` (§6.6).
+
+Recipient statuses: `pending`, `sending`, `sent`, `failed`, `replied`, `cancelled`. Campaign statuses: `running`, `completed`, `cancelled`. A recipient's `error.code` is `SEND_FAILED` (the engine or WhatsApp refused it), `SEND_BLOCKED` (a plugin vetoed it on `message:sending`) or `SEND_INTERRUPTED`.
+
+Every route refuses a key restricted with `allowedChats` (`403`): a campaign reaches numbers outside any chat allowlist.
+
+#### POST /api/sessions/:sessionId/campaigns
+
+Create a campaign and start sending.
+
+**Auth:** API key (OPERATOR)
+
+**Request body**
+
+| Field      | Type     | Required | Description                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| name       | string   | yes      | 1 to 100 characters.                                                                                                                                                                                                                                                                                                                                                           |
+| text       | string   | yes      | The message, not blank, at most 4096 characters.                                                                                                                                                                                                                                                                                                                               |
+| recipients | string[] | yes      | Numbers as typed or read from a `.csv`/`.txt` file. An entry may hold several, separated by line breaks, `,`, `;` or tabs. Accepted: at least 6 digits once spaces, parentheses, hyphens and a leading `+` are removed, or `<digits>@c.us` / `<digits>@s.whatsapp.net`. Groups, `@lid` ids and channels are dropped; duplicates count once. Each is stored as `<digits>@c.us`. |
+
+```json
+{
+  "name": "October follow-up",
+  "text": "Hi! We have news about your order.",
+  "recipients": ["+55 (11) 98888-7777", "5511977776666"]
+}
+```
+
+**Response** `201`
+
+```json
+{ "id": "6f1c2d3e-4b5a-4c7d-8e9f-0a1b2c3d4e5f", "name": "October follow-up", "status": "running", "total": 2 }
+```
+
+`total` is the number of distinct accepted numbers.
+
+**Errors:** `400` validation, `CAMPAIGN_NO_RECIPIENTS` (no entry is a phone number) or `CAMPAIGN_TOO_MANY_RECIPIENTS` (more than 5000 accepted) · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted with `allowedChats` · `404` no session with this id · `409` `CAMPAIGN_ALREADY_RUNNING`: the session already has a running campaign
+
+#### GET /api/sessions/:sessionId/campaigns
+
+List the session's campaigns, newest first.
+
+**Auth:** API key (any role)
+
+**Response** `200`
+
+```json
+[
+  {
+    "id": "6f1c2d3e-4b5a-4c7d-8e9f-0a1b2c3d4e5f",
+    "name": "October follow-up",
+    "status": "running",
+    "counts": { "total": 2, "pending": 1, "sending": 0, "sent": 1, "failed": 0, "replied": 0, "cancelled": 0 },
+    "createdAt": "2026-10-08T12:00:00.000Z",
+    "completedAt": null
+  }
+]
+```
+
+`counts` holds the recipients by current status; the buckets are exclusive and sum to `total`, so a recipient that replied counts under `replied`, not `sent`.
+
+**Errors:** `401` missing/invalid key · `403` the key is restricted with `allowedChats` · `404` no session with this id
+
+#### GET /api/sessions/:sessionId/campaigns/:campaignId
+
+One campaign: the list fields, its `text`, and why it is not sending right now.
+
+**Auth:** API key (any role)
+
+**Response** `200` — the list item plus:
+
+```json
+{
+  "text": "Hi! We have news about your order.",
+  "waiting": { "reason": "pacing", "nextAttemptAt": "2026-10-09T00:00:00.000Z" }
+}
+```
+
+`waiting` is `null` while the campaign sends and once it has ended. `reason` is `pacing` (the session's daily allowance is spent; `nextAttemptAt` is when it tries again), `restricted` (WhatsApp restricts the account; see `session.restriction` in §6.6) or `disconnected` (the session is not `ready`); `nextAttemptAt` is `null` for the last two.
+
+**Errors:** `401` missing/invalid key · `403` the key is restricted with `allowedChats` · `404` no such campaign in this session
+
+#### GET /api/sessions/:sessionId/campaigns/:campaignId/recipients
+
+The campaign's recipients in list order, filtered by status and paged.
+
+**Auth:** API key (any role)
+
+**Query parameters**
+
+| Name   | Type   | Description                                   |
+| ------ | ------ | --------------------------------------------- |
+| status | string | Only recipients in this status.               |
+| limit  | number | Page size, 1 to 100. Default `50`.            |
+| offset | number | Recipients to skip, `0` or more. Default `0`. |
+
+**Response** `200`
+
+```json
+{
+  "items": [
+    {
+      "chatId": "5511988887777@c.us",
+      "status": "replied",
+      "sentAt": "2026-10-08T12:00:04.000Z",
+      "repliedAt": "2026-10-08T12:31:10.000Z",
+      "error": null
+    },
+    {
+      "chatId": "5511977776666@c.us",
+      "status": "failed",
+      "sentAt": null,
+      "repliedAt": null,
+      "error": { "code": "SEND_FAILED", "message": "..." }
+    }
+  ],
+  "total": 2
+}
+```
+
+`total` counts the recipients that match the filter.
+
+**Errors:** `400` an unknown `status`, a `limit` outside 1-100 or a negative `offset` · `401` missing/invalid key · `403` the key is restricted with `allowedChats` · `404` no such campaign in this session
+
+#### POST /api/sessions/:sessionId/campaigns/:campaignId/cancel
+
+Cancel a running campaign. Every `pending` recipient becomes `cancelled` and no send starts after the response; a send already in the engine ends as `sent` or `failed`.
+
+**Auth:** API key (OPERATOR)
+
+**Response** `200`
+
+```json
+{
+  "id": "6f1c2d3e-4b5a-4c7d-8e9f-0a1b2c3d4e5f",
+  "status": "cancelled",
+  "counts": { "total": 2, "pending": 0, "sending": 0, "sent": 1, "failed": 0, "replied": 0, "cancelled": 1 }
+}
+```
+
+**Errors:** `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted with `allowedChats` · `404` no such campaign in this session · `409` `CAMPAIGN_NOT_RUNNING`: the campaign is already completed or cancelled
+
 ## 6.5 Real-time API (WebSocket)
 
 Live events are delivered over a **Socket.IO** connection (not a raw WebSocket). The server mounts a single Socket.IO namespace, **`/events`**, on the same port as the REST API. There are no REST routes in this module.
@@ -7354,6 +7500,8 @@ These are the events OpenWA actually emits. A webhook is registered with an `eve
 > **`status.received` is opt-in and carries no media blob.** Unlike every other event above, `status.received` is only delivered to a webhook whose `events` list explicitly includes `"status.received"` (or `"*"`) — registering for other events does not implicitly subscribe you to it. The payload never embeds media bytes: when `hasMedia` is `true`, fetch the file separately via `GET /api/sessions/:sessionId/status/:statusId/media`. Your own posted statuses never trigger this event — only inbound stories from contacts (an own-send echo is dropped before ingest).
 
 > **`STORE_EPHEMERAL_MESSAGES=false` affects `message.received`.** When `STORE_EPHEMERAL_MESSAGES` is set to `false`, incoming disappearing messages (those with `ephemeralDuration > 0`) are **not** persisted nor dispatched — no DB insert, no webhook delivery, and no websocket event. Downstream consumers and the dashboard both stop seeing them. Default is `true` (backward compatible — store and dispatch everything).
+
+> **`campaign` on `message.received` marks the reply to a campaign (OpenMsg).** When a message arrives in the 1:1 chat of a number a campaign of this session sent to (`@c.us`, `@s.whatsapp.net`, or an `@lid` the gateway already maps to that number), and the latest campaign to reach that number has not seen a reply yet, its recipient becomes `replied` and that one payload carries `campaign: { "id": "<campaign uuid>", "name": "<campaign name>" }`. Every other `message.received` has no `campaign` key: later messages from the same chat, messages from numbers no campaign reached, groups, channels and status posts, and a reply from an `@lid` the gateway cannot map to a number yet (that recipient stays `sent`). The field is added by a `message:received` hook at priority 0, ahead of plugins, so a plugin sees it too. Routes: §6.4.18.
 
 > **`senderPhone` on `message.received` is opt-in (`RESOLVE_LID_TO_PHONE`).** When a sender is identified by a WhatsApp privacy id (`…@lid`) rather than a phone number, setting `RESOLVE_LID_TO_PHONE=true` attaches a best-effort `senderPhone` — MSISDN digits, or `null` when the engine cannot map the id — before dispatch, so the webhook and the websocket event both carry it in the same pass. Default is **off**, and while it is off the field is absent from every payload: resolving costs a per-sender lookup (cached). Only inbound privacy-id senders are resolved — a sender that already is a phone number needs no lookup, and own-sends are skipped. The on-demand `GET /api/sessions/:sessionId/contacts/:contactId/phone` works regardless of this flag.
 

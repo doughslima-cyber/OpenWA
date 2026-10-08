@@ -1,13 +1,13 @@
 # AGENTS.md
 
 Instructions for coding agents working in this repository. Read [OPENMSG.md](OPENMSG.md) first: it explains what
-this fork changes, how users and passwords work, and how the fork is deployed.
+this fork changes, how users, passwords and campaigns work, and how the fork is deployed.
 
 ## What this repository is
 
 OpenMsg is a fork of [OpenWA](https://github.com/rmyndharis/OpenWA), an open-source WhatsApp API gateway (MIT).
-The fork adds its own branding and email/password sign-in with user management in the dashboard. Everything else
-is upstream code.
+The fork adds its own branding, email/password sign-in with user management in the dashboard, and campaigns (one
+text paced out to a list of numbers, with the reply tagged on `message.received`). Everything else is upstream code.
 
 - `src/`: NestJS 11 backend (TypeORM, two databases: `main` for auth/audit, always SQLite; `data` for the rest).
 - `dashboard/`: React 19 + Vite dashboard, bundled into the API image and served on the same port.
@@ -20,8 +20,11 @@ is upstream code.
 - **Put fork code in its own files.** Branding lives in `dashboard/src/brand.ts`, `brand.css` and
   `components/BrandLogo.tsx`; sign-in and users in `src/modules/auth/{users.*,auth-login.controller.*,password-hash.ts}`,
   `entities/user*.entity.ts`, `dto/user.dto.ts`, and on the dashboard `pages/{Users,Account}.*`,
-  `services/users.ts`, `hooks/useUsers.ts`. Edit upstream files only where a hook point is unavoidable, and keep
-  that edit small.
+  `services/users.ts`, `hooks/useUsers.ts`; campaigns in `src/modules/campaign/` (its reply hook is a
+  `message:received` handler, not an edit to `message-projector.service.ts`), the migration
+  `src/database/migrations/1791100000000-AddCampaigns.ts`, and on the dashboard `pages/Campaigns.*`,
+  `services/campaigns.ts`, `hooks/useCampaigns.ts`, `utils/campaignRecipients.*`. Edit upstream files only where a
+  hook point is unavoidable, and keep that edit small.
 - **Colors go through tokens.** Use `var(--primary)`, `--primary-text`, `--primary-hover`, `--primary-soft`;
   `brand.css` overrides them. Positive statuses (connected, active, success) use `--success` / `--success-text`,
   not the brand color. Do not hard-code hex colors in page CSS.
