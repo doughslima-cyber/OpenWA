@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Document the inactive OpenMsg campaign-reply workflow in n8n, credential setup, verified checks, and activation requirements.
 - The dashboard login screen no longer accepts an API key; API keys stay the credential for API clients and integrations.
 - Rebrand the dashboard as OpenMsg (logo, favicon, title, indigo palette).
 

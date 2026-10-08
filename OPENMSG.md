@@ -140,6 +140,26 @@ Use a URL pública do n8n. Um endereço interno da VM (`http://n8n:5678/...`) s�
 estiver na mesma rede Docker que o n8n e o host estiver em `SSRF_ALLOWED_HOSTS`; sem isso o gateway recusa endereços
 privados como destino de webhook.
 
+### Atendimento de campanhas no n8n
+
+O fluxo escolhido recebe a primeira resposta a uma campanha e continua apenas as conversas iniciadas por ela.
+O atendimento será de cobrança de inadimplência com IA no n8n, usando modelos de mensagem do OpenMsg para
+responder. As regras de cobrança serão definidas depois; o Hermes não participa deste fluxo.
+
+Em **08/10/2026**, o workflow **OpenMsg - respostas de campanhas - rascunho** está salvo no n8n, mas inativo.
+As credenciais `OpenMsg n8n operator` e `OpenMsg webhook HMAC` estão cadastradas: a primeira passou em uma
+consulta de sessões e modelos, e a segunda rejeitou uma assinatura inválida em teste. A sessão `douglas-teste`
+estava `ready` nessa consulta, mas não tinha modelos de mensagem cadastrados.
+
+O rascunho tem recepção com HMAC, filtros, vínculo persistente da conversa com a campanha e registro da mensagem
+antes do ACK. Os testes de entrada usam dados fictícios; ainda faltam deduplicação atômica de entregas
+simultâneas, retomada dos envios pendentes, modelos de mensagem e regras de atendimento. Nenhum webhook foi
+cadastrado na sessão e nenhum envio foi feito por esse fluxo.
+
+O [guia de respostas de campanhas no n8n](docs/examples/openmsg-campaign-replies.md) explica onde configurar
+as credenciais, quais nós mudar e o que verificar antes de ativar. Uma atualização apenas desta documentação
+não exige rebuild dos containers nem publicação do workflow.
+
 ## Implantação
 
 O OpenMsg roda com o `docker-compose.yml` do projeto numa VM Oracle Cloud Always Free (Ampere A1, ARM64), publicado
@@ -244,7 +264,9 @@ Nunca renomeie nem apague um arquivo de `src/database/migrations-main/`: o banco
   envio da sessão, inclusive as respostas do Hermes e do n8n: quem passa da cota recebe HTTP 429 com
   `code: SEND_PACING_LIMITED`.
 - A sessão da VM ainda não tem webhook: nenhuma mensagem recebida chega ao Hermes ou ao n8n, e a resposta a uma
-  campanha aparece só em **Conversas**. A integração com o n8n está em andamento.
+  campanha aparece só em **Conversas**. O rascunho do n8n está inativo; as credenciais foram validadas, mas
+  faltam modelos de mensagem, regras de cobrança e os requisitos de ativação do
+  [guia da integração](docs/examples/openmsg-campaign-replies.md#antes-de-ativar).
 - Não há como excluir uma campanha: a lista de números fica guardada até a sessão ser excluída.
 - Não há recuperação de senha por e-mail; o caminho é sempre um admin ou o `.env` da VM.
 - Algumas falhas de teste no Windows (permissões de arquivo, quebras de linha) acontecem também no OpenWA original
