@@ -231,6 +231,7 @@ erDiagram
         varchar nodeUrl
         timestamp leaseExpiresAt
         varchar desiredState
+        varchar engine
         timestamp createdAt
         timestamp updatedAt
     }
@@ -348,6 +349,9 @@ CREATE TABLE sessions (
     -- auto-start and the takeover sweep skip a stopped row. Server-owned: not in any session
     -- response, only in the /api/infra/export-data backup.
     "desiredState" VARCHAR(20),
+    -- OpenMsg: the engine this session runs. NULL (every row before the column) = ENGINE_TYPE; the
+    -- only value written is 'meta-cloud', a WhatsApp Cloud API session (docs/32).
+    "engine" VARCHAR(30),
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -919,7 +923,8 @@ src/database/migrations/           # data connection (pluggable)
 ├── 1787200000000-DeduplicateTerminalWebhookFailures.ts   # one terminal record per webhook and idempotency key
 ├── 1790812800000-AddMessageWindowIndexes.ts   # compound timestamp indexes for message-time pagination
 ├── 1791100000000-AddCampaigns.ts   # campaigns + campaign_recipients (OpenMsg); FKs ON DELETE CASCADE
-└── 1791200000000-AddCampaignRecipientWaMessageId.ts   # campaign_recipients.waMessageId for delivery/read metrics; best-effort backfill
+├── 1791200000000-AddCampaignRecipientWaMessageId.ts   # campaign_recipients.waMessageId for delivery/read metrics; best-effort backfill
+└── 1791300000000-AddSessionEngine.ts   # sessions.engine (OpenMsg): NULL = ENGINE_TYPE, or meta-cloud; no backfill
 ```
 
 > [!NOTE]

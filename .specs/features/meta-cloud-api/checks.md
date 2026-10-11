@@ -47,7 +47,7 @@ Proof: `npx jest src/engine/engine.factory.spec.ts -t "C6 "`
 **C7** - With `META_CLOUD_ENABLED=true`, `PluginsService.disablePlugin('meta-cloud')` returns `success: false` and `isPluginEnabled('meta-cloud')` stays `true`; the existing refusal for the `ENGINE_TYPE` plugin is unchanged (ENG-01, AC 7)
 Proof: `npx jest src/modules/plugins/plugins.service.spec.ts -t "C7 "`
 
-**C8** - `AddSessionEngine` adds `sessions.engine` as nullable `varchar(30)` with no default; after `up` on a database holding two session rows, both rows have `engine` NULL; `down` removes the column and keeps the rows (ENG-01, AC 8 · door 1)
+**C8** - `AddSessionEngine` adds `sessions.engine` as nullable `varchar(30)` with no default; after `up` on a database holding two session rows, both rows have `engine` NULL; `down` removes the column and keeps the rows (ENG-01, AC 8 · door 1) ✅
 Proof: `npx jest src/database/migrations/__tests__/1791300000000-AddSessionEngine.spec.ts -t "C8 "`
 
 **C9** - `ENGINE_TYPE=meta-cloud` fails boot validation, and `whatsapp-web.js` and `baileys` still pass (door 2)
