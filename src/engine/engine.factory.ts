@@ -6,6 +6,8 @@ import { IWhatsAppEngine } from './interfaces/whatsapp-engine.interface';
 import { PluginLoaderService, PluginType, IEnginePlugin, PluginManifest } from '../core/plugins';
 import { WhatsAppWebJsPlugin } from './builtin/whatsapp-web-js';
 import { BaileysPlugin } from './builtin/baileys';
+import { MetaCloudPlugin } from './builtin/meta-cloud';
+import { META_CLOUD_ENGINE, isMetaCloudEnabled } from './session-engine';
 import { createLogger } from '../common/services/logger.service';
 import { BaileysMessageStoreService } from './adapters/baileys-message-store.service';
 import { LidMappingStoreService } from './identity/lid-mapping-store.service';
@@ -26,6 +28,8 @@ export interface EngineCreateOptions {
   dbSessionId: string;
   proxyUrl?: string;
   proxyType?: 'http' | 'https' | 'socks4' | 'socks5';
+  /** The row's `sessions.engine` (OpenMsg): unset means the deployment's ENGINE_TYPE. */
+  engine?: string;
 }
 
 @Injectable()
@@ -86,19 +90,35 @@ export class EngineFactory implements OnModuleInit {
       engineConfig,
     );
 
-    // Auto-enable the configured engine
-    try {
-      await this.pluginLoader.enablePlugin(this.engineType);
-      this.logger.log(`Engine plugin enabled: ${this.engineType}`, {
-        action: 'engine_enabled',
-        engineType: this.engineType,
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to enable engine plugin: ${this.engineType}`,
-        error instanceof Error ? error.message : String(error),
-        { action: 'engine_enable_failed' },
-      );
+    // OpenMsg: the WhatsApp Cloud API engine, for sessions whose row says `meta-cloud` (docs/32).
+    // Always registered, so /infra/engines lists it; enabled only with META_CLOUD_ENABLED=true.
+    const metaCloudManifest: PluginManifest = {
+      id: META_CLOUD_ENGINE,
+      name: 'Meta Cloud API Engine',
+      version: '1.0.0',
+      type: PluginType.ENGINE,
+      description: 'WhatsApp Cloud API (official Meta API) engine adapter',
+      main: 'index.ts',
+      provides: ['whatsapp-engine'],
+    };
+    this.pluginLoader.registerBuiltInPlugin(metaCloudManifest, new MetaCloudPlugin(), engineConfig);
+
+    // Auto-enable the configured engine, and the Cloud API engine beside it when switched on
+    const toEnable = isMetaCloudEnabled() ? [this.engineType, META_CLOUD_ENGINE] : [this.engineType];
+    for (const engineType of toEnable) {
+      try {
+        await this.pluginLoader.enablePlugin(engineType);
+        this.logger.log(`Engine plugin enabled: ${engineType}`, {
+          action: 'engine_enabled',
+          engineType,
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to enable engine plugin: ${engineType}`,
+          error instanceof Error ? error.message : String(error),
+          { action: 'engine_enable_failed' },
+        );
+      }
     }
   }
 
@@ -118,8 +138,13 @@ export class EngineFactory implements OnModuleInit {
     ensurePrivateDir(this.wwjsAuthDir(options.sessionId));
     ensurePrivateDir(this.baileysAuthDir(options.sessionId));
 
-    // Try to get engine from plugin system
-    const enginePlugin = this.pluginLoader.getPlugin(this.engineType);
+    // Try to get engine from plugin system: the row's engine when it has one, else ENGINE_TYPE
+    const engineType = options.engine ?? this.engineType;
+    if (engineType === META_CLOUD_ENGINE && !isMetaCloudEnabled()) {
+      // The plugin stays registered while switched off, so refuse here rather than start it.
+      throw new Error(`Engine '${engineType}' is disabled (META_CLOUD_ENABLED is not true); cannot start the session.`);
+    }
+    const enginePlugin = this.pluginLoader.getPlugin(engineType);
 
     if (enginePlugin?.instance && this.isEnginePlugin(enginePlugin.instance)) {
       // Engine-neutral per-call config, plus the two auth-dir bases. Engine-specific config (e.g.
@@ -140,7 +165,7 @@ export class EngineFactory implements OnModuleInit {
 
     // Both built-ins are registered with an instance in onModuleInit and ENGINE_TYPE is whitelisted at
     // boot, so this is reached only by a broken host. Never build some other engine in its place.
-    throw new Error(`Engine '${this.engineType}' is not registered; cannot start the session.`);
+    throw new Error(`Engine '${engineType}' is not registered; cannot start the session.`);
   }
 
   /**

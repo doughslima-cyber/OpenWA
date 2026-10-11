@@ -129,6 +129,9 @@ const UNPREFIXED_FILE_ENGINES: Record<string, readonly AdapterKey[] | typeof SHA
   'engine-patch-status.ts': SHARED,
   'inbound-media-cap.ts': SHARED,
   'message-mapper.ts': SHARED,
+  // OpenMsg (docs/32): the WhatsApp Cloud API adapter. Neither QR engine imports it, so its refusals
+  // are credited to neither; the matrix gains its own `cloud` column when the adapter is filled in.
+  'meta-cloud-adapter.ts': [],
   'safe-link-preview.ts': ['baileys'],
   'vcard.ts': SHARED,
 };

@@ -98,6 +98,20 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ENGINE_TYPE: 'baileys' })).not.toThrow();
   });
 
+  // OpenMsg (docs/32 D1): the Cloud API engine is chosen per session, never for the whole deployment.
+  it('C9 rejects ENGINE_TYPE=meta-cloud and still accepts whatsapp-web.js and baileys', () => {
+    expect(() => validateEnv({ ENGINE_TYPE: 'meta-cloud' })).toThrow(/ENGINE_TYPE/);
+    expect(() => validateEnv({ ENGINE_TYPE: 'whatsapp-web.js' })).not.toThrow();
+    expect(() => validateEnv({ ENGINE_TYPE: 'baileys' })).not.toThrow();
+  });
+
+  it('rejects a META_CLOUD_ENABLED typo and accepts true, false and blank', () => {
+    expect(() => validateEnv({ META_CLOUD_ENABLED: 'yes' })).toThrow(/META_CLOUD_ENABLED/);
+    for (const value of ['true', 'false', '']) {
+      expect(() => validateEnv({ META_CLOUD_ENABLED: value })).not.toThrow();
+    }
+  });
+
   it('rejects a STORAGE_TYPE typo instead of silently falling back to local', () => {
     expect(() => validateEnv({ STORAGE_TYPE: 'ss' })).toThrow(/STORAGE_TYPE/);
     expect(() => validateEnv({ STORAGE_TYPE: 'local' })).not.toThrow();

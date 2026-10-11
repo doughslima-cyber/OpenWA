@@ -756,6 +756,65 @@ describe('PluginsService: disable an engine plugin', () => {
   });
 });
 
+// OpenMsg (docs/32): the Cloud API engine runs beside engine.type and boot enables it again while
+// META_CLOUD_ENABLED=true, so a runtime disable would report success while Cloud sessions keep using it.
+describe('PluginsService: disable the meta-cloud engine plugin', () => {
+  const prevFlag = process.env.META_CLOUD_ENABLED;
+  let tmpDir: string;
+
+  afterEach(() => {
+    if (prevFlag === undefined) delete process.env.META_CLOUD_ENABLED;
+    else process.env.META_CLOUD_ENABLED = prevFlag;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  const build = async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'owa-meta-engine-'));
+    const settings: Record<string, string> = {
+      'plugins.dir': path.join(tmpDir, 'plugins'),
+      dataDir: tmpDir,
+      'engine.type': 'baileys',
+    };
+    const config = { get: (k: string) => settings[k] } as unknown as ConfigService;
+    const loader = new PluginLoaderService(
+      config,
+      new HookManager(),
+      new PluginStorageService(config),
+      {} as unknown as ModuleRef,
+    );
+    for (const id of ['baileys', 'meta-cloud']) {
+      loader.registerBuiltInPlugin({ id, name: id, version: '1.0.0', type: PluginType.ENGINE, main: 'index.js' }, {});
+      await loader.enablePlugin(id);
+    }
+    return { loader, service: new PluginsService(loader, config) };
+  };
+
+  it('C7 refuses to disable meta-cloud while META_CLOUD_ENABLED=true and keeps it enabled', async () => {
+    process.env.META_CLOUD_ENABLED = 'true';
+    const { loader, service } = await build();
+    const disablePlugin = jest.spyOn(loader, 'disablePlugin');
+
+    const res = await service.disable('meta-cloud');
+
+    expect(res.success).toBe(false);
+    expect(disablePlugin).not.toHaveBeenCalled();
+    expect(loader.isPluginEnabled('meta-cloud')).toBe(true);
+  });
+
+  it('C7 still refuses to disable the engine.type plugin, unchanged', async () => {
+    process.env.META_CLOUD_ENABLED = 'true';
+    const { loader, service } = await build();
+
+    const res = await service.disable('baileys');
+
+    expect(res).toEqual({
+      success: false,
+      message: 'Engine "baileys" cannot be disabled at runtime. Set engine.type and restart to switch engines.',
+    });
+    expect(loader.isPluginEnabled('baileys')).toBe(true);
+  });
+});
+
 /**
  * Recovery for a plugin the gateway still has a registry entry for but whose code is gone — the
  * state the loader announces on every boot ("Reinstall it — its config and stored data are kept").

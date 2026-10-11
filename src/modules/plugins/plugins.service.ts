@@ -12,6 +12,7 @@ import { assertDownloadSha256, assertPluginInstallUrl, fetchSafeBuffer } from '.
 import { annotateCatalog, CatalogEntry, CatalogPlugin } from './catalog';
 import { redactSsrfError } from '../../common/security/ssrf-guard';
 import { createLogger } from '../../common/services/logger.service';
+import { META_CLOUD_ENGINE, isMetaCloudEnabled } from '../../engine/session-engine';
 
 /** Cap on the catalog JSON download (the catalog is small; this bounds a hostile response). */
 const CATALOG_MAX_BYTES = 1 * 1024 * 1024;
@@ -177,6 +178,15 @@ export class PluginsService {
       return {
         success: false,
         message: `Engine "${id}" cannot be disabled at runtime. Set engine.type and restart to switch engines.`,
+      };
+    }
+
+    // OpenMsg: the Cloud API engine runs beside engine.type and boot enables it again while
+    // META_CLOUD_ENABLED=true, so disabling it would report success while Cloud sessions keep using it.
+    if (plugin.manifest.type === PluginType.ENGINE && id === META_CLOUD_ENGINE && isMetaCloudEnabled()) {
+      return {
+        success: false,
+        message: `Engine "${id}" cannot be disabled at runtime. Set META_CLOUD_ENABLED=false and restart to turn it off.`,
       };
     }
 

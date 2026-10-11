@@ -26,11 +26,11 @@ the way `main.ts` captures it.
 Proof: `npx jest src/modules/session/dto/session-response.dto.spec.ts -t "C1 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C1 "`
 
-**C2** - Starting a session whose `engine` is NULL creates its engine from the `ENGINE_TYPE` plugin, and the lifecycle passes the row's `engine` (here `undefined`) to `EngineFactory.create` (ENG-01, AC 2)
+**C2** - Starting a session whose `engine` is NULL creates its engine from the `ENGINE_TYPE` plugin, and the lifecycle passes the row's `engine` (here `undefined`) to `EngineFactory.create` (ENG-01, AC 2) ✅
 Proof: `npx jest src/engine/engine.factory.spec.ts -t "C2 "`
 Proof: `npx jest src/modules/session/session-engine-lifecycle-engine-select.spec.ts -t "C2 "`
 
-**C3** - With `ENGINE_TYPE=baileys`, a row whose `engine` is `meta-cloud` gets its engine from the `meta-cloud` plugin's `createEngine`, and the Baileys plugin's `createEngine` is not called (ENG-01, AC 3)
+**C3** - With `ENGINE_TYPE=baileys`, a row whose `engine` is `meta-cloud` gets its engine from the `meta-cloud` plugin's `createEngine`, and the Baileys plugin's `createEngine` is not called (ENG-01, AC 3) ✅
 Proof: `npx jest src/engine/engine.factory.spec.ts -t "C3 "`
 Proof: `npx jest src/modules/session/session-engine-lifecycle-engine-select.spec.ts -t "C3 "`
 
@@ -41,19 +41,19 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.
 **C5** - With `META_CLOUD_ENABLED` unset, and again with it set to `false`, `POST /api/sessions` with a complete `meta-cloud` body answers 400 with `code: "META_CLOUD_DISABLED"` and the `sessions` table count is unchanged (ENG-01, AC 5)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-disabled.e2e-spec.ts -t "C5 "`
 
-**C6** - On `onModuleInit` with `META_CLOUD_ENABLED=true` and `ENGINE_TYPE=baileys`, both `baileys` and `meta-cloud` are enabled; with `META_CLOUD_ENABLED` unset, `meta-cloud` is registered but not enabled (ENG-01, AC 6)
+**C6** - On `onModuleInit` with `META_CLOUD_ENABLED=true` and `ENGINE_TYPE=baileys`, both `baileys` and `meta-cloud` are enabled; with `META_CLOUD_ENABLED` unset, `meta-cloud` is registered but not enabled (ENG-01, AC 6) ✅
 Proof: `npx jest src/engine/engine.factory.spec.ts -t "C6 "`
 
-**C7** - With `META_CLOUD_ENABLED=true`, `PluginsService.disablePlugin('meta-cloud')` returns `success: false` and `isPluginEnabled('meta-cloud')` stays `true`; the existing refusal for the `ENGINE_TYPE` plugin is unchanged (ENG-01, AC 7)
+**C7** - With `META_CLOUD_ENABLED=true`, `PluginsService.disablePlugin('meta-cloud')` returns `success: false` and `isPluginEnabled('meta-cloud')` stays `true`; the existing refusal for the `ENGINE_TYPE` plugin is unchanged (ENG-01, AC 7) ✅
 Proof: `npx jest src/modules/plugins/plugins.service.spec.ts -t "C7 "`
 
 **C8** - `AddSessionEngine` adds `sessions.engine` as nullable `varchar(30)` with no default; after `up` on a database holding two session rows, both rows have `engine` NULL; `down` removes the column and keeps the rows (ENG-01, AC 8 · door 1) ✅
 Proof: `npx jest src/database/migrations/__tests__/1791300000000-AddSessionEngine.spec.ts -t "C8 "`
 
-**C9** - `ENGINE_TYPE=meta-cloud` fails boot validation, and `whatsapp-web.js` and `baileys` still pass (door 2)
+**C9** - `ENGINE_TYPE=meta-cloud` fails boot validation, and `whatsapp-web.js` and `baileys` still pass (door 2) ✅
 Proof: `npx jest src/config/env.validation.spec.ts -t "C9 "`
 
-**C10** - `GET /api/infra/engines` (`getAvailableEngines()`) lists `meta-cloud` with `enabled: true` and `library.name: "whatsapp-cloud-api"` when `META_CLOUD_ENABLED=true` (door 11)
+**C10** - `GET /api/infra/engines` (`getAvailableEngines()`) lists `meta-cloud` with `enabled: true` and `library.name: "whatsapp-cloud-api"` when `META_CLOUD_ENABLED=true` (door 11) ✅
 Proof: `npx jest src/engine/engine.factory.spec.ts -t "C10 "`
 
 ### S2 - Connect a Cloud session · 18 files · ~260 KB · ~65k

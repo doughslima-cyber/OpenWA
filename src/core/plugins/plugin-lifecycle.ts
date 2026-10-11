@@ -9,6 +9,7 @@ import { PluginSandboxBridge } from './plugin-sandbox-bridge';
 import { PluginWorkerHost } from './sandbox/plugin-worker-host';
 import { unregisterPluginSearchProvider } from './search-provider-registration.util';
 import { resolvePluginMainPath } from './plugin-paths';
+import { META_CLOUD_ENGINE, isMetaCloudEnabled } from '../../engine/session-engine';
 
 /**
  * The runtime half of the plugin loader: everything that happens to a plugin AFTER the boot scan has
@@ -65,7 +66,9 @@ export class PluginLifecycle {
     // engines and desync the factory, so reject anything but the configured active engine.
     if (plugin.manifest.type === PluginType.ENGINE) {
       const activeEngine = this.configService.get<string>('engine.type') ?? 'whatsapp-web.js';
-      if (pluginId !== activeEngine) {
+      // OpenMsg: the Cloud API engine runs beside the active one, chosen per session (docs/32).
+      const metaCloudBeside = pluginId === META_CLOUD_ENGINE && isMetaCloudEnabled();
+      if (pluginId !== activeEngine && !metaCloudBeside) {
         throw new Error(
           `Engine "${pluginId}" is not the active engine ("${activeEngine}"). Set engine.type and restart to switch engines.`,
         );
