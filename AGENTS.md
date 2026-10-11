@@ -21,8 +21,9 @@ text paced out to a list of numbers, with the reply tagged on `message.received`
   `components/BrandLogo.tsx`; sign-in and users in `src/modules/auth/{users.*,auth-login.controller.*,password-hash.ts}`,
   `entities/user*.entity.ts`, `dto/user.dto.ts`, and on the dashboard `pages/{Users,Account}.*`,
   `services/users.ts`, `hooks/useUsers.ts`; campaigns in `src/modules/campaign/` (its reply hook is a
-  `message:received` handler, not an edit to `message-projector.service.ts`), the migration
-  `src/database/migrations/1791100000000-AddCampaigns.ts`, and on the dashboard `pages/Campaigns.*`,
+  `message:received` handler, not an edit to `message-projector.service.ts`), the migrations
+  `src/database/migrations/{1791100000000-AddCampaigns,1791200000000-AddCampaignRecipientWaMessageId}.ts`,
+  and on the dashboard `pages/Campaigns.*`,
   `services/campaigns.ts`, `hooks/useCampaigns.ts`, `utils/{campaignRecipients,recipientTable,xlsx}.*`. Edit upstream files only where a
   hook point is unavoidable, and keep that edit small.
 - **Colors go through tokens.** Use `var(--primary)`, `--primary-text`, `--primary-hover`, `--primary-soft`;
@@ -90,6 +91,8 @@ Format what you change with `npx prettier --write <files>` (backend, dashboard a
 - Install backend dependencies with `PUPPETEER_SKIP_DOWNLOAD=true npm ci --ignore-scripts`, then
   `node scripts/postinstall.js`. A plain `npm ci` fails compiling `better-sqlite3`; the package ships prebuilt
   binaries that `--ignore-scripts` keeps.
+- A fresh worktree has no `dashboard/node_modules`; run `npm ci` in `dashboard/` before its checks, or
+  `npm run typecheck` fails on `vite/client`.
 - Python is not installed; write helper scripts in Node.
 - These fail on Windows with or without fork changes; compare against a stashed tree before blaming a change:
   `auth.service.spec.ts` (2 banner/bootstrap-file tests), `env-precedence.spec.ts` (3), `sqlite-file-permissions.spec.ts`,

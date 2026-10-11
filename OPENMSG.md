@@ -256,6 +256,7 @@ O fork foi feito para gerar poucos conflitos: quase tudo o que é dele está em 
 | `src/modules/campaign/` (inteiro)                                                                                                       |
 | `src/database/migrations-main/1791000000000-CreateUserTables.ts`                                                                        |
 | `src/database/migrations/1791100000000-AddCampaigns.ts`                                                                                 |
+| `src/database/migrations/1791200000000-AddCampaignRecipientWaMessageId.ts`                                                              |
 
 Os conflitos, quando aparecerem, devem cair em arquivos do projeto original que o fork alterou pontualmente:
 `Login.tsx`, `App.tsx`, `Layout.tsx`, `auth.module.ts`, `app.module.ts`, `src/database/data-source.ts` e os
@@ -268,7 +269,8 @@ cd dashboard && npm run i18n:check      # todas as chaves nos 15 idiomas
 npm run typecheck && npm run lint && npm test && npm run build
 ```
 
-Nunca renomeie nem apague um arquivo de `src/database/migrations-main/`: o banco registra cada migration pelo nome.
+Nunca renomeie nem apague um arquivo de `src/database/migrations-main/` ou de `src/database/migrations/`: o banco
+registra cada migration pelo nome. Uma tabela que já foi para produção só muda por uma migration nova.
 
 ## Pendências conhecidas
 
@@ -276,6 +278,13 @@ Nunca renomeie nem apague um arquivo de `src/database/migrations-main/`: o banco
 - O anti-banimento está ligado na VM desde 08/10/2026 (`SEND_PACING_ENABLED=true`, cotas padrão). Ele vale para todo
   envio da sessão, inclusive as respostas do Hermes e do n8n: quem passa da cota recebe HTTP 429 com
   `code: SEND_PACING_LIMITED`.
+- Dois pontos do anti-banimento são menos cautelosos que as cotas. A campanha manda uma mensagem a cada 3 a 5
+  segundos, então a cota do dia sai em rajada. E a cota vira às 00:00 UTC (21:00 em Brasília), não numa janela de
+  24 horas: uma campanha que gasta a cota às 20:50 recomeça às 21:00, e manda duas cotas em poucos minutos. Para
+  contatos que nunca falaram com o número, vale baixar `SEND_PACING_COLD_DAILY_CAP` no `.env`.
+- As métricas de campanha (entregues, lidas, respostas e tempo até a resposta) estão na VM desde 11/10/2026. Até
+  essa data nenhuma campanha tinha sido criada em produção, então todas as campanhas da VM têm as métricas
+  completas.
 - A sessão da VM ainda não tem webhook: nenhuma mensagem recebida chega ao Hermes ou ao n8n, e a resposta a uma
   campanha aparece só em **Conversas**. O rascunho do n8n está inativo; as credenciais foram validadas, mas
   faltam modelos de mensagem, regras de cobrança e os requisitos de ativação do
