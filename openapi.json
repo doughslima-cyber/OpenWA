@@ -25901,6 +25901,44 @@
           "cancelled"
         ]
       },
+      "CampaignMetricsDto": {
+        "type": "object",
+        "properties": {
+          "sent": {
+            "type": "number",
+            "description": "Recipients whose message went out (status sent or replied)",
+            "example": 120
+          },
+          "delivered": {
+            "type": "number",
+            "description": "Of those, delivered to the phone",
+            "example": 112
+          },
+          "read": {
+            "type": "number",
+            "description": "Of those, read. Undercounts: a recipient with read receipts off never reports a read",
+            "example": 64
+          },
+          "replied": {
+            "type": "number",
+            "description": "Of those, replied",
+            "example": 18
+          },
+          "medianReplySeconds": {
+            "type": "number",
+            "nullable": true,
+            "description": "Median seconds from send to reply over the recipients that replied; null with no replies",
+            "example": 1260
+          }
+        },
+        "required": [
+          "sent",
+          "delivered",
+          "read",
+          "replied",
+          "medianReplySeconds"
+        ]
+      },
       "CampaignSummaryDto": {
         "type": "object",
         "properties": {
@@ -25926,6 +25964,14 @@
               }
             ]
           },
+          "metrics": {
+            "description": "Delivery, read and reply figures over the sent messages",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignMetricsDto"
+              }
+            ]
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -25941,6 +25987,7 @@
           "name",
           "status",
           "counts",
+          "metrics",
           "createdAt",
           "completedAt"
         ]
@@ -25993,6 +26040,14 @@
               }
             ]
           },
+          "metrics": {
+            "description": "Delivery, read and reply figures over the sent messages",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignMetricsDto"
+              }
+            ]
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -26021,6 +26076,7 @@
           "name",
           "status",
           "counts",
+          "metrics",
           "createdAt",
           "completedAt",
           "text",
@@ -26062,6 +26118,16 @@
               "cancelled"
             ]
           },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "delivered",
+              "read"
+            ],
+            "nullable": true,
+            "description": "How far the message got: `sent`, `delivered` or `read` (a reply counts as read); null when nothing was sent"
+          },
           "sentAt": {
             "format": "date-time",
             "type": "string",
@@ -26085,6 +26151,7 @@
         "required": [
           "chatId",
           "status",
+          "delivery",
           "sentAt",
           "repliedAt",
           "error"

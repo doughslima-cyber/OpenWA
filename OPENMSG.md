@@ -113,6 +113,19 @@ Cada sessão tem no máximo uma campanha em andamento.
 - Um número que o WhatsApp recusa, ou que um plugin bloqueia, vira falha (`SEND_FAILED` ou `SEND_BLOCKED`) e a
   campanha segue para o próximo.
 
+### Métricas
+
+A lista de campanhas e a tela de cada campanha mostram, sobre as mensagens que saíram:
+
+- **Entregues** e **Lidas**: vêm das confirmações do WhatsApp para cada mensagem. Uma resposta conta como entregue
+  e lida. A leitura fica abaixo da real, porque quem desligou a confirmação de leitura nunca aparece como lido.
+- **Responderam**: a primeira mensagem que chega do número depois do envio.
+- **Tempo até a resposta**: a mediana entre o envio e a resposta, só de quem respondeu.
+
+Na tabela de números, a coluna **Entrega** mostra até onde cada mensagem chegou (enviada, entregue ou lida). Uma
+campanha enviada antes desta versão tem os números ligados às mensagens pelo texto e pelo chat; o que não casar
+conta só como enviado.
+
 A tela de cada campanha (clique no nome dela na lista) mostra os contadores por status, a lista de destinatários
 com filtro e paginação, e o motivo de uma campanha em andamento não estar enviando. Ela se atualiza sozinha a cada
 5 segundos. O botão **Cancelar** pede confirmação; os números que ainda não receberam não recebem mais.

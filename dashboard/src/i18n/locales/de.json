@@ -1270,7 +1270,9 @@
       "failed": "Failed",
       "replied": "Replied",
       "createdAt": "Created",
-      "actions": "Actions"
+      "actions": "Actions",
+      "delivered": "Delivered",
+      "read": "Read"
     },
     "status": {
       "running": "Running",
@@ -1342,7 +1344,8 @@
         "status": "Status",
         "sentAt": "Sent at",
         "repliedAt": "Replied at",
-        "error": "Error code"
+        "error": "Error code",
+        "delivery": "Delivery"
       }
     },
     "recipientStatus": {
@@ -1358,6 +1361,27 @@
       "pacingNoTime": "Waiting for the send allowance",
       "restricted": "The session is restricted by WhatsApp",
       "disconnected": "The session is not connected"
+    },
+    "delivery": {
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "read": "Read"
+    },
+    "metrics": {
+      "title": "Performance",
+      "delivered": "Delivered",
+      "read": "Read",
+      "replied": "Replied",
+      "ofSent": "{{count}} of {{total}} sent",
+      "replyTime": "Time to reply",
+      "replyTimeNote": "median of those who replied",
+      "hint": "Shares of the messages that went out. A reply counts as delivered and read. Read is a floor: people who turned read receipts off never show as read.",
+      "duration": {
+        "seconds": "{{count}} s",
+        "minutes": "{{count}} min",
+        "hours": "{{hours}} h {{minutes}} min",
+        "days": "{{days}} d {{hours}} h"
+      }
     }
   }
 }

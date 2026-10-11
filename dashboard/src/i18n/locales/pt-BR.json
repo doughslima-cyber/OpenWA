@@ -1276,7 +1276,9 @@
       "failed": "Falhas",
       "replied": "Respostas",
       "createdAt": "Criada em",
-      "actions": "Ações"
+      "actions": "Ações",
+      "delivered": "Entregues",
+      "read": "Lidas"
     },
     "status": {
       "running": "Em andamento",
@@ -1348,7 +1350,8 @@
         "status": "Status",
         "sentAt": "Enviada em",
         "repliedAt": "Respondeu em",
-        "error": "Código de erro"
+        "error": "Código de erro",
+        "delivery": "Entrega"
       }
     },
     "recipientStatus": {
@@ -1364,6 +1367,27 @@
       "pacingNoTime": "Aguardando a cota de envio",
       "restricted": "A sessão está com restrição do WhatsApp",
       "disconnected": "A sessão não está conectada"
+    },
+    "delivery": {
+      "sent": "Enviada",
+      "delivered": "Entregue",
+      "read": "Lida"
+    },
+    "metrics": {
+      "title": "Desempenho",
+      "delivered": "Entregues",
+      "read": "Lidas",
+      "replied": "Responderam",
+      "ofSent": "{{count}} de {{total}} enviadas",
+      "replyTime": "Tempo até a resposta",
+      "replyTimeNote": "mediana de quem respondeu",
+      "hint": "Percentuais sobre as mensagens que saíram. Uma resposta conta como entregue e lida. A leitura fica abaixo da real: quem desligou a confirmação de leitura nunca aparece como lido.",
+      "duration": {
+        "seconds": "{{count}} s",
+        "minutes": "{{count}} min",
+        "hours": "{{hours}} h {{minutes}} min",
+        "days": "{{days}} d {{hours}} h"
+      }
     }
   }
 }

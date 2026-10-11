@@ -272,7 +272,7 @@ export class CampaignRunner implements OnApplicationBootstrap, OnModuleDestroy {
       const result = await engine.sendTextMessage(recipient.chatId, gated.text);
       settle?.(true);
       this.pacing.recordSendSuccess(sessionId);
-      await this.finishRecipient(recipient.id, 'sent', { sentAt: new Date() });
+      await this.finishRecipient(recipient.id, 'sent', { sentAt: new Date(), waMessageId: result.id });
       await this.clearWait(campaign.id, state);
       await this.persistSent(sessionId, recipient.chatId, gated.text, result.id, result.timestamp);
     } catch (error) {
@@ -372,7 +372,7 @@ export class CampaignRunner implements OnApplicationBootstrap, OnModuleDestroy {
   private async finishRecipient(
     recipientId: string,
     status: 'sent' | 'failed',
-    fields: Partial<Pick<CampaignRecipient, 'sentAt' | 'errorCode' | 'errorMessage'>>,
+    fields: Partial<Pick<CampaignRecipient, 'sentAt' | 'waMessageId' | 'errorCode' | 'errorMessage'>>,
   ): Promise<void> {
     await this.recipients.update({ id: recipientId, status: 'sending' }, { status, ...fields });
   }

@@ -47,6 +47,10 @@ export class CampaignRecipient {
   @Column({ type: dateColumnType(), nullable: true, transformer: DateTransformer })
   repliedAt!: Date | null;
 
+  /** WhatsApp id of the message sent; its `messages` row carries the delivery and read status. */
+  @Column({ type: 'varchar', nullable: true })
+  waMessageId!: string | null;
+
   @Column({ type: 'varchar', length: 40, nullable: true })
   errorCode!: string | null;
 

@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { createLogger } from '../../common/services/logger.service';
 import { isUniqueViolation } from '../../common/utils/db-errors';
 import { Session } from '../session/entities/session.entity';
+import { Message, MessageStatus } from '../message/entities/message.entity';
 import { Campaign } from './entities/campaign.entity';
 import { CampaignRecipient, RECIPIENT_STATUSES, type RecipientStatus } from './entities/campaign-recipient.entity';
 import { parseCampaignRecipients } from './campaign-recipients';
@@ -23,10 +24,12 @@ import {
   type CampaignCountsDto,
   type CampaignCreatedDto,
   type CampaignDetailDto,
+  type CampaignMetricsDto,
   type CampaignRecipientPageDto,
   type CampaignSummaryDto,
   type CreateCampaignDto,
   type ListRecipientsQueryDto,
+  type RecipientDelivery,
 } from './dto/campaign.dto';
 
 /** Rows per INSERT: 500 × 5 bound columns stays far under SQLite's parameter limit. */
@@ -44,6 +47,28 @@ function conflict(code: string, message: string): ConflictException {
 /** Counts by current status, exclusive buckets summing to `total`. */
 export function emptyCounts(): CampaignCountsDto {
   return { total: 0, pending: 0, sending: 0, sent: 0, failed: 0, replied: 0, cancelled: 0 };
+}
+
+export function emptyMetrics(): CampaignMetricsDto {
+  return { sent: 0, delivered: 0, read: 0, replied: 0, medianReplySeconds: null };
+}
+
+/** The recipient statuses whose message went out. */
+const WENT_OUT: RecipientStatus[] = ['sent', 'replied'];
+
+/** Median of a non-empty list. */
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** How far a recipient's message got. A reply proves it was read, whatever acks WhatsApp reported. */
+function deliveryOf(status: RecipientStatus, messageStatus: string | undefined): RecipientDelivery | null {
+  if (!WENT_OUT.includes(status)) return null;
+  if (status === 'replied' || messageStatus === MessageStatus.READ) return 'read';
+  if (messageStatus === MessageStatus.DELIVERED) return 'delivered';
+  return 'sent';
 }
 
 @Injectable()
@@ -129,16 +154,17 @@ export class CampaignsService {
   async list(sessionId: string): Promise<CampaignSummaryDto[]> {
     await this.requireSession(sessionId);
     const rows = await this.campaigns.find({ where: { sessionId }, order: { createdAt: 'DESC', id: 'DESC' } });
-    const counts = await this.countsFor(rows.map(row => row.id));
-    return rows.map(row => this.summary(row, counts.get(row.id)));
+    const ids = rows.map(row => row.id);
+    const [counts, metrics] = await Promise.all([this.countsFor(ids), this.metricsFor(ids)]);
+    return rows.map(row => this.summary(row, counts.get(row.id), metrics.get(row.id)));
   }
 
   async findOne(sessionId: string, campaignId: string): Promise<CampaignDetailDto> {
     const row = await this.requireCampaign(sessionId, campaignId);
-    const counts = await this.countsFor([row.id]);
+    const [counts, metrics] = await Promise.all([this.countsFor([row.id]), this.metricsFor([row.id])]);
     const waiting =
       row.status === 'running' && row.waitReason ? { reason: row.waitReason, nextAttemptAt: row.nextAttemptAt } : null;
-    return { ...this.summary(row, counts.get(row.id)), text: row.text, waiting };
+    return { ...this.summary(row, counts.get(row.id), metrics.get(row.id)), text: row.text, waiting };
   }
 
   async listRecipients(
@@ -154,10 +180,12 @@ export class CampaignsService {
       take: query.limit ?? CAMPAIGN_RECIPIENTS_PAGE_DEFAULT,
       skip: query.offset ?? 0,
     });
+    const messageStatus = await this.messageStatuses(row.sessionId, items);
     return {
       items: items.map(item => ({
         chatId: item.chatId,
         status: item.status,
+        delivery: deliveryOf(item.status, item.waMessageId ? messageStatus.get(item.waMessageId) : undefined),
         sentAt: item.sentAt,
         repliedAt: item.repliedAt,
         error: item.errorCode ? { code: item.errorCode, message: item.errorMessage ?? '' } : null,
@@ -212,12 +240,78 @@ export class CampaignsService {
     return out;
   }
 
-  private summary(row: Campaign, counts: CampaignCountsDto | undefined): CampaignSummaryDto {
+  /**
+   * Delivery, read and reply figures over each campaign's sent messages: one grouped query joining every
+   * sent recipient to its `messages` row through the (sessionId, waMessageId) unique index, and one read
+   * of the replied recipients' send and reply times for the median. A recipient without a message row
+   * (sent before waMessageId was recorded, or whose row was cleared with its chat) counts as sent only.
+   */
+  async metricsFor(campaignIds: string[]): Promise<Map<string, CampaignMetricsDto>> {
+    const out = new Map<string, CampaignMetricsDto>();
+    if (campaignIds.length === 0) return out;
+    const delivered = `CASE WHEN r.status = 'replied' OR m.status IN ('${MessageStatus.DELIVERED}', '${MessageStatus.READ}') THEN 1 ELSE 0 END`;
+    const read = `CASE WHEN r.status = 'replied' OR m.status = '${MessageStatus.READ}' THEN 1 ELSE 0 END`;
+    const rows = await this.recipients
+      .createQueryBuilder('r')
+      .innerJoin('r.campaign', 'c')
+      .leftJoin(Message, 'm', 'm.sessionId = c.sessionId AND m.waMessageId = r.waMessageId')
+      .select('r.campaignId', 'campaignId')
+      .addSelect('COUNT(*)', 'sent')
+      .addSelect(`SUM(${delivered})`, 'delivered')
+      .addSelect(`SUM(${read})`, 'read')
+      .addSelect(`SUM(CASE WHEN r.status = 'replied' THEN 1 ELSE 0 END)`, 'replied')
+      .where({ campaignId: In(campaignIds), status: In(WENT_OUT) })
+      .groupBy('r.campaignId')
+      .getRawMany<Record<'campaignId' | 'sent' | 'delivered' | 'read' | 'replied', string | number>>();
+    for (const row of rows) {
+      out.set(String(row.campaignId), {
+        sent: Number(row.sent),
+        delivered: Number(row.delivered),
+        read: Number(row.read),
+        replied: Number(row.replied),
+        medianReplySeconds: null,
+      });
+    }
+
+    const replies = await this.recipients.find({
+      select: { campaignId: true, sentAt: true, repliedAt: true },
+      where: { campaignId: In(campaignIds), status: 'replied' },
+    });
+    const waits = new Map<string, number[]>();
+    for (const { campaignId, sentAt, repliedAt } of replies) {
+      if (!sentAt || !repliedAt) continue;
+      const seconds = Math.max(0, (repliedAt.getTime() - sentAt.getTime()) / 1000);
+      waits.set(campaignId, [...(waits.get(campaignId) ?? []), seconds]);
+    }
+    for (const [campaignId, list] of waits) {
+      const metrics = out.get(campaignId);
+      if (metrics) metrics.medianReplySeconds = Math.round(median(list));
+    }
+    return out;
+  }
+
+  /** The `messages` status of each recipient's sent message, by WhatsApp id. */
+  private async messageStatuses(sessionId: string, items: CampaignRecipient[]): Promise<Map<string, string>> {
+    const ids = items.map(item => item.waMessageId).filter((id): id is string => Boolean(id));
+    if (ids.length === 0) return new Map();
+    const rows = await this.recipients.manager.getRepository(Message).find({
+      select: { waMessageId: true, status: true },
+      where: { sessionId, waMessageId: In(ids) },
+    });
+    return new Map(rows.map(row => [row.waMessageId, row.status]));
+  }
+
+  private summary(
+    row: Campaign,
+    counts: CampaignCountsDto | undefined,
+    metrics: CampaignMetricsDto | undefined,
+  ): CampaignSummaryDto {
     return {
       id: row.id,
       name: row.name,
       status: row.status,
       counts: counts ?? emptyCounts(),
+      metrics: metrics ?? emptyMetrics(),
       createdAt: row.createdAt,
       completedAt: row.completedAt,
     };

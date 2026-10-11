@@ -27,6 +27,7 @@ import {
 import {
   RECIPIENT_STATUSES,
   type CampaignDetail,
+  type CampaignMetrics,
   type CampaignSummary,
   type RecipientStatus,
 } from '../services/campaigns';
@@ -56,6 +57,18 @@ type CancelTarget = Pick<CampaignSummary, 'id' | 'name'>;
 function hourMinute(iso: string): string {
   const date = new Date(iso);
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+/** `count` as a whole percent of `total` in the dashboard's language; null when nothing went out. */
+function share(count: number, total: number, language: string): string | null {
+  if (total === 0) return null;
+  return new Intl.NumberFormat(language, { style: 'percent', maximumFractionDigits: 0 }).format(count / total);
+}
+
+/** The list cell for one metric: `3 (75%)`, or `-` while nothing went out. */
+function metricCell(count: number, metrics: CampaignMetrics, language: string): string {
+  const rate = share(count, metrics.sent, language);
+  return rate === null ? '-' : `${count} (${rate})`;
 }
 
 /** Newest first, whatever order the rows arrive in. */
@@ -331,6 +344,8 @@ export function Campaigns() {
                   <th>{t('campaigns.columns.status')}</th>
                   <th>{t('campaigns.columns.sent')}</th>
                   <th>{t('campaigns.columns.failed')}</th>
+                  <th>{t('campaigns.columns.delivered')}</th>
+                  <th>{t('campaigns.columns.read')}</th>
                   <th>{t('campaigns.columns.replied')}</th>
                   <th>{t('campaigns.columns.createdAt')}</th>
                   {canWrite && <th className="campaigns-actions-col">{t('campaigns.columns.actions')}</th>}
@@ -358,7 +373,9 @@ export function Campaigns() {
                       {campaign.counts.sent + campaign.counts.replied}/{campaign.counts.total}
                     </td>
                     <td>{campaign.counts.failed}</td>
-                    <td>{campaign.counts.replied}</td>
+                    <td>{metricCell(campaign.metrics.delivered, campaign.metrics, i18n.language)}</td>
+                    <td>{metricCell(campaign.metrics.read, campaign.metrics, i18n.language)}</td>
+                    <td>{metricCell(campaign.metrics.replied, campaign.metrics, i18n.language)}</td>
                     <td className="campaigns-muted">{formatDate(campaign.createdAt)}</td>
                     {canWrite && (
                       <td className="campaigns-actions-col">
@@ -709,6 +726,8 @@ function CampaignScreen({ sessionId, campaignId, canWrite, onBack, onCancel, for
         ))}
       </dl>
 
+      <CampaignMetricsPanel metrics={campaign.metrics} />
+
       <div className="campaigns-card campaigns-detail-text">
         <span className="campaigns-detail-label">{t('campaigns.detail.message')}</span>
         <p>{campaign.text}</p>
@@ -753,6 +772,7 @@ function CampaignScreen({ sessionId, campaignId, canWrite, onBack, onCancel, for
                 <tr>
                   <th>{t('campaigns.detail.columns.number')}</th>
                   <th>{t('campaigns.detail.columns.status')}</th>
+                  <th>{t('campaigns.detail.columns.delivery')}</th>
                   <th>{t('campaigns.detail.columns.sentAt')}</th>
                   <th>{t('campaigns.detail.columns.repliedAt')}</th>
                   <th>{t('campaigns.detail.columns.error')}</th>
@@ -766,6 +786,15 @@ function CampaignScreen({ sessionId, campaignId, canWrite, onBack, onCancel, for
                       <span className={`campaigns-status campaigns-status--r-${item.status}`}>
                         {t(`campaigns.recipientStatus.${item.status}`)}
                       </span>
+                    </td>
+                    <td>
+                      {item.delivery ? (
+                        <span className={`campaigns-delivery campaigns-delivery--${item.delivery}`}>
+                          {t(`campaigns.delivery.${item.delivery}`)}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
                     </td>
                     <td className="campaigns-muted">{item.sentAt ? formatDate(item.sentAt) : '-'}</td>
                     <td className="campaigns-muted">{item.repliedAt ? formatDate(item.repliedAt) : '-'}</td>
@@ -802,5 +831,55 @@ function CampaignScreen({ sessionId, campaignId, canWrite, onBack, onCancel, for
         </div>
       </section>
     </div>
+  );
+}
+
+/** A duration in seconds as its two largest units: `45 s`, `20 min`, `3 h 5 min`, `2 d 4 h`. */
+function useDuration(): (seconds: number) => string {
+  const { t } = useTranslation();
+  return seconds => {
+    const s = Math.round(seconds);
+    if (s < 60) return t('campaigns.metrics.duration.seconds', { count: s });
+    const minutes = Math.floor(s / 60);
+    if (minutes < 60) return t('campaigns.metrics.duration.minutes', { count: minutes });
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return t('campaigns.metrics.duration.hours', { hours, minutes: minutes % 60 });
+    return t('campaigns.metrics.duration.days', { days: Math.floor(hours / 24), hours: hours % 24 });
+  };
+}
+
+/**
+ * Delivery, read and reply rates over the messages that went out, and the median time to a reply. Each
+ * rate shows its share and the count behind it; nothing reads as 0% before a message went out.
+ */
+function CampaignMetricsPanel({ metrics }: { metrics: CampaignMetrics }) {
+  const { t, i18n } = useTranslation();
+  const duration = useDuration();
+  const rates = [
+    ['delivered', metrics.delivered],
+    ['read', metrics.read],
+    ['replied', metrics.replied],
+  ] as const;
+  const replyTime = metrics.medianReplySeconds;
+
+  return (
+    <section className="campaigns-card campaigns-metrics" aria-labelledby="campaign-metrics-title">
+      <h3 id="campaign-metrics-title">{t('campaigns.metrics.title')}</h3>
+      <dl className="campaigns-metrics-grid">
+        {rates.map(([key, count]) => (
+          <div key={key} className={`campaigns-metric campaigns-metric--${key}`}>
+            <dt>{t(`campaigns.metrics.${key}`)}</dt>
+            <dd data-testid={`campaign-metric-${key}`}>{share(count, metrics.sent, i18n.language) ?? '-'}</dd>
+            <dd className="campaigns-metric-note">{t('campaigns.metrics.ofSent', { count, total: metrics.sent })}</dd>
+          </div>
+        ))}
+        <div className="campaigns-metric">
+          <dt>{t('campaigns.metrics.replyTime')}</dt>
+          <dd data-testid="campaign-metric-reply-time">{replyTime === null ? '-' : duration(replyTime)}</dd>
+          <dd className="campaigns-metric-note">{t('campaigns.metrics.replyTimeNote')}</dd>
+        </div>
+      </dl>
+      <p className="campaigns-muted campaigns-metrics-hint">{t('campaigns.metrics.hint')}</p>
+    </section>
   );
 }
