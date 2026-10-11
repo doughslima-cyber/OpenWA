@@ -274,6 +274,9 @@ registra cada migration pelo nome. Uma tabela que já foi para produção só mu
 
 ## Pendências conhecidas
 
+- O plano para aceitar também a API oficial da Meta (WhatsApp Cloud API), por sessão e ao lado das sessões de QR,
+  está em [docs/32](docs/32-meta-cloud-api.md). Nada dele está implementado.
+
 - Os 13 idiomas além de português e inglês mostram em inglês os textos novos do OpenMsg.
 - O anti-banimento está ligado na VM desde 08/10/2026 (`SEND_PACING_ENABLED=true`, cotas padrão). Ele vale para todo
   envio da sessão, inclusive as respostas do Hermes e do n8n: quem passa da cota recebe HTTP 429 com

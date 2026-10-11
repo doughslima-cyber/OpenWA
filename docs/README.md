@@ -63,6 +63,7 @@
 | 29  | [Engine Capability Matrix](./29-engine-capability-matrix.md)             | Per-engine capability support, gaps, and roadmap                                   |
 | 30  | [Plugin Sandboxing](./30-plugin-sandboxing.md)                           | Worker isolation, capabilities, and plugin limits                                  |
 | 31  | [Session Lifecycle: Invariant Catalog](./31-session-lifecycle-design.md) | The race windows the lifecycle defends, where each is defended, which spec pins it |
+| 32  | [Meta Cloud API Plan (OpenMsg)](./32-meta-cloud-api.md)                  | Plan for official WhatsApp Cloud API sessions beside linked-device sessions (fork) |
 
 **Examples**
 
