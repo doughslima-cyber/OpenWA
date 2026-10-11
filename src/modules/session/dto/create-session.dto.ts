@@ -1,6 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsIn, IsObject, IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength, Validate } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsIn,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Matches,
+  MaxLength,
+  MinLength,
+  Validate,
+  ValidateNested,
+} from 'class-validator';
+import { META_CLOUD_ENGINE } from '../../../engine/session-engine';
+import { MetaCloudCredentialsDto } from '../../meta-cloud/dto/meta-cloud-credentials.dto';
 import { MaxCodePoints } from '../../../common/validation/max-code-points';
 import { HasDecodableProxyCredentialsConstraint } from './has-decodable-proxy-credentials.validator';
 import { normaliseSessionConfig, RecognisedSessionConfigConstraint } from './recognised-session-config.validator';
@@ -79,4 +92,26 @@ export class CreateSessionDto {
   @IsOptional()
   @IsIn(['http', 'https', 'socks4', 'socks5'])
   proxyType?: 'http' | 'https' | 'socks4' | 'socks5';
+
+  // OpenMsg (docs/32): a session on a WhatsApp Cloud API number. whatsapp-web.js vs baileys stays
+  // per deployment (ENGINE_TYPE), so `meta-cloud` is the only value accepted here.
+  @ApiPropertyOptional({
+    description:
+      "Engine for this session. Omit to use the deployment's ENGINE_TYPE. `meta-cloud` binds the session " +
+      'to a WhatsApp Cloud API number given in `metaCloud`; it needs META_CLOUD_ENABLED=true (400 ' +
+      'META_CLOUD_DISABLED otherwise).',
+    enum: [META_CLOUD_ENGINE],
+  })
+  @IsOptional()
+  @IsIn([META_CLOUD_ENGINE])
+  engine?: typeof META_CLOUD_ENGINE;
+
+  @ApiPropertyOptional({
+    type: () => MetaCloudCredentialsDto,
+    description: 'The Cloud API number of a `meta-cloud` session.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => MetaCloudCredentialsDto)
+  metaCloud?: MetaCloudCredentialsDto;
 }

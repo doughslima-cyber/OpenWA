@@ -53,6 +53,7 @@ import { isTransientDbError, isUniqueViolation } from '../../common/utils/db-err
 import { resolveFeatureFlags } from '../../config/feature-flags';
 import { IWhatsAppEngine, ChatSummary, ChatState } from '../../engine/interfaces/whatsapp-engine.interface';
 import { createLogger } from '../../common/services/logger.service';
+import { META_CLOUD_ENGINE, isMetaCloudEnabled } from '../../engine/session-engine';
 import { HookManager } from '../../core/hooks';
 import { LidMappingStoreService } from '../../engine/identity/lid-mapping-store.service';
 import { resolveJidCandidates } from '../../engine/identity/jid-candidates';
@@ -335,6 +336,16 @@ export class SessionService implements OnModuleDestroy, OnModuleInit, OnApplicat
   }
 
   async create(dto: CreateSessionDto): Promise<Session> {
+    // OpenMsg (docs/32): Cloud API sessions exist only while the deployment switched them on.
+    if (dto.engine === META_CLOUD_ENGINE && !isMetaCloudEnabled()) {
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'WhatsApp Cloud API sessions are disabled on this gateway (META_CLOUD_ENABLED is not true)',
+        code: 'META_CLOUD_DISABLED',
+      });
+    }
+
     // Check if session with same name exists
     const existing = await this.sessionRepository.findOne({
       where: { name: dto.name },
@@ -350,6 +361,7 @@ export class SessionService implements OnModuleDestroy, OnModuleInit, OnApplicat
       proxyUrl: dto.proxyUrl || null,
       proxyType: dto.proxyType || null,
       status: SessionStatus.CREATED,
+      engine: dto.engine ?? null,
     });
 
     // The findOne pre-check above is a fast path for the common case, but it's a check-then-insert

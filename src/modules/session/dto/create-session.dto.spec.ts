@@ -98,3 +98,34 @@ describe('CreateSessionDto config keys through the global pipe', () => {
     expect(dto.config).toEqual({ custom: 'x', maxReconnectAttempts: null });
   });
 });
+
+/**
+ * OpenMsg (docs/32): `engine` takes only `meta-cloud`. whatsapp-web.js vs baileys stays the deployment's
+ * ENGINE_TYPE, the match is case-sensitive, and an empty string is a value, not an omission.
+ */
+describe('CreateSessionDto engine through the global pipe', () => {
+  const pipe = new ValidationPipe(GLOBAL_VALIDATION_OPTIONS);
+  const create = (body: Record<string, unknown>): Promise<CreateSessionDto> =>
+    pipe.transform(
+      { name: 'my-bot', ...body },
+      { type: 'body', metatype: CreateSessionDto },
+    ) as Promise<CreateSessionDto>;
+
+  it.each(['baileys', 'whatsapp-web.js', 'META-CLOUD', ''])('C4 rejects engine %j with a 400', async engine => {
+    const error = await create({ engine }).then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(BadRequestException);
+    expect(((error as BadRequestException).getResponse() as { message: string[] }).message).toEqual([
+      expect.stringContaining('engine'),
+    ]);
+  });
+
+  it('accepts engine meta-cloud with its credentials, and a body without engine', async () => {
+    await expect(
+      create({ engine: 'meta-cloud', metaCloud: { phoneNumberId: '1065', wabaId: '1022', accessToken: 'EAAG-token' } }),
+    ).resolves.toMatchObject({ engine: 'meta-cloud' });
+    await expect(create({})).resolves.toMatchObject({ name: 'my-bot' });
+  });
+});

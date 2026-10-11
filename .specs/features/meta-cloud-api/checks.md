@@ -22,7 +22,7 @@ the way `main.ts` captures it.
 
 ### S1 - Per-session engine, QR sessions unchanged · 20 files · ~240 KB · ~60k
 
-**C1** - `GET /api/sessions` and `GET /api/sessions/:id` return `engine: "baileys"` for a row whose `engine` is NULL under `ENGINE_TYPE=baileys`, and `engine: "meta-cloud"` for a `meta-cloud` row (ENG-01, AC 1)
+**C1** - `GET /api/sessions` and `GET /api/sessions/:id` return `engine: "baileys"` for a row whose `engine` is NULL under `ENGINE_TYPE=baileys`, and `engine: "meta-cloud"` for a `meta-cloud` row (ENG-01, AC 1) ✅
 Proof: `npx jest src/modules/session/dto/session-response.dto.spec.ts -t "C1 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C1 "`
 
@@ -34,11 +34,11 @@ Proof: `npx jest src/modules/session/session-engine-lifecycle-engine-select.spec
 Proof: `npx jest src/engine/engine.factory.spec.ts -t "C3 "`
 Proof: `npx jest src/modules/session/session-engine-lifecycle-engine-select.spec.ts -t "C3 "`
 
-**C4** - `POST /api/sessions` with `engine` set to each of `baileys`, `whatsapp-web.js`, `META-CLOUD` and `""` answers 400 and the `sessions` table count is unchanged (ENG-01, AC 4)
+**C4** - `POST /api/sessions` with `engine` set to each of `baileys`, `whatsapp-web.js`, `META-CLOUD` and `""` answers 400 and the `sessions` table count is unchanged (ENG-01, AC 4) ✅
 Proof: `npx jest src/modules/session/dto/create-session.dto.spec.ts -t "C4 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C4 "`
 
-**C5** - With `META_CLOUD_ENABLED` unset, and again with it set to `false`, `POST /api/sessions` with a complete `meta-cloud` body answers 400 with `code: "META_CLOUD_DISABLED"` and the `sessions` table count is unchanged (ENG-01, AC 5)
+**C5** - With `META_CLOUD_ENABLED` unset, and again with it set to `false`, `POST /api/sessions` with a complete `meta-cloud` body answers 400 with `code: "META_CLOUD_DISABLED"` and the `sessions` table count is unchanged (ENG-01, AC 5) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-disabled.e2e-spec.ts -t "C5 "`
 
 **C6** - On `onModuleInit` with `META_CLOUD_ENABLED=true` and `ENGINE_TYPE=baileys`, both `baileys` and `meta-cloud` are enabled; with `META_CLOUD_ENABLED` unset, `meta-cloud` is registered but not enabled (ENG-01, AC 6) ✅

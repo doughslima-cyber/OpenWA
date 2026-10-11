@@ -34,4 +34,10 @@ public record SessionResponse(
      * automatic-reconnect (engine present) and one stopped with no engine. {@code null} from a
      * gateway older than the field.
      */
-    Boolean engineLoaded) {}
+    Boolean engineLoaded,
+    /**
+     * The engine this session runs: {@code meta-cloud} for a WhatsApp Cloud API session, otherwise the
+     * deployment engine ({@code whatsapp-web.js} or {@code baileys}). {@code null} from a gateway older
+     * than the field.
+     */
+    String engine) {}

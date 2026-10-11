@@ -88,6 +88,11 @@ export interface SessionResponse {
    * that predates the field.
    */
   engineLoaded: boolean;
+  /**
+   * The engine this session runs: `meta-cloud` for a WhatsApp Cloud API session, otherwise the
+   * deployment's engine (`whatsapp-web.js` or `baileys`). Absent from a gateway that predates the field.
+   */
+  engine: string;
 }
 
 /**
@@ -207,6 +212,17 @@ export interface CreateSessionRequest {
   proxyUrl?: string;
   /** @deprecated Ignored by the gateway; the `proxyUrl` scheme selects the protocol. */
   proxyType?: 'http' | 'https' | 'socks4' | 'socks5';
+  /** `meta-cloud` for a WhatsApp Cloud API session (needs `META_CLOUD_ENABLED=true`); omit for the deployment engine. */
+  engine?: 'meta-cloud';
+  /** The Cloud API number of a `meta-cloud` session. */
+  metaCloud?: MetaCloudCredentials;
+}
+
+/** A WhatsApp Cloud API number: its Phone Number ID, its WABA ID and a system-user token. */
+export interface MetaCloudCredentials {
+  phoneNumberId: string;
+  wabaId: string;
+  accessToken: string;
 }
 
 export interface QrCodeResponse {

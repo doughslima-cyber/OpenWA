@@ -19481,6 +19481,35 @@
           }
         }
       },
+      "MetaCloudCredentialsDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumberId": {
+            "type": "string",
+            "description": "Phone Number ID of the number in Meta",
+            "example": "106540352242922",
+            "maxLength": 64
+          },
+          "wabaId": {
+            "type": "string",
+            "description": "WhatsApp Business Account ID that owns the number",
+            "example": "102290129340398",
+            "maxLength": 64
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "System-user access token. Stored encrypted and never returned by any route.",
+            "writeOnly": true,
+            "maxLength": 2048,
+            "example": "EAAG..."
+          }
+        },
+        "required": [
+          "phoneNumberId",
+          "wabaId",
+          "accessToken"
+        ]
+      },
       "CreateSessionDto": {
         "type": "object",
         "properties": {
@@ -19515,6 +19544,21 @@
               "socks5"
             ],
             "deprecated": true
+          },
+          "engine": {
+            "type": "string",
+            "description": "Engine for this session. Omit to use the deployment's ENGINE_TYPE. `meta-cloud` binds the session to a WhatsApp Cloud API number given in `metaCloud`; it needs META_CLOUD_ENABLED=true (400 META_CLOUD_DISABLED otherwise).",
+            "enum": [
+              "meta-cloud"
+            ]
+          },
+          "metaCloud": {
+            "description": "The Cloud API number of a `meta-cloud` session.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MetaCloudCredentialsDto"
+              }
+            ]
           }
         },
         "required": [
@@ -19629,6 +19673,11 @@
             "type": "boolean",
             "description": "Whether the gateway currently holds a live engine for this session: an engine in the answering process or, in a multi-node deployment, a live claim by the node running the session. `status` alone does not imply it: a `disconnected` session keeps its engine for the duration of an automatic reconnect backoff, while a session stopped through `POST /sessions/:sessionId/stop` carries the same status with no engine. On the node running the session, `true` means `stop`, `logout` and `force-kill` can act and `start` answers 400; `false` means the reverse. For a session another node runs, request routing (NODE_URL set on every node) forwards the lifecycle routes to that node, where they act; without routing, only that node can act on it, and any other node answers 409 to `start` and `stop` and 400 to `logout` and `force-kill`. Derived per request from live state, so it is never persisted and never historical.",
             "example": true
+          },
+          "engine": {
+            "type": "string",
+            "description": "The engine this session runs: `meta-cloud` for a WhatsApp Cloud API session, otherwise the deployment's ENGINE_TYPE (`whatsapp-web.js` or `baileys`).",
+            "example": "baileys"
           }
         },
         "required": [
@@ -19637,7 +19686,8 @@
           "status",
           "createdAt",
           "updatedAt",
-          "engineLoaded"
+          "engineLoaded",
+          "engine"
         ]
       },
       "SessionConfigResponseDto": {

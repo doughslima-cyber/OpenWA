@@ -79,6 +79,7 @@ describe('SessionController — create() response contract', () => {
       lastError: null,
       restriction: null,
       engineLoaded: false,
+      engine: process.env.ENGINE_TYPE || 'whatsapp-web.js',
     });
   });
 
