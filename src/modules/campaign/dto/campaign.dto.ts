@@ -81,6 +81,31 @@ export class CampaignCountsDto {
   @ApiProperty() cancelled!: number;
 }
 
+/**
+ * How the sent messages fared. Every count is a subset of `sent`. A reply proves delivery and reading,
+ * so a recipient that replied counts as delivered and read whatever acks WhatsApp reported.
+ */
+export class CampaignMetricsDto {
+  @ApiProperty({ description: 'Recipients whose message went out (status sent or replied)', example: 120 })
+  sent!: number;
+  @ApiProperty({ description: 'Of those, delivered to the phone', example: 112 })
+  delivered!: number;
+  @ApiProperty({
+    description: 'Of those, read. Undercounts: a recipient with read receipts off never reports a read',
+    example: 64,
+  })
+  read!: number;
+  @ApiProperty({ description: 'Of those, replied', example: 18 })
+  replied!: number;
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: 'Median seconds from send to reply over the recipients that replied; null with no replies',
+    example: 1260,
+  })
+  medianReplySeconds!: number | null;
+}
+
 export class CampaignCreatedDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
@@ -97,6 +122,8 @@ export class CampaignSummaryDto {
     description: 'Recipients by current status; the buckets sum to total',
   })
   counts!: CampaignCountsDto;
+  @ApiProperty({ type: CampaignMetricsDto, description: 'Delivery, read and reply figures over the sent messages' })
+  metrics!: CampaignMetricsDto;
   @ApiProperty() createdAt!: Date;
   @ApiProperty({ type: Date, nullable: true }) completedAt!: Date | null;
 }
@@ -134,9 +161,19 @@ export class CampaignRecipientErrorDto {
   @ApiProperty() message!: string;
 }
 
+export const RECIPIENT_DELIVERIES = ['sent', 'delivered', 'read'] as const;
+export type RecipientDelivery = (typeof RECIPIENT_DELIVERIES)[number];
+
 export class CampaignRecipientDto {
   @ApiProperty({ example: '5511988887777@c.us' }) chatId!: string;
   @ApiProperty({ enum: RECIPIENT_STATUSES }) status!: RecipientStatus;
+  @ApiProperty({
+    enum: RECIPIENT_DELIVERIES,
+    nullable: true,
+    description:
+      'How far the message got: `sent`, `delivered` or `read` (a reply counts as read); null when nothing was sent',
+  })
+  delivery!: RecipientDelivery | null;
   @ApiProperty({ type: Date, nullable: true }) sentAt!: Date | null;
   @ApiProperty({ type: Date, nullable: true }) repliedAt!: Date | null;
   @ApiProperty({ type: CampaignRecipientErrorDto, nullable: true }) error!: CampaignRecipientErrorDto | null;

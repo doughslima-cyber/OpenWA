@@ -7207,6 +7207,7 @@ List the session's campaigns, newest first.
     "name": "October follow-up",
     "status": "running",
     "counts": { "total": 2, "pending": 1, "sending": 0, "sent": 1, "failed": 0, "replied": 0, "cancelled": 0 },
+    "metrics": { "sent": 1, "delivered": 1, "read": 0, "replied": 0, "medianReplySeconds": null },
     "createdAt": "2026-10-08T12:00:00.000Z",
     "completedAt": null
   }
@@ -7214,6 +7215,8 @@ List the session's campaigns, newest first.
 ```
 
 `counts` holds the recipients by current status; the buckets are exclusive and sum to `total`, so a recipient that replied counts under `replied`, not `sent`.
+
+`metrics` describes the messages that went out. `sent` is the recipients in `sent` or `replied`; `delivered`, `read` and `replied` are subsets of it, read from each message's WhatsApp acks (the `messages` row with the id the send returned). A reply proves delivery and reading, so a recipient that replied counts as delivered and read whatever acks arrived. `read` undercounts: a recipient with read receipts off never reports a read. `medianReplySeconds` is the median time from send to reply over the recipients that replied, `null` with no replies. A recipient sent before the gateway recorded message ids, or whose chat was cleared, counts as sent only.
 
 **Errors:** `401` missing/invalid key · `403` the key is restricted with `allowedChats` · `404` no session with this id
 
@@ -7258,6 +7261,7 @@ The campaign's recipients in list order, filtered by status and paged.
     {
       "chatId": "5511988887777@c.us",
       "status": "replied",
+      "delivery": "read",
       "sentAt": "2026-10-08T12:00:04.000Z",
       "repliedAt": "2026-10-08T12:31:10.000Z",
       "error": null
@@ -7265,6 +7269,7 @@ The campaign's recipients in list order, filtered by status and paged.
     {
       "chatId": "5511977776666@c.us",
       "status": "failed",
+      "delivery": null,
       "sentAt": null,
       "repliedAt": null,
       "error": { "code": "SEND_FAILED", "message": "..." }
@@ -7274,7 +7279,7 @@ The campaign's recipients in list order, filtered by status and paged.
 }
 ```
 
-`total` counts the recipients that match the filter.
+`total` counts the recipients that match the filter. `delivery` is how far the message got: `sent`, `delivered` or `read` (a reply counts as `read`), and `null` when nothing was sent.
 
 **Errors:** `400` an unknown `status`, a `limit` outside 1-100 or a negative `offset` · `401` missing/invalid key · `403` the key is restricted with `allowedChats` · `404` no such campaign in this session
 

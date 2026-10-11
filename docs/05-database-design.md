@@ -918,7 +918,8 @@ src/database/migrations/           # data connection (pluggable)
 ├── 1787100000000-AddSendIdempotencyKeys.ts   # send_idempotency_keys (opt-in send retry guard)
 ├── 1787200000000-DeduplicateTerminalWebhookFailures.ts   # one terminal record per webhook and idempotency key
 ├── 1790812800000-AddMessageWindowIndexes.ts   # compound timestamp indexes for message-time pagination
-└── 1791100000000-AddCampaigns.ts   # campaigns + campaign_recipients (OpenMsg); FKs ON DELETE CASCADE
+├── 1791100000000-AddCampaigns.ts   # campaigns + campaign_recipients (OpenMsg); FKs ON DELETE CASCADE
+└── 1791200000000-AddCampaignRecipientWaMessageId.ts   # campaign_recipients.waMessageId for delivery/read metrics; best-effort backfill
 ```
 
 > [!NOTE]

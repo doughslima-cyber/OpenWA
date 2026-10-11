@@ -167,6 +167,12 @@ describe('CampaignRunner', () => {
       ['333333@c.us', 'Novidades!'],
     ]);
     expect(await statusesOf(ds, campaign.id)).toEqual(['sent', 'sent', 'sent']);
+    // The engine's message id, which campaign metrics follow to the message's delivery and read acks.
+    expect((await recipientsOf(ds, campaign.id)).map(r => r.waMessageId)).toEqual([
+      'wa-111111@c.us-1',
+      'wa-222222@c.us-2',
+      'wa-333333@c.us-3',
+    ]);
   });
 
   it.each([

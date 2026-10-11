@@ -13,6 +13,7 @@ import { ChatScopeService } from '../auth/chat-scope.service';
 import { AuditService } from '../audit/audit.service';
 import { ApiKey, ApiKeyRole } from '../auth/entities/api-key.entity';
 import { Session } from '../session/entities/session.entity';
+import { Message, MessageDirection, MessageStatus } from '../message/entities/message.entity';
 import { Campaign } from './entities/campaign.entity';
 import { CampaignRecipient } from './entities/campaign-recipient.entity';
 import { CampaignsController } from './campaigns.controller';
@@ -29,7 +30,8 @@ interface Body {
   total: number;
   text: string;
   waiting: unknown;
-  items: Array<{ chatId: string }>;
+  items: Array<{ chatId: string; delivery?: string | null }>;
+  metrics: unknown;
 }
 const body = (res: { body: unknown }): Body => res.body as Body;
 const list = (res: { body: unknown }) => res.body as Array<{ name: string; counts: unknown }>;
@@ -231,6 +233,7 @@ describe('CampaignsController over HTTP', () => {
       name: 'Nova',
       status: 'running',
       counts: { total: 3, pending: 1, sending: 1, sent: 0, failed: 1, replied: 0, cancelled: 0 },
+      metrics: { sent: 0, delivered: 0, read: 0, replied: 0, medianReplySeconds: null },
       createdAt: expect.any(String) as string,
       completedAt: null,
     });
@@ -261,6 +264,7 @@ describe('CampaignsController over HTTP', () => {
     expect(body(firstPage).items[0]).toEqual({
       chatId: chatIds[0],
       status: 'failed',
+      delivery: null,
       sentAt: null,
       repliedAt: null,
       error: { code: 'SEND_FAILED', message: 'nope' },
@@ -276,6 +280,62 @@ describe('CampaignsController over HTTP', () => {
     expect(body(await get(`/${campaign.id}/recipients?limit=100`)).items).toHaveLength(100);
     expect((await get(`/${campaign.id}/recipients?limit=101`)).status).toBe(400);
     expect((await get(`/${campaign.id}/recipients?status=lost`)).status).toBe(400);
+  });
+
+  it('reports delivery, read and reply figures over the sent messages, and how far each one got', async () => {
+    const chatIds = ['111111@c.us', '222222@c.us', '333333@c.us', '444444@c.us', '555555@c.us', '666666@c.us'];
+    const campaign = await seedCampaign(ds, sessionId, chatIds, {
+      recipientStatus: ['sent', 'sent', 'sent', 'replied', 'replied', 'failed'],
+    });
+    const sentAt = new Date('2026-10-08T12:00:00.000Z');
+    // [message ack, minutes to the reply]. The third was sent before ids were recorded: no message row.
+    const fates: Array<[MessageStatus | null, number | null]> = [
+      [MessageStatus.DELIVERED, null],
+      [MessageStatus.READ, null],
+      [null, null],
+      [MessageStatus.SENT, 10],
+      [MessageStatus.READ, 30],
+    ];
+    for (const [i, [ack, minutes]] of fates.entries()) {
+      const waMessageId = ack ? `wa-${i}` : null;
+      const repliedAt = minutes === null ? null : new Date(sentAt.getTime() + minutes * 60_000);
+      await ds
+        .getRepository(CampaignRecipient)
+        .update({ campaignId: campaign.id, chatId: chatIds[i] }, { sentAt, repliedAt, waMessageId });
+      if (!ack || !waMessageId) continue;
+      await ds.getRepository(Message).insert({
+        sessionId,
+        waMessageId,
+        chatId: chatIds[i],
+        from: 'me',
+        to: chatIds[i],
+        body: 'Olá!',
+        direction: MessageDirection.OUTGOING,
+        status: ack,
+      });
+    }
+    // A message with the same id in another session is not this campaign's.
+    const other = await seedSession(ds);
+    await ds.getRepository(Message).insert({
+      sessionId: other.id,
+      waMessageId: 'wa-0',
+      chatId: chatIds[0],
+      from: 'me',
+      to: chatIds[0],
+      direction: MessageDirection.OUTGOING,
+      status: MessageStatus.READ,
+    });
+
+    const expected = { sent: 5, delivered: 4, read: 3, replied: 2, medianReplySeconds: 1200 };
+    expect(body(await get(`/${campaign.id}`)).metrics).toEqual(expected);
+    expect(
+      (res => (res.body as Array<{ id: string; metrics: unknown }>).find(c => c.id === campaign.id)?.metrics)(
+        await get(''),
+      ),
+    ).toEqual(expected);
+
+    const page = await get(`/${campaign.id}/recipients`);
+    expect(body(page).items.map(item => item.delivery)).toEqual(['delivered', 'read', 'sent', 'read', 'read', null]);
   });
 
   it('C41 answers the wait reason of a running campaign, and none once it ended', async () => {
