@@ -14,6 +14,7 @@ interface Campaign {
   name: string;
   status: 'running' | 'completed' | 'cancelled';
   counts: Record<string, number>;
+  metrics: Metrics;
   createdAt: string;
   completedAt: string | null;
 }
@@ -29,9 +30,27 @@ const counts = (over: Record<string, number> = {}) => ({
   ...over,
 });
 
+interface Metrics {
+  sent: number;
+  delivered: number;
+  read: number;
+  replied: number;
+  medianReplySeconds: number | null;
+}
+
+const metrics = (over: Partial<Metrics> = {}): Metrics => ({
+  sent: 0,
+  delivered: 0,
+  read: 0,
+  replied: 0,
+  medianReplySeconds: null,
+  ...over,
+});
+
 interface Recipient {
   chatId: string;
   status: string;
+  delivery: 'sent' | 'delivered' | 'read' | null;
   sentAt: string | null;
   repliedAt: string | null;
   error: { code: string; message: string } | null;
@@ -86,6 +105,7 @@ function installFetchStub(): void {
         name: body.name,
         status: 'running',
         counts: counts({ total: body.recipients.length, pending: body.recipients.length }),
+        metrics: metrics(),
         createdAt: '2026-10-08T12:00:00.000Z',
         completedAt: null,
       };
@@ -355,6 +375,7 @@ test('C15 a viewer sees the list without New campaign or Cancel', async () => {
       name: 'Outubro',
       status: 'running',
       counts: counts({ total: 3, pending: 3 }),
+      metrics: metrics(),
       createdAt: '2026-10-08T12:00:00.000Z',
       completedAt: null,
     },
@@ -373,6 +394,7 @@ test('C15 an operator sees Cancel on a running campaign', async () => {
       name: 'Outubro',
       status: 'running',
       counts: counts({ total: 3, pending: 3 }),
+      metrics: metrics(),
       createdAt: '2026-10-08T12:00:00.000Z',
       completedAt: null,
     },
@@ -386,6 +408,7 @@ test('C15 an operator sees Cancel on a running campaign', async () => {
 const campaign = (over: Partial<Campaign> & Pick<Campaign, 'id' | 'name'>): Campaign => ({
   status: 'running',
   counts: counts({ total: 3, pending: 3 }),
+  metrics: metrics(),
   createdAt: '2026-10-08T12:00:00.000Z',
   completedAt: null,
   ...over,
@@ -411,19 +434,21 @@ const cellsOf = (row: Element): string[] => [...row.querySelectorAll('td')].map(
 
 const counter = (status: string) => rtl.screen.getByTestId(`campaign-count-${status}`);
 
-test('C36 the list shows the selected session campaigns newest first with name, status, sent/total, failed, replied and creation date', async () => {
+test('C36 the list shows the selected session campaigns newest first with name, status, sent/total, failed, delivered, read, replied and creation date', async () => {
   campaigns = [
     campaign({
       id: 'c-a',
       name: 'Setembro',
       status: 'completed',
       counts: counts({ total: 10, sent: 3, replied: 2, failed: 4, cancelled: 1 }),
+      metrics: metrics({ sent: 5, delivered: 4, read: 3, replied: 2 }),
       createdAt: '2026-09-15T09:30:00.000Z',
     }),
     campaign({
       id: 'c-b',
       name: 'Outubro',
       counts: counts({ total: 20, pending: 12, sent: 5, replied: 1, failed: 2 }),
+      metrics: metrics({ sent: 6, delivered: 6, read: 2, replied: 1 }),
       createdAt: '2026-10-08T12:00:00.000Z',
     }),
     campaign({
@@ -431,6 +456,7 @@ test('C36 the list shows the selected session campaigns newest first with name, 
       name: 'Início de outubro',
       status: 'cancelled',
       counts: counts({ total: 4, sent: 1, cancelled: 3 }),
+      metrics: metrics({ sent: 1 }),
       createdAt: '2026-10-01T08:00:00.000Z',
     }),
   ];
@@ -441,12 +467,12 @@ test('C36 the list shows the selected session campaigns newest first with name, 
   const rows = [...document.querySelectorAll('.campaigns-table tbody tr')].map(cellsOf);
   const date = (iso: string) => new Date(iso).toLocaleString('en');
   assert.deepEqual(rows, [
-    ['Outubro', 'Running', '6/20', '2', '1', date('2026-10-08T12:00:00.000Z')],
-    ['Início de outubro', 'Cancelled', '1/4', '0', '0', date('2026-10-01T08:00:00.000Z')],
-    ['Setembro', 'Completed', '5/10', '4', '2', date('2026-09-15T09:30:00.000Z')],
+    ['Outubro', 'Running', '6/20', '2', '6 (100%)', '2 (33%)', '1 (17%)', date('2026-10-08T12:00:00.000Z')],
+    ['Início de outubro', 'Cancelled', '1/4', '0', '0 (0%)', '0 (0%)', '0 (0%)', date('2026-10-01T08:00:00.000Z')],
+    ['Setembro', 'Completed', '5/10', '4', '4 (80%)', '3 (60%)', '2 (40%)', date('2026-09-15T09:30:00.000Z')],
   ]);
   const headers = [...document.querySelectorAll('.campaigns-table thead th')].map(th => th.textContent);
-  assert.deepEqual(headers, ['Name', 'Status', 'Sent', 'Failed', 'Replied', 'Created']);
+  assert.deepEqual(headers, ['Name', 'Status', 'Sent', 'Failed', 'Delivered', 'Read', 'Replied', 'Created']);
 
   // Another session: only its campaigns.
   rtl.fireEvent.change(rtl.screen.getByLabelText('Session'), { target: { value: 'sess-2' } });
@@ -474,16 +500,27 @@ test('C39 the campaign screen shows counters by status and the recipient table, 
       return {
         chatId,
         status: 'replied',
+        delivery: 'read',
         sentAt: '2026-10-08T12:00:00.000Z',
         repliedAt: '2026-10-08T12:30:00.000Z',
         error: null,
       };
     }
     if (i % 10 === 1) {
-      return { chatId, status: 'failed', sentAt: null, repliedAt: null, error: { code: 'SEND_FAILED', message: 'x' } };
+      return {
+        chatId,
+        status: 'failed',
+        delivery: null,
+        sentAt: null,
+        repliedAt: null,
+        error: { code: 'SEND_FAILED', message: 'x' },
+      };
     }
-    if (i < 60) return { chatId, status: 'sent', sentAt: '2026-10-08T12:01:00.000Z', repliedAt: null, error: null };
-    return { chatId, status: 'pending', sentAt: null, repliedAt: null, error: null };
+    if (i < 60) {
+      const delivery = i % 2 ? 'delivered' : 'sent';
+      return { chatId, status: 'sent', delivery, sentAt: '2026-10-08T12:01:00.000Z', repliedAt: null, error: null };
+    }
+    return { chatId, status: 'pending', delivery: null, sentAt: null, repliedAt: null, error: null };
   };
   recipientRows = { 'c-1': Array.from({ length: 120 }, (_, i) => rowsFor(i)) };
   campaigns = [
@@ -522,18 +559,21 @@ test('C39 the campaign screen shows counters by status and the recipient table, 
   const headers = [...document.querySelectorAll('.campaigns-detail .campaigns-table thead th')].map(
     th => th.textContent,
   );
-  assert.deepEqual(headers, ['Number', 'Status', 'Sent at', 'Replied at', 'Error code']);
+  assert.deepEqual(headers, ['Number', 'Status', 'Delivery', 'Sent at', 'Replied at', 'Error code']);
   const date = (iso: string) => new Date(iso).toLocaleString('en');
   const tableRows = () => [...document.querySelectorAll('.campaigns-detail .campaigns-table tbody tr')];
   assert.equal(tableRows().length, 50);
   assert.deepEqual(cellsOf(tableRows()[0]), [
     '5511900000000',
     'Replied',
+    'Read',
     date('2026-10-08T12:00:00.000Z'),
     date('2026-10-08T12:30:00.000Z'),
     '-',
   ]);
-  assert.deepEqual(cellsOf(tableRows()[1]), ['5511900000001', 'Failed', '-', '-', 'SEND_FAILED']);
+  assert.deepEqual(cellsOf(tableRows()[1]), ['5511900000001', 'Failed', '-', '-', '-', 'SEND_FAILED']);
+  assert.deepEqual(cellsOf(tableRows()[2]).slice(1, 3), ['Sent', 'Sent']);
+  assert.deepEqual(cellsOf(tableRows()[3]).slice(1, 3), ['Sent', 'Delivered']);
   assert.ok(rtl.screen.getByText('1–50 of 120'));
 
   // Next and previous move the offset by one page.
@@ -564,6 +604,53 @@ test('C39 the campaign screen shows counters by status and the recipient table, 
   await rtl.waitFor(() => assert.equal(tableRows().length, 12));
   assert.ok(tableRows().every(row => cellsOf(row)[1] === 'Failed'));
   assert.ok(rtl.screen.getByText('1–12 of 12'));
+});
+
+test('the campaign screen shows delivery, read and reply rates over the messages sent, and the median time to reply', async () => {
+  campaigns = [
+    campaign({
+      id: 'c-1',
+      name: 'Outubro',
+      counts: counts({ total: 10, pending: 2, sent: 5, replied: 3 }),
+      metrics: metrics({ sent: 8, delivered: 7, read: 4, replied: 3, medianReplySeconds: 3 * 3600 + 5 * 60 }),
+    }),
+    campaign({ id: 'c-2', name: 'Novembro' }),
+  ];
+  renderCampaigns('viewer');
+  await openCampaign('Outubro');
+
+  await rtl.screen.findByRole('heading', { name: 'Performance' });
+  const metric = (key: string) => rtl.screen.getByTestId(`campaign-metric-${key}`);
+  assert.equal(metric('delivered').textContent, '88%');
+  assert.equal(metric('delivered').nextElementSibling?.textContent, '7 of 8 sent');
+  assert.equal(metric('read').textContent, '50%');
+  assert.equal(metric('replied').textContent, '38%');
+  assert.equal(metric('replied').nextElementSibling?.textContent, '3 of 8 sent');
+  assert.equal(metric('reply-time').textContent, '3 h 5 min');
+
+  // Nothing sent yet: no rate and no reply time, rather than 0%.
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: /All campaigns/ }));
+  await openCampaign('Novembro');
+  await rtl.screen.findByRole('heading', { name: 'Novembro' });
+  for (const key of ['delivered', 'read', 'replied', 'reply-time']) assert.equal(metric(key).textContent, '-', key);
+});
+
+test('the metrics read in pt-BR', async () => {
+  campaigns = [
+    campaign({
+      id: 'c-1',
+      name: 'Outubro',
+      metrics: metrics({ sent: 4, delivered: 3, read: 2, replied: 1, medianReplySeconds: 2 * 86400 + 4 * 3600 }),
+    }),
+  ];
+  await inPortuguese(async () => {
+    renderCampaigns('viewer');
+    await openCampaign('Outubro');
+    await rtl.screen.findByRole('heading', { name: 'Desempenho' });
+    assert.equal(rtl.screen.getByTestId('campaign-metric-delivered').textContent, '75%');
+    assert.ok(rtl.screen.getByText('3 de 4 enviadas'));
+    assert.equal(rtl.screen.getByTestId('campaign-metric-reply-time').textContent, '2 d 4 h');
+  });
 });
 
 test('C40 while the open campaign runs, a counter change reaches the screen within 10 s with no reload', async () => {

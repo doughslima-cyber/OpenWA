@@ -5,6 +5,8 @@ import { request } from './api';
 export type CampaignStatus = 'running' | 'completed' | 'cancelled';
 export type RecipientStatus = 'pending' | 'sending' | 'sent' | 'failed' | 'replied' | 'cancelled';
 export type CampaignWaitReason = 'pacing' | 'restricted' | 'disconnected';
+/** How far a recipient's message got; a reply counts as read. */
+export type RecipientDelivery = 'sent' | 'delivered' | 'read';
 
 export const RECIPIENT_STATUSES: RecipientStatus[] = ['pending', 'sending', 'sent', 'failed', 'replied', 'cancelled'];
 
@@ -19,11 +21,25 @@ export interface CampaignCounts {
   cancelled: number;
 }
 
+/**
+ * How the messages that went out fared. Every count is a subset of `sent`; a reply counts as delivered
+ * and read. `read` undercounts: a recipient with read receipts off never reports a read.
+ */
+export interface CampaignMetrics {
+  sent: number;
+  delivered: number;
+  read: number;
+  replied: number;
+  /** Median seconds from send to reply over the recipients that replied; null with no replies. */
+  medianReplySeconds: number | null;
+}
+
 export interface CampaignSummary {
   id: string;
   name: string;
   status: CampaignStatus;
   counts: CampaignCounts;
+  metrics: CampaignMetrics;
   createdAt: string;
   completedAt: string | null;
 }
@@ -36,6 +52,7 @@ export interface CampaignDetail extends CampaignSummary {
 export interface CampaignRecipient {
   chatId: string;
   status: RecipientStatus;
+  delivery: RecipientDelivery | null;
   sentAt: string | null;
   repliedAt: string | null;
   error: { code: string; message: string } | null;
