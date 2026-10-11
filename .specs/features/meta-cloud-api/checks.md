@@ -399,3 +399,7 @@ for the large files (`session-engine-lifecycle.service.ts` 83 KB read at ~20 KB,
 
 Builder A's first commit brings `docs/32-meta-cloud-api.md` into this branch from the
 `meta-official-api-plan-32d1eb` worktree, with the five corrections listed in the plan's Sources.
+
+- Boundary: C1-C10 closed at `8ebe86fd` (S1 done; S2 starts at C11).
+- Settled mid-build: nothing by the user. Builder decisions below the Landing bar: `POST /api/sessions` already declares `metaCloud` (`MetaCloudCredentialsDto`, three non-empty strings) because C5 sends a complete body through `forbidNonWhitelisted`; the cross-field rules of C16/C17 and the account insert are still S2. The create path with `META_CLOUD_ENABLED=true` writes a `meta-cloud` row and drops `metaCloud`, and the plugin returns a `MetaCloudAdapter` placeholder that answers 501 to every method. The factory refuses to start a `meta-cloud` row while the flag is off. `SessionResponseDto.engine` reads `ENGINE_TYPE` the way `configuration.ts` does (`src/engine/session-engine.ts`). `meta-cloud-adapter.ts` is attributed to no QR engine in `engine-parity.spec.ts` until S5 adds the `cloud` column. Landing row 12 (SDK names) added; the five SDK hand types already carry `engine`/`metaCloud`.
+- Abandoned: none.

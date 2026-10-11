@@ -12,9 +12,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-api
-**Where**: plan and checks written and validated; no code yet
+**Where**: S1 built - C1-C10 closed and committed (`c8aceccf` doc 32, `c727ffd8`, `3b784d80`, `8ebe86fd`)
 **In progress**: none
-**Next step**: builder A starts S1 - bring `docs/32-meta-cloud-api.md` in from the `meta-official-api-plan-32d1eb` worktree with the five corrections, then C1-C10
+**Next step**: builder A continues with S2 (C11-C36): account table and cipher, `metaCloud` create in one transaction, the adapter lifecycle, `GET/PUT .../meta/account`
 **Blockers**: none for building; go-live waits on plan open questions 1 and 2
-**Uncommitted**: `.specs/STATE.md`, `.specs/features/meta-cloud-api/plan.md`, `.specs/features/meta-cloud-api/checks.md`
+**Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
