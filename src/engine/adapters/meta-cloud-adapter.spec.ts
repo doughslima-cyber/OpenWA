@@ -448,6 +448,77 @@ describe('MetaCloudAdapter', () => {
       // A reaction is not a message of its own, so no message.sent follows it.
       expect(onMessageCreate).not.toHaveBeenCalled();
     });
+
+    const TEMPLATE_ENVELOPE = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: '5511988887777',
+      type: 'template',
+    };
+
+    it('C28 sendTemplateMessage with no parameters posts the template name and language and no components', async () => {
+      const { adapter } = await readyAdapter();
+
+      const result = await adapter.sendTemplateMessage(CHAT, { name: 'order_ready', language: 'pt_BR' }, 'Ready');
+
+      expect(messageBodies()).toEqual([
+        { ...TEMPLATE_ENVELOPE, template: { name: 'order_ready', language: { code: 'pt_BR' } } },
+      ]);
+      expect(result).toMatchObject({ id: WAMID });
+    });
+
+    it('C28 sendTemplateMessage with positional parameters posts one body component of text parameters in order', async () => {
+      const { adapter } = await readyAdapter();
+
+      await adapter.sendTemplateMessage(
+        CHAT,
+        { name: 'order_shipped', language: 'pt_BR', parameters: ['Ana', '42'] },
+        'Olá Ana, seu pedido 42 saiu',
+      );
+
+      expect(messageBodies()).toEqual([
+        {
+          ...TEMPLATE_ENVELOPE,
+          template: {
+            name: 'order_shipped',
+            language: { code: 'pt_BR' },
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  { type: 'text', text: 'Ana' },
+                  { type: 'text', text: '42' },
+                ],
+              },
+            ],
+          },
+        },
+      ]);
+    });
+
+    it('C28 sendTemplateMessage with named parameters posts parameter_name with each text', async () => {
+      const { adapter, onMessageCreate } = await readyAdapter();
+
+      await adapter.sendTemplateMessage(
+        CHAT,
+        { name: 'greeting', language: 'pt_BR', parameters: { first_name: 'Ana' } },
+        'Oi Ana',
+      );
+
+      expect(messageBodies()).toEqual([
+        {
+          ...TEMPLATE_ENVELOPE,
+          template: {
+            name: 'greeting',
+            language: { code: 'pt_BR' },
+            components: [{ type: 'body', parameters: [{ type: 'text', parameter_name: 'first_name', text: 'Ana' }] }],
+          },
+        },
+      ]);
+      // The own-send echo carries the rendered body, which the stored row and message.sent show.
+      expect(onMessageCreate).toHaveBeenCalledTimes(1);
+      expect(onMessageCreate.mock.calls[0][0]).toMatchObject({ id: WAMID, body: 'Oi Ana', fromMe: true });
+    });
   });
 
   describe('read side and refusals', () => {

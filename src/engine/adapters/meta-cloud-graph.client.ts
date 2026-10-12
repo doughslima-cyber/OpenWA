@@ -109,9 +109,16 @@ const META_SEND_ERRORS: ReadonlyArray<{ codes: readonly number[]; status: number
   { codes: [131026, 131021], status: 400, code: 'META_RECIPIENT_UNAVAILABLE' },
   { codes: [131008, 131009], status: 400, code: 'META_INVALID_PARAMETER' },
   { codes: [133010, 131031], status: 409, code: 'META_ACCOUNT_RESTRICTED' },
+  // F3 door 4: a template Meta does not accept (unknown name or language, wrong parameter count or
+  // format, paused or disabled template) is the caller's mistake: 400, and the idempotency key is freed.
+  { codes: range(132000, 132016), status: 400, code: 'META_TEMPLATE_INVALID' },
 ];
 
 const META_RATE_LIMITED_CODE = 130429;
+
+function range(from: number, to: number): number[] {
+  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+}
 
 const REASON: Record<number, string> = { 400: 'Bad Request', 409: 'Conflict', 429: 'Too Many Requests' };
 

@@ -16432,6 +16432,352 @@
         ]
       }
     },
+    "/api/sessions/{sessionId}/meta/templates": {
+      "get": {
+        "description": "Every template of the WABA (up to 500), with Meta's `components` unchanged. Cached for 5 minutes per session; `refresh=true` reads Graph again.",
+        "operationId": "MetaCloudTemplatesController_listTemplates",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "refresh",
+            "required": false,
+            "in": "query",
+            "description": "Bypass the 5-minute cache",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaTemplateListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Meta refused the token (`META_TOKEN_INVALID`), or the session has no usable token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The session is not a WhatsApp Cloud API session (its engine is not `meta-cloud`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "`META_UPSTREAM_ERROR`: Graph answered with an error the gateway does not map; `metaCode` names it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Graph did not answer (refused, reset or timed out)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List the message templates of a WhatsApp Cloud API session's account",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/sessions/{sessionId}/meta/chats/{chatId}/window": {
+      "get": {
+        "description": "Free-form messages are allowed until 24 hours after the customer's last message; after that only an approved template can be sent.",
+        "operationId": "MetaCloudTemplatesController_getWindow",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chatId",
+            "required": true,
+            "in": "path",
+            "description": "Chat ID (`<digits>@c.us`)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaChatWindowResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The session is not a WhatsApp Cloud API session (its engine is not `meta-cloud`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get the 24-hour customer service window of a WhatsApp Cloud API chat",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/sessions/{sessionId}/meta/send-template": {
+      "post": {
+        "description": "The only message Meta accepts outside the 24-hour service window. `parameters` fills the body: an array for a positional template, an object keyed by placeholder name for a named one. The stored message holds the body with its parameters filled in.",
+        "operationId": "MetaCloudTemplatesController_sendTemplate",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Optional. Makes the send safe to retry: within 24 hours, a retry with the same key and body replays the first response (marked `Idempotent-Replayed: true`) instead of sending again. 1-255 visible ASCII characters, unique per session. While the first request runs a retry gets 409 `IDEMPOTENCY_KEY_IN_PROGRESS`; after a failure that may have sent the message it gets 409 `IDEMPOTENCY_OUTCOME_UNKNOWN`. A 4xx or 501 refusal before the engine call frees the key. Errors from an engine send keep it taken regardless of HTTP status, including 409.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMetaTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Template sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, a plugin blocked the send, or Meta refused the template (`META_TEMPLATE_INVALID`, Graph codes 132000-132016) or the recipient; `metaCode` names Meta's code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The API key's role, session or chat scope, or IP allow-list does not allow this operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The session is not connected: an engine exists for it but is not `ready`, meaning disconnected, reconnecting, or still initializing, so the request never reached WhatsApp. Wait for `ready` and retry. A session that was never started answers `400` instead, and the session lifecycle routes answer `409` for a conflicting state rather than this. One window answers this while the session still reads `ready`: WhatsApp Web periodically reloads its own page and the engine re-injects into it, and for those few seconds the answer is a `409` naming the reload; retry shortly. Also `META_TOKEN_INVALID` and `META_ACCOUNT_RESTRICTED`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`IDEMPOTENCY_KEY_REUSED`: the Idempotency-Key was already used with a different route or body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`META_LIMIT_REACHED` or `META_RATE_LIMITED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The session is not a WhatsApp Cloud API session (its engine is not `meta-cloud`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "`META_UPSTREAM_ERROR`: Graph answered with an error the gateway does not map; `metaCode` names it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Graph did not answer (refused, reset or timed out)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send an approved Meta message template on a WhatsApp Cloud API session",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
     "/api/sessions/{sessionId}/catalog": {
       "get": {
         "operationId": "CatalogController_getCatalog",
@@ -26590,6 +26936,142 @@
           "id",
           "status",
           "counts"
+        ]
+      },
+      "MetaTemplateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "order_shipped"
+          },
+          "language": {
+            "type": "string",
+            "example": "pt_BR"
+          },
+          "status": {
+            "type": "string",
+            "example": "APPROVED",
+            "description": "As Meta reports it: APPROVED, PENDING, REJECTED, PAUSED, ..."
+          },
+          "category": {
+            "type": "string",
+            "example": "UTILITY",
+            "description": "MARKETING, UTILITY or AUTHENTICATION"
+          },
+          "parameterFormat": {
+            "type": "string",
+            "example": "POSITIONAL",
+            "description": "Meta's `parameter_format`: POSITIONAL (`{{1}}`) or NAMED (`{{first_name}}`); POSITIONAL when absent"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Meta's template components (HEADER, BODY, FOOTER, BUTTONS), unchanged",
+            "example": [
+              {
+                "type": "BODY",
+                "text": "Olá {{1}}, seu pedido {{2}} saiu"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "language",
+          "status",
+          "category",
+          "parameterFormat",
+          "components"
+        ]
+      },
+      "MetaTemplateListResponseDto": {
+        "type": "object",
+        "properties": {
+          "templates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetaTemplateDto"
+            }
+          }
+        },
+        "required": [
+          "templates"
+        ]
+      },
+      "MetaChatWindowResponseDto": {
+        "type": "object",
+        "properties": {
+          "lastInboundAt": {
+            "type": "string",
+            "nullable": true,
+            "example": "2026-10-12T14:03:00.000Z",
+            "description": "The customer's last inbound message, ISO 8601 UTC; null when the chat never wrote"
+          },
+          "open": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether free-form messages are allowed now (closesAt is later than now)"
+          },
+          "closesAt": {
+            "type": "string",
+            "nullable": true,
+            "example": "2026-10-13T14:03:00.000Z",
+            "description": "lastInboundAt plus 24 hours, ISO 8601 UTC; null when the chat never wrote"
+          }
+        },
+        "required": [
+          "lastInboundAt",
+          "open",
+          "closesAt"
+        ]
+      },
+      "SendMetaTemplateDto": {
+        "type": "object",
+        "properties": {
+          "chatId": {
+            "type": "string",
+            "example": "5511988887777@c.us"
+          },
+          "name": {
+            "type": "string",
+            "example": "order_shipped",
+            "maxLength": 512
+          },
+          "language": {
+            "type": "string",
+            "example": "pt_BR",
+            "maxLength": 32
+          },
+          "parameters": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "The body parameters: an array for a positional template (`{{1}}`, `{{2}}`, in order), an object keyed by placeholder name for a named one. Omit for a template with no body parameters.",
+            "example": [
+              "Ana",
+              "42"
+            ]
+          }
+        },
+        "required": [
+          "chatId",
+          "name",
+          "language"
         ]
       },
       "CatalogDto": {

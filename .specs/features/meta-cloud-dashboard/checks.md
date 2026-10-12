@@ -87,45 +87,45 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 
 ### S3 - Send an approved template · 14 files · ~210 KB · ~53k
 
-**C22** - `listTemplates` follows Graph `paging.cursors.after` across 3 pages and returns every template in order; with pages holding 600 templates in total it stops after 500; each template carries `name`, `language`, `status`, `category`, `parameterFormat` (from `parameter_format`, `POSITIONAL` when absent) and the Graph `components` unchanged (MCT-01, AC 22 · door 3)
+**C22** - `listTemplates` follows Graph `paging.cursors.after` across 3 pages and returns every template in order; with pages holding 600 templates in total it stops after 500; each template carries `name`, `language`, `status`, `category`, `parameterFormat` (from `parameter_format`, `POSITIONAL` when absent) and the Graph `components` unchanged (MCT-01, AC 22 · door 3) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-templates.service.spec.ts -t "C22 "`
 
-**C23** - `GET /api/sessions/:id/meta/templates` on a Cloud session answers 200 `{ templates: [...] }` with the fake Graph's templates (MCT-01, AC 22)
+**C23** - `GET /api/sessions/:id/meta/templates` on a Cloud session answers 200 `{ templates: [...] }` with the fake Graph's templates (MCT-01, AC 22) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C23 "`
 
-**C24** - Two list requests 4 minutes apart (fake clock) make one Graph call; a third at 6 minutes makes a second; a request with `refresh=true` inside the 5 minutes makes a call; two sessions do not share an entry (MCT-01, AC 23 · door 3)
+**C24** - Two list requests 4 minutes apart (fake clock) make one Graph call; a third at 6 minutes makes a second; a request with `refresh=true` inside the 5 minutes makes a call; two sessions do not share an entry (MCT-01, AC 23 · door 3) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-templates.service.spec.ts -t "C24 "`
 
-**C25** - The templates route and the window route answer 501 on a NULL-engine session and 404 on an unknown session id (4 cases) (MCT-01, AC 24)
+**C25** - The templates route and the window route answer 501 on a NULL-engine session and 404 on an unknown session id (4 cases) (MCT-01, AC 24) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C25 "`
 
-**C26** - The templates route answers 409 `META_TOKEN_INVALID` when Graph answers code 190, 502 `META_UPSTREAM_ERROR` on a Graph 500, and 503 when Graph is unreachable (MCT-01, Surface)
+**C26** - The templates route answers 409 `META_TOKEN_INVALID` when Graph answers code 190, 502 `META_UPSTREAM_ERROR` on a Graph 500, and 503 when Graph is unreachable (MCT-01, Surface) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C26 "`
 
-**C27** - With a contact whose `lastInboundAt` is 23 h 59 min ago the window route answers `{ lastInboundAt, open: true, closesAt }` with `closesAt` exactly 24 h after `lastInboundAt` (ISO 8601 UTC); at 24 h 1 min ago `open: false`; with no contact row `{ lastInboundAt: null, open: false, closesAt: null }` (MCT-01, AC 25 · door 5)
+**C27** - With a contact whose `lastInboundAt` is 23 h 59 min ago the window route answers `{ lastInboundAt, open: true, closesAt }` with `closesAt` exactly 24 h after `lastInboundAt` (ISO 8601 UTC); at 24 h 1 min ago `open: false`; with no contact row `{ lastInboundAt: null, open: false, closesAt: null }` (MCT-01, AC 25 · door 5) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-window.service.spec.ts -t "C27 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C27 "`
 
-**C28** - `sendTemplateMessage` posts `{ messaging_product: "whatsapp", recipient_type: "individual", to, type: "template", template: { name, language: { code } } }` with no `components` when there are no parameters; with `["Ana", "42"]` one component `{ type: "body", parameters: [{ type: "text", text: "Ana" }, { type: "text", text: "42" }] }`; with `{ first_name: "Ana" }` `{ type: "body", parameters: [{ type: "text", parameter_name: "first_name", text: "Ana" }] }` (MCT-02, AC 26 · door 2)
+**C28** - `sendTemplateMessage` posts `{ messaging_product: "whatsapp", recipient_type: "individual", to, type: "template", template: { name, language: { code } } }` with no `components` when there are no parameters; with `["Ana", "42"]` one component `{ type: "body", parameters: [{ type: "text", text: "Ana" }, { type: "text", text: "42" }] }`; with `{ first_name: "Ana" }` `{ type: "body", parameters: [{ type: "text", parameter_name: "first_name", text: "Ana" }] }` (MCT-02, AC 26 · door 2) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C28 "`
 
-**C29** - `POST /api/sessions/:id/meta/send-template` with a positional template on a `READY` Cloud session answers 201 with `messageId` equal to the fake Graph's `wamid` (MCT-02, AC 26)
+**C29** - `POST /api/sessions/:id/meta/send-template` with a positional template on a `READY` Cloud session answers 201 with `messageId` equal to the fake Graph's `wamid` (MCT-02, AC 26) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C29 "`
 
-**C30** - After a template send of body `Olá {{1}}, seu pedido {{2}} saiu` with `["Ana", "42"]`, the stored message's body is `Olá Ana, seu pedido 42 saiu`; for a named template `Oi {{first_name}}` with `{ first_name: "Ana" }` it is `Oi Ana`; `WebhookService.dispatch` is called with `message.sent` exactly once per send (MCT-02, AC 27)
+**C30** - After a template send of body `Olá {{1}}, seu pedido {{2}} saiu` with `["Ana", "42"]`, the stored message's body is `Olá Ana, seu pedido 42 saiu`; for a named template `Oi {{first_name}}` with `{ first_name: "Ana" }` it is `Oi Ana`; `WebhookService.dispatch` is called with `message.sent` exactly once per send (MCT-02, AC 27) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C30 "`
 
-**C31** - A template send with a plugin that cancels `message:sending` answers the same refusal `send-text` answers and makes no Graph call; the same `Idempotency-Key` sent twice makes one Graph call and returns the same `messageId`; a key restricted to another chat gets 403 and no Graph call (MCT-02, AC 28)
+**C31** - A template send with a plugin that cancels `message:sending` answers the same refusal `send-text` answers and makes no Graph call; the same `Idempotency-Key` sent twice makes one Graph call and returns the same `messageId`; a key restricted to another chat gets 403 and no Graph call (MCT-02, AC 28) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C31 "`
 
-**C32** - The Graph client maps codes `132000`, `132001`, `132005`, `132007`, `132012`, `132015`, `132016` (7 cases) to 400 `META_TEMPLATE_INVALID` with `metaCode`, and the F2 table's other rows are unchanged (MCT-02, AC 29 · door 4)
+**C32** - The Graph client maps codes `132000`, `132001`, `132005`, `132007`, `132012`, `132015`, `132016` (7 cases) to 400 `META_TEMPLATE_INVALID` with `metaCode`, and the F2 table's other rows are unchanged (MCT-02, AC 29 · door 4) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C32 "`
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C44 "`
 
-**C33** - A template send answered by Graph with `132001` returns 400 `META_TEMPLATE_INVALID` with `metaCode: 132001` over HTTP (MCT-02, AC 29)
+**C33** - A template send answered by Graph with `132001` returns 400 `META_TEMPLATE_INVALID` with `metaCode: 132001` over HTTP (MCT-02, AC 29) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C33 "`
 
-**C34** - A template send on a Cloud session that is not started answers 409; bodies missing `chatId`, `name` and `language` (3 cases), and one whose `parameters` is a number, each answer 400; a NULL-engine session answers 501 (MCT-02, AC 30 · Surface)
+**C34** - A template send on a Cloud session that is not started answers 409; bodies missing `chatId`, `name` and `language` (3 cases), and one whose `parameters` is a number, each answer 400; a NULL-engine session answers 501 (MCT-02, AC 30 · Surface) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C34 "`
 
 **C35** - The picker requests the templates route once on open and lists only the `APPROVED` templates (a `PENDING` and a `REJECTED` one are absent), each with name, language and category, ordered by name then language; **Refresh** requests it again with `refresh=true` (MCT-03, AC 31)

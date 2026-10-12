@@ -69,7 +69,28 @@ const ECHO_TYPE: Record<string, MessageType> = {
   sticker: 'sticker',
   location: 'location',
   contacts: 'contact',
+  // A template is stored and echoed as the text the customer received (its rendered body).
+  template: 'text',
 };
+
+/**
+ * An approved Meta template to send (F3 door 2): its body parameters as an array (positional
+ * `{{1}}`, `{{2}}`, ...) or as an object keyed by placeholder name (named templates).
+ */
+export interface CloudTemplateInput {
+  name: string;
+  language: string;
+  parameters?: string[] | Record<string, string>;
+}
+
+/** The one `body` component of a template send, or none when there is nothing to fill in. */
+function templateComponents(parameters: CloudTemplateInput['parameters']): unknown[] | undefined {
+  if (!parameters) return undefined;
+  const values = Array.isArray(parameters)
+    ? parameters.map(text => ({ type: 'text', text }))
+    : Object.entries(parameters).map(([parameter_name, text]) => ({ type: 'text', parameter_name, text }));
+  return values.length ? [{ type: 'body', parameters: values }] : undefined;
+}
 
 interface GraphSendAnswer {
   messages?: Array<{ id?: string }>;
@@ -320,6 +341,21 @@ export class MetaCloudAdapter implements MetaCloudInboundTarget {
 
   replyToMessage(chatId: string, quotedMsgId: string, text: string): Promise<MessageResult> {
     return this.sendMessage(chatId, 'text', { body: text, preview_url: false }, text, quotedMsgId);
+  }
+
+  /**
+   * Sends an approved template (`type: "template"`), the only message Meta accepts outside the 24-hour
+   * service window. `body` is the template text with its parameters filled in: the own-send echo
+   * carries it, so the stored row and `message.sent` show what the customer received.
+   */
+  sendTemplateMessage(chatId: string, template: CloudTemplateInput, body: string): Promise<MessageResult> {
+    const components = templateComponents(template.parameters);
+    return this.sendMessage(
+      chatId,
+      'template',
+      { name: template.name, language: { code: template.language }, ...(components ? { components } : {}) },
+      body,
+    );
   }
 
   /** A reaction is not a message of its own: no `message.sent` follows it, as on Baileys. */
