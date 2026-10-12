@@ -4876,7 +4876,7 @@
             "description": "META_CLOUD_ENABLED is not `true`: Cloud API sessions are switched off"
           },
           "503": {
-            "description": "META_APP_SECRET is not set, so no delivery can be verified; or the body names a number whose Cloud API session is not live in this process, so Meta retries it later"
+            "description": "META_APP_SECRET is not set, so no delivery can be verified; or the body names a number whose Cloud API session is not live in this process, or the lookup of the stored Cloud API numbers failed; nothing in the body is processed and Meta retries it later"
           }
         },
         "summary": "Receive WhatsApp Cloud API events from Meta",

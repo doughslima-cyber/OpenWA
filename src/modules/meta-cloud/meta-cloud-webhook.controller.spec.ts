@@ -114,6 +114,23 @@ describe('MetaCloudWebhookController', () => {
     });
   });
 
+  it('C99 a failing stored-account lookup answers 503, starts no router run and logs each failure once', async () => {
+    router.knownNumbersNotLive.mockRejectedValue(new Error('SQLITE_BUSY: database is locked'));
+    const controller = app.get(MetaCloudWebhookController);
+    const logged = jest.spyOn(
+      (controller as unknown as { logger: { error: (...args: unknown[]) => void } }).logger,
+      'error',
+    );
+
+    await post().expect(503);
+    await post().expect(503);
+    await flush();
+
+    expect(router.knownNumbersNotLive).toHaveBeenCalledTimes(2);
+    expect(router.handle).not.toHaveBeenCalled();
+    expect(logged).toHaveBeenCalledTimes(2);
+  });
+
   describe('C55 the 200 does not wait on processing', () => {
     let unhandled: jest.Mock;
     beforeEach(() => {

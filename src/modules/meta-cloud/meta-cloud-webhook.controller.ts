@@ -95,7 +95,8 @@ export class MetaCloudWebhookController {
     status: 503,
     description:
       'META_APP_SECRET is not set, so no delivery can be verified; or the body names a number whose Cloud API ' +
-      'session is not live in this process, so Meta retries it later',
+      'session is not live in this process, or the lookup of the stored Cloud API numbers failed; nothing in the body ' +
+      'is processed and Meta retries it later',
   })
   async receive(
     @Req() req: Request & { rawBody?: Buffer },
@@ -118,7 +119,18 @@ export class MetaCloudWebhookController {
     const body: unknown = req.body;
     // Meta never redelivers a 2xx: a message for a number whose session is not live here yet (a restart)
     // is refused whole, and Meta's retry brings it back once the session is READY (Landing 16).
-    const notLive = await this.router.knownNumbersNotLive(body);
+    let notLive: string[];
+    try {
+      notLive = await this.router.knownNumbersNotLive(body);
+    } catch (error) {
+      // Which numbers are stored cannot be told, so nothing is processed and Meta redelivers (Landing 17).
+      this.logger.error(
+        'Refused a Meta webhook delivery with 503: the stored-account lookup failed',
+        error instanceof Error ? error.message : String(error),
+        { action: 'meta_webhook_lookup_failed' },
+      );
+      throw new ServiceUnavailableException('The Meta webhook cannot check its stored numbers right now');
+    }
     if (notLive.length > 0) {
       this.logger.warn(`Refused a Meta webhook delivery with 503: no live session for ${notLive.join(', ')}`, {
         phoneNumberIds: notLive,
