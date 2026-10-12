@@ -31,6 +31,8 @@ export const PUBLIC_PATHS = [
   '/api/health/ready',
   '/api/infra/health',
   '/api/ingress/{pluginId}/{instanceId}/{path}',
+  // OpenMsg: Meta's WhatsApp Cloud API callbacks (docs/32), verified by token and HMAC, not by key.
+  '/api/meta-webhook',
 ];
 
 const HTTP_METHODS = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head', 'trace', 'search'] as const;

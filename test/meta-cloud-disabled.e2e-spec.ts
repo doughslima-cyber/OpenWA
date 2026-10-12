@@ -67,6 +67,32 @@ describe('Meta Cloud API sessions switched off (e2e)', () => {
     expect(await sessions.count()).toBe(before);
   });
 
+  it('C54 with META_CLOUD_ENABLED unset, GET and POST /api/meta-webhook each answer 404', async () => {
+    delete process.env.META_CLOUD_ENABLED;
+    // Even fully configured: the switch alone decides whether the receiver exists.
+    const prev = { token: process.env.META_WEBHOOK_VERIFY_TOKEN, secret: process.env.META_APP_SECRET };
+    process.env.META_WEBHOOK_VERIFY_TOKEN = 'e2e-verify-token';
+    process.env.META_APP_SECRET = 'e2e-app-secret';
+    try {
+      await request(app.getHttpServer())
+        .get('/api/meta-webhook')
+        .query({ 'hub.mode': 'subscribe', 'hub.verify_token': 'e2e-verify-token', 'hub.challenge': '1158201444' })
+        .expect(404);
+      await request(app.getHttpServer())
+        .post('/api/meta-webhook')
+        .send({ object: 'whatsapp_business_account', entry: [] })
+        .expect(404);
+    } finally {
+      for (const [name, value] of [
+        ['META_WEBHOOK_VERIFY_TOKEN', prev.token],
+        ['META_APP_SECRET', prev.secret],
+      ] as const) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+  });
+
   it('still creates a QR session, with the deployment engine', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/sessions')

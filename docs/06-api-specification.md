@@ -7374,6 +7374,26 @@ The session's next Graph call sends the new token. A session in `action_required
 
 **Errors:** `400` validation (missing or empty `accessToken`, or any other field) or `META_CLOUD_NOT_CONFIGURED` · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted to specific sessions · `404` no session with this id, or it has no Cloud API account · `501` the session is not a `meta-cloud` session
 
+### 6.4.20 WhatsApp Cloud API webhook (OpenMsg)
+
+The callback URL registered in the Meta app's WhatsApp webhook settings (`MetaCloudWebhookController`, `@Controller('meta-webhook')`; an OpenMsg fork receiver, not exposed in the SDKs, like `ingress`). Both routes answer `404` while `META_CLOUD_ENABLED` is not `true`, and neither is rate limited by the global per-IP tiers: Meta delivers in bursts from few addresses, and the signature is the gate.
+
+**Auth:** **none** — `@Public`, because Meta presents no API key. The handshake is authenticated by `META_WEBHOOK_VERIFY_TOKEN`, every delivery by `X-Hub-Signature-256`: `sha256=` followed by the hex HMAC-SHA256 of the exact request bytes under `META_APP_SECRET`.
+
+#### GET /api/meta-webhook
+
+Meta's verification handshake. With `hub.mode=subscribe` and a `hub.verify_token` equal to `META_WEBHOOK_VERIFY_TOKEN`, answers `200` with `hub.challenge` as the body, `Content-Type: text/plain`.
+
+**Query parameters:** `hub.mode`, `hub.verify_token`, `hub.challenge`
+
+**Errors:** `403` `hub.mode` is not `subscribe`, the token differs, or `META_WEBHOOK_VERIFY_TOKEN` is unset · `404` `META_CLOUD_ENABLED` is not `true`
+
+#### POST /api/meta-webhook
+
+Meta's event delivery: the `whatsapp_business_account` envelope, each `entry[].changes[]` carrying one `field`. The answer is an empty `200`, sent before any event is processed. Each `messages` change goes to the `meta-cloud` session live in this process whose number is the change's `metadata.phone_number_id`: inbound messages become `message.received` (a reaction `message.reaction`, an `interactive` or `button` reply carries `button: { id, text }`, a message Meta could not deliver arrives as `type: "unknown"` with `metadata: { reason, errors }`), media is downloaded through Graph under `MEDIA_DOWNLOAD_MAX_BYTES`, and `statuses[]` become `message.ack` (a `failed` status also `message.failed`, both with Meta's `errorCode`). Other fields (`account_update`, template and quality updates) are accepted and ignored. A change for a number no session holds in this process is accepted, logged and dropped, as is a duplicate delivery, so Meta never retries it.
+
+**Errors:** `401` `X-Hub-Signature-256` missing, or not the HMAC of the body under `META_APP_SECRET` · `404` `META_CLOUD_ENABLED` is not `true` · `503` `META_APP_SECRET` is unset, so no delivery can be verified (logged once per process)
+
 ## 6.5 Real-time API (WebSocket)
 
 Live events are delivered over a **Socket.IO** connection (not a raw WebSocket). The server mounts a single Socket.IO namespace, **`/events`**, on the same port as the REST API. There are no REST routes in this module.

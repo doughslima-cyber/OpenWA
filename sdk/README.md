@@ -48,8 +48,8 @@ All five SDKs expose the same fluent resource surface:
 > docs. Deliberately **not** exposed, matching `docs/18-sdk-design.md` exactly:
 > `auth/api-keys` (key validation itself is the `auth` row above), `users`, `campaigns`, `meta`, `audit`,
 > `settings`, `stats`, `automation`, `infra`,
-> `plugins`, the `integration` management routes, `metrics`, `mcp`, `ingress`
-> and `docker`. These two lists have to agree — they did not, in both
+> `plugins`, the `integration` management routes, `metrics`, `mcp`, `ingress`,
+> `meta-webhook` and `docker`. These two lists have to agree — they did not, in both
 > directions, and a list that disagrees with its own design doc reads as an
 > accidental omission rather than a decision.
 >

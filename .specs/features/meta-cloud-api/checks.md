@@ -178,31 +178,31 @@ Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C48 "`
 
 ### S4 - Receive through the Meta webhook · 12 files · ~170 KB · ~43k
 
-**C49** - `GET /api/meta-webhook?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=1158201444` answers 200 with `Content-Type: text/plain` and body exactly `1158201444` (MCW-01, AC 37)
+**C49** - `GET /api/meta-webhook?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=1158201444` answers 200 with `Content-Type: text/plain` and body exactly `1158201444` (MCW-01, AC 37) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C49 "`
 
-**C50** - `hub.mode=unsubscribe` with the right token, a wrong token, and the right token while `META_WEBHOOK_VERIFY_TOKEN` is unset (3 cases) each answer 403 (MCW-01, AC 38)
+**C50** - `hub.mode=unsubscribe` with the right token, a wrong token, and the right token while `META_WEBHOOK_VERIFY_TOKEN` is unset (3 cases) each answer 403 (MCW-01, AC 38) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C50 "`
 
-**C51** - The signature check accepts `sha256=<hex HMAC-SHA256 of the raw body under META_APP_SECRET>` and rejects: no header, a header without the `sha256=` prefix, an HMAC under another secret, an HMAC of the re-serialized JSON, and a header of different length (5 cases) (MCW-01, AC 39)
+**C51** - The signature check accepts `sha256=<hex HMAC-SHA256 of the raw body under META_APP_SECRET>` and rejects: no header, a header without the `sha256=` prefix, an HMAC under another secret, an HMAC of the re-serialized JSON, and a header of different length (5 cases) (MCW-01, AC 39) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-webhook-signature.spec.ts -t "C51 "`
 
-**C52** - A `POST /api/meta-webhook` with no signature, and one signed with another secret, each answer 401 and `WebhookService.dispatch` is not called (MCW-01, AC 39)
+**C52** - A `POST /api/meta-webhook` with no signature, and one signed with another secret, each answer 401 and `WebhookService.dispatch` is not called (MCW-01, AC 39) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C52 "`
 
-**C53** - With `META_APP_SECRET` unset, two `POST /api/meta-webhook` requests both answer 503, and the controller's logger records the cause exactly once (MCW-01, AC 40)
+**C53** - With `META_APP_SECRET` unset, two `POST /api/meta-webhook` requests both answer 503, and the controller's logger records the cause exactly once (MCW-01, AC 40) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-webhook.controller.spec.ts -t "C53 "`
 
-**C54** - With `META_CLOUD_ENABLED` unset, `GET` and `POST /api/meta-webhook` each answer 404 (MCW-01, AC 41)
+**C54** - With `META_CLOUD_ENABLED` unset, `GET` and `POST /api/meta-webhook` each answer 404 (MCW-01, AC 41) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-disabled.e2e-spec.ts -t "C54 "`
 
-**C55** - With a router whose `handle()` returns a promise that never settles, and with one that rejects, a signed POST still answers 200, and the rejection reaches no unhandled-rejection listener (MCW-01, AC 42)
+**C55** - With a router whose `handle()` returns a promise that never settles, and with one that rejects, a signed POST still answers 200, and the rejection reaches no unhandled-rejection listener (MCW-01, AC 42) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-webhook.controller.spec.ts -t "C55 "`
 
-**C56** - 30 signed POSTs from one client within one second all answer 200 (the global `short` tier allows 10) (door 6)
+**C56** - 30 signed POSTs from one client within one second all answer 200 (the global `short` tier allows 10) (door 6) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C56 "`
 
-**C57** - A signed inbound-text fixture for the live session's `phone_number_id` leads to one `message.received` dispatch whose payload has `id` the fixture's `wamid`, `chatId` and `from` `"5511988887777@c.us"`, `body` the text, and the sender name from `contacts[0].profile.name` (MCW-02, AC 43 · door 10)
+**C57** - A signed inbound-text fixture for the live session's `phone_number_id` leads to one `message.received` dispatch whose payload has `id` the fixture's `wamid`, `chatId` and `from` `"5511988887777@c.us"`, `body` the text, and the sender name from `contacts[0].profile.name` (MCW-02, AC 43 · door 10) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C57 "`
 
 **C58** - The inbound mapper turns each of the 14 fixtures into the expected neutral message: `text` → text; `image`, `video`, `audio`, `document`, `sticker` → the same type with the media id kept for download; `location` → location; `contacts` → contact; `reaction` → a reaction event; `interactive.button_reply`, `interactive.list_reply` and `button` → `button: { id, text }`; `unsupported`, and a message carrying `errors`, → type `unknown` with the reason in `metadata`. Every `chatId` ends in `@c.us` (MCW-02, AC 43, 44, 45, 46, 47) ✅
@@ -211,29 +211,29 @@ Proof: `npx jest src/engine/adapters/meta-cloud-inbound.mapper.spec.ts -t "C58 "
 **C59** - An inbound image is fetched with `GET /<MEDIA_ID>` and then from the returned URL, both with `Authorization: Bearer <token>`; an image whose `file_size` exceeds `MEDIA_DOWNLOAD_MAX_BYTES` is delivered without a download, through the existing `capInboundMedia` path (MCW-02, AC 44) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-media.spec.ts -t "C59 "`
 
-**C60** - A signed `reaction` fixture leads to one `message.reaction` dispatch for the reacted `wamid` with the emoji (MCW-02, AC 45)
+**C60** - A signed `reaction` fixture leads to one `message.reaction` dispatch for the reacted `wamid` with the emoji (MCW-02, AC 45) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C60 "`
 
 **C61** - The mapper turns `statuses[]` entries `sent`, `delivered`, `read` and `failed` (4 cases) into `onMessageAck(wamid, status, "<recipient_id>@c.us")`, the `failed` one carrying `errors[0].code` (MCW-02, AC 48, 49) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-inbound.mapper.spec.ts -t "C61 "`
 
-**C62** - After the C38 send, a signed `delivered` status for its `wamid` leads to one `message.ack` dispatch with `delivered`, and the row's status becomes `delivered` (MCW-02, AC 48)
+**C62** - After the C38 send, a signed `delivered` status for its `wamid` leads to one `message.ack` dispatch with `delivered`, and the row's status becomes `delivered` (MCW-02, AC 48) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C62 "`
 
-**C63** - A signed `failed` status with `errors[0].code: 131026` sets the row to `failed` and leads to one `message.failed` dispatch carrying `131026` (MCW-02, AC 49)
+**C63** - A signed `failed` status with `errors[0].code: 131026` sets the row to `failed` and leads to one `message.failed` dispatch carrying `131026` (MCW-02, AC 49) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C63 "`
 
-**C64** - The same signed inbound fixture posted twice leaves one `messages` row and one `message.received` dispatch (MCW-02, AC 50)
+**C64** - The same signed inbound fixture posted twice leaves one `messages` row and one `message.received` dispatch (MCW-02, AC 50) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C64 "`
 
-**C65** - A `read` status posted before the `delivered` status of the same `wamid` leaves the row at `read` (MCW-02, AC 51)
+**C65** - A `read` status posted before the `delivered` status of the same `wamid` leaves the row at `read` (MCW-02, AC 51) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C65 "`
 
-**C66** - A signed body whose `phone_number_id` matches no live session answers 200 and dispatches nothing; the router logs a warning naming that `phone_number_id` (MCW-02, AC 52 · door 7)
+**C66** - A signed body whose `phone_number_id` matches no live session answers 200 and dispatches nothing; the router logs a warning naming that `phone_number_id` (MCW-02, AC 52 · door 7) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C66 "`
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-router.service.spec.ts -t "C66 "`
 
-**C67** - A body with 2 `entry[]` of 2 `changes[]` each, all for live sessions, leads to 4 adapter deliveries in order; a change whose `field` is `account_update` is skipped without stopping the rest (MCW-02, AC 53)
+**C67** - A body with 2 `entry[]` of 2 `changes[]` each, all for live sessions, leads to 4 adapter deliveries in order; a change whose `field` is `account_update` is skipped without stopping the rest (MCW-02, AC 53) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-router.service.spec.ts -t "C67 "`
 
 **C68** - After one inbound message, `meta_cloud_contacts` holds one row for the session and `wa_id` with the profile name, `lastInboundAt` and `lastInboundWamid`; a second message from the same `wa_id` updates that row and adds none (MCW-02, AC 54 · door 5) ✅

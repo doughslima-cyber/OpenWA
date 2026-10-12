@@ -4812,6 +4812,80 @@
         ]
       }
     },
+    "/api/meta-webhook": {
+      "get": {
+        "operationId": "MetaCloudWebhookController_verify",
+        "parameters": [
+          {
+            "name": "hub.challenge",
+            "required": false,
+            "in": "query",
+            "description": "Echoed back as the body",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hub.verify_token",
+            "required": false,
+            "in": "query",
+            "description": "Must equal META_WEBHOOK_VERIFY_TOKEN",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hub.mode",
+            "required": false,
+            "in": "query",
+            "description": "Must be `subscribe`",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`hub.challenge`, as `text/plain`"
+          },
+          "403": {
+            "description": "`hub.mode` is not `subscribe`, the token differs, or META_WEBHOOK_VERIFY_TOKEN is unset"
+          },
+          "404": {
+            "description": "META_CLOUD_ENABLED is not `true`: Cloud API sessions are switched off"
+          }
+        },
+        "summary": "Meta's webhook verification handshake (WhatsApp Cloud API sessions)",
+        "tags": [
+          "integration"
+        ],
+        "security": []
+      },
+      "post": {
+        "description": "Answers 200 before the events are processed. Each `messages` change goes to the session live in this process for its `phone_number_id`; a change for any other number is logged and dropped.",
+        "operationId": "MetaCloudWebhookController_receive",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Accepted (also for a duplicate delivery and for a number with no live session)"
+          },
+          "401": {
+            "description": "`X-Hub-Signature-256` is missing or is not the HMAC of the body"
+          },
+          "404": {
+            "description": "META_CLOUD_ENABLED is not `true`: Cloud API sessions are switched off"
+          },
+          "503": {
+            "description": "META_APP_SECRET is not set, so no delivery can be verified"
+          }
+        },
+        "summary": "Receive WhatsApp Cloud API events from Meta",
+        "tags": [
+          "integration"
+        ],
+        "security": []
+      }
+    },
     "/api/sessions/{sessionId}/messages": {
       "get": {
         "operationId": "MessageController_getMessages",

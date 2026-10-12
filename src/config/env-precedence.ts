@@ -82,6 +82,8 @@ export const BLANK_SHADOWED_ENV_KEYS: string[] = [
   'META_GRAPH_BASE_URL',
   'META_CLOUD_TIMEOUT_MS',
   'META_CLOUD_MAX_RPS',
+  'META_WEBHOOK_VERIFY_TOKEN',
+  'META_APP_SECRET',
   // Server-side media conversion, same arrangement.
   'MEDIA_CONVERSION_ENABLED',
   'FFMPEG_PATH',
