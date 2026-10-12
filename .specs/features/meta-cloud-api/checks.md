@@ -155,7 +155,7 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts 
 **C41** - `sendLocationMessage` sends `type: "location"` with `latitude`, `longitude`, `name` and `address`; `sendContactMessage` sends `type: "contacts"`; `replyToMessage` sends the reply's type with `context.message_id` set to the quoted `wamid`; `reactToMessage` sends `type: "reaction"` with `message_id` and `emoji` (4 cases) (MCS-01, AC 31)
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C41 "`
 
-**C42** - With `SEND_PACING_ENABLED=true` and a daily cap of 1, `assertSendAllowed` admits a `meta-cloud` session a second time and records nothing against it, while a NULL-engine session is refused with `SEND_PACING_LIMITED` (MCS-01, AC 32)
+**C42** - With `SEND_PACING_ENABLED=true` and a daily cap of 1, `assertSendAllowed` admits a `meta-cloud` session a second time and records nothing against it, while a NULL-engine session is refused with `SEND_PACING_LIMITED` (MCS-01, AC 32) ✅
 Proof: `npx jest src/modules/message/send-pacing.service.spec.ts -t "C42 "`
 
 **C43** - With `SEND_PACING_ENABLED=true` and a daily cap of 1, two `send-text` calls on a Cloud session both answer 201 (MCS-01, AC 32)
