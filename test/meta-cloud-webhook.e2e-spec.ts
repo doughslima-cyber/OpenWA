@@ -164,6 +164,27 @@ describe('Meta Cloud API webhook (e2e)', () => {
     return id;
   };
 
+  /** A Cloud session bound to `phoneNumberId`, created but not started: its account is stored, no adapter is live. */
+  const storedCloudSession = async (phoneNumberId: string): Promise<string> => {
+    const created = await http()
+      .post('/api/sessions')
+      .set('X-API-Key', operatorKey)
+      .send({
+        name: `e2e-cloud-stored-${phoneNumberId}-${Date.now()}`,
+        engine: 'meta-cloud',
+        metaCloud: { phoneNumberId, wabaId: '102290129340399', accessToken: TOKEN },
+      })
+      .expect(201);
+    return (created.body as { id: string }).id;
+  };
+
+  /** Starts a created Cloud session and waits for READY, polled from the database. */
+  const startReady = async (id: string): Promise<void> => {
+    await http().post(`/api/sessions/${id}/start`).set('X-API-Key', operatorKey).send({}).expect(200);
+    await eventually(async () => String((await sessions.findOneByOrFail({ id })).status) === 'ready');
+    expect((await sessions.findOneByOrFail({ id })).status).toBe('ready');
+  };
+
   /** A sent Cloud message (its row at `sent`), as the S3 send path stores it; answers the wamid. */
   const sentMessage = async (id: string): Promise<string> => {
     const res = await http()
@@ -360,6 +381,78 @@ describe('Meta Cloud API webhook (e2e)', () => {
     expect(dispatch.mock.calls.length).toBe(dispatchesBefore);
     expect(warn.mock.calls.some(([message]) => String(message).includes('999000999000'))).toBe(true);
     warn.mockRestore();
+  });
+
+  it('C96 a body for a stored number whose session is not started answers 503 and processes nothing; after the start it is accepted once', async () => {
+    const phoneNumberId = '106540352242996';
+    const id = await storedCloudSession(phoneNumberId);
+    const wamid = 'wamid.C96-before-start';
+    const body = messagesBody(
+      messagesValue({ messages: [{ ...INBOUND_MESSAGES.text, id: wamid, text: { body: 'C96' } }] }, phoneNumberId),
+    );
+    const received = () => dispatchesOf('message.received', d => d.id === wamid);
+    const dispatchesBefore = dispatch.mock.calls.length;
+
+    await postWebhook(body).expect(503);
+    await pause(300);
+
+    expect(routed.mock.calls.length).toBe(runsAtStart);
+    expect(dispatch.mock.calls.length).toBe(dispatchesBefore);
+    expect(await messages.countBy({ waMessageId: wamid })).toBe(0);
+
+    await startReady(id);
+    await postWebhook(body).expect(200);
+    await routerIdle();
+    await eventually(() => received().length > 0);
+    await pause(300);
+
+    expect(received()).toHaveLength(1);
+    expect(received()[0][0]).toBe(id);
+    expect(await messages.countBy({ sessionId: id, waMessageId: wamid })).toBe(1);
+  });
+
+  it('C98 a body mixing a live number and a stored one not started answers 503 and processes nothing; redelivered once both are live, each message arrives once', async () => {
+    const liveId = await readyCloudSession();
+    const phoneNumberId = '106540352242998';
+    const storedId = await storedCloudSession(phoneNumberId);
+    const toLive = 'wamid.C98-live-number';
+    const toStored = 'wamid.C98-stored-number';
+    const body = webhookBody([
+      {
+        field: 'messages',
+        value: messagesValue({ messages: [{ ...INBOUND_MESSAGES.text, id: toLive, text: { body: 'C98 a' } }] }),
+      },
+      {
+        field: 'messages',
+        value: messagesValue(
+          { messages: [{ ...INBOUND_MESSAGES.text, id: toStored, text: { body: 'C98 b' } }] },
+          phoneNumberId,
+        ),
+      },
+    ]);
+    const received = (wamid: string) => dispatchesOf('message.received', d => d.id === wamid);
+
+    await postWebhook(body).expect(503);
+    await pause(300);
+
+    expect(routed.mock.calls.length).toBe(runsAtStart);
+    expect(received(toLive)).toHaveLength(0);
+    expect(received(toStored)).toHaveLength(0);
+    expect(await messages.countBy({ waMessageId: toLive })).toBe(0);
+    expect(await messages.countBy({ waMessageId: toStored })).toBe(0);
+
+    await startReady(storedId);
+    await postWebhook(body).expect(200);
+    await routerIdle();
+    await eventually(() => received(toLive).length > 0 && received(toStored).length > 0);
+    await pause(500);
+
+    expect(received(toLive)).toHaveLength(1);
+    expect(received(toLive)[0][0]).toBe(liveId);
+    expect(received(toStored)).toHaveLength(1);
+    expect(received(toStored)[0][0]).toBe(storedId);
+    expect(await messages.countBy({ sessionId: liveId, waMessageId: toLive })).toBe(1);
+    expect(await messages.countBy({ sessionId: storedId, waMessageId: toStored })).toBe(1);
   });
 
   it('C87 no message.* payload dispatched for sent, received, ack and failed carries the token or an 8-character run of it', async () => {

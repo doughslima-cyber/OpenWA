@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/meta-cloud-api/plan.md`
 
-95 checks in 5 slices, governance, verification round 1, PR review and PR review decisions · 11 one-way doors · 2 open, of which 0 block building (both block go-live)
+98 checks in 5 slices, governance, verification round 1, PR review and PR review decisions · 11 one-way doors · 2 open, of which 0 block building (both block go-live)
 
 Proof commands, from `package.json` and `.github/workflows/ci.yml`:
 
@@ -360,6 +360,21 @@ Proof: `npx jest src/modules/infra/meta-cloud-backup.spec.ts -t "C95 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-backup.e2e-spec.ts -t "C95 "`
 Proof: `npx jest src/modules/infra/export-tables.parity.spec.ts -t "exports and imports the same tables in the same FK-safe order|publishes exactly the registry keys in the export response DTOs|flags exactly the tables with an FK to sessions"`
 
+**C96** - With a stored Cloud account whose session is not started, a signed `messages` body for its number answers 503, starts no router run, dispatches nothing and writes no `messages` row; after the session starts, the same body answers 200 and yields one `message.received` (Landing 16 · door 7) ✅
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C96 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-router.service.spec.ts -t "C96 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-webhook.controller.spec.ts -t "C96 "`
+
+**C97** - A signed body for a number with no stored account still answers 200, dispatches nothing and logs the drop: C66's claim, re-proven after Landing 16 (its e2e test posts a number no account holds and asserts the 200 and no dispatch) (MCW-02, AC 52 · door 7) ✅
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C66 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-router.service.spec.ts -t "C97 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-webhook.controller.spec.ts -t "C97 "`
+
+**C98** - A body mixing a live number and a known number whose session is not started answers 503 and processes nothing from it (no router run, no `messages` row for either message); after both sessions are live, redelivering it answers 200 and yields exactly one `message.received` per message (Landing 16 · door 7 · AC 50, 53) ✅
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C98 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-router.service.spec.ts -t "C98 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-webhook.controller.spec.ts -t "C98 "`
+
 ## Coverage
 
 | Set (size)                                                                     | Member -> proof                                                                                                                                                                                                                                                         | Unproven |
@@ -371,7 +386,7 @@ Proof: `npx jest src/modules/infra/export-tables.parity.spec.ts -t "exports and 
 | `GET /api/sessions/:id/meta/account` statuses (5)                              | 200 C30 · 400 non-UUID id C88 · 403 fence C79 · 404 unknown session C31, no account row C85 · 501 C31                                                                                                                                                                   | -        |
 | `PUT /api/sessions/:id/meta/account` statuses (5)                              | 200 C32 · 400 DTO C33, `META_CLOUD_NOT_CONFIGURED` C84, non-UUID id C88 · 403 fence C79 (and the existing operator-role guard) · 404 unknown session C31, no account row C85 · 501 C31                                                                                  | -        |
 | `GET /api/meta-webhook` statuses (3)                                           | 200 C49 · 403 C50 · 404 C54                                                                                                                                                                                                                                             | -        |
-| `POST /api/meta-webhook` statuses (4)                                          | 200 C55, C56, C57 · 401 C52 · 404 C54 · 503 C53                                                                                                                                                                                                                         | -        |
+| `POST /api/meta-webhook` statuses (4)                                          | 200 C55, C56, C57, C97 · 401 C52 · 404 C54 · 503 C53, known number not live C96, C98                                                                                                                                                                                    | -        |
 | `/api/sessions/:id/messages/send-*` statuses added for Cloud sessions (6)      | 400 C44 · 409 C44, C45 · 429 C44, C46 · 501 C75 · 502 C44 · 503 C48                                                                                                                                                                                                     | -        |
 | `POST /api/sessions/:id/campaigns` status added (1)                            | 400 C77                                                                                                                                                                                                                                                                 | -        |
 | Meta error table (17 cases)                                                    | C44, table-driven over all 17; boundary row 131047 C45                                                                                                                                                                                                                  | -        |
@@ -397,11 +412,12 @@ Proof: `npx jest src/modules/infra/export-tables.parity.spec.ts -t "exports and 
 | startup config: new variables (4 places)                                       | `.env.example` C83 · `docker-compose.yml` C83 · `docker-compose.dev.yml` C83 · `BLANK_SHADOWED_ENV_KEYS` C83                                                                                                                                                            | -        |
 | token sinks named by AC 15 (3)                                                 | HTTP bodies C20 · log lines C21 · outbound `message.*` webhook payloads C87                                                                                                                                                                                             | -        |
 | send idempotency after a Cloud send failure (2)                                | Meta 4xx refusal frees the key C89 · 502 keeps it as outcome unknown C89                                                                                                                                                                                                | -        |
+| webhook body admission (3 outcomes)                                            | every number live: 200 then processed C98 (and C57) · a stored number not live here: 503, nothing processed C96, C98 · no stored account: 200, dropped C97 (C66)                                                                                                        | -        |
 | `meta_cloud_accounts` columns in the backup (2 groups)                         | the ten exported columns C93, C94 (restored) · the two token columns, absent from the export C93 and NULL after a restore C94, also from a hand-edited archive C94                                                                                                      | -        |
 | a restored Cloud session (2 steps)                                             | `PUT .../meta/account` on the NULL-token row answers 200 C94 · the session then starts to READY C94                                                                                                                                                                     | -        |
 
 - Claims naming a status code, route or response shape: C1, C4, C5, C11, C15, C16, C17, C18, C19, C20, C29, C30, C31,
-  C32, C33, C38, C40, C43, C45, C49, C50, C52, C54, C56, C57, C60, C62, C63, C64, C65, C66, C70, C76, C77, C84, C85, C87, C88, C89, C93, C94, C95. Each has
+  C32, C33, C38, C40, C43, C45, C49, C50, C52, C54, C56, C57, C60, C62, C63, C64, C65, C66, C70, C76, C77, C84, C85, C87, C88, C89, C93, C94, C95, C96, C97, C98. Each has
   a proof that crosses the HTTP boundary. C53 and C55 are proven at the controller with a real Nest testing
   module, because the log count and the never-settling router are not reachable from supertest.
 - C44 (17 rows) and C58 (14 rows) are decision tables proven at their own layer, each with one boundary row
@@ -429,6 +445,10 @@ Evidence (planned files, classified by the shape the plan fixes):
 - `meta-cloud-webhook.controller.ts` with its signature check: 4 verify outcomes, 6 signature outcomes, 2 gates
   (enabled, secret set) -> decides, reached across a boundary (C49-C54)
 - `meta-cloud-router.service.ts`: 3 routing outcomes -> decides (C66, C67)
+- `meta-cloud-router.service.ts` `knownNumbersNotLive` with the webhook controller's answer (PR review decisions,
+  Landing 16): 3 outcomes - every number live -> 200, then processed; a stored number with no live adapter here -> 503,
+  nothing processed; a number with no stored account -> 200, dropped -> decides, reached across a boundary (own
+  layer: router spec and controller spec C96, C97, C98; at HTTP: C96, C98 and C66 for C97)
 - `meta-cloud-chat-store.service.ts`: grouping and unread rule, 3 branch points -> decides, not reached by a
   boundary proof except C70
 - `meta-cloud-crypto.ts`: format and tamper detection -> decides (C13)
@@ -448,7 +468,7 @@ signature check are proven only by the one path each e2e test happens to take.
 ## Swept
 
 - validation: C4, C15, C16, C17, C33, C51
-- failure modes: C12, C27, C48, C55
+- failure modes: C12, C27, C48, C55, C96 and C98 (a message arriving while its session is not live is refused with 503 so Meta redelivers it)
 - idempotency: C64, C65; C89 - a Meta 4xx refusal frees the send's idempotency key and a 502 keeps it as unknown
   (this branch added the `EngineRejectedSendError` case to `send-idempotency.interceptor.ts:34`; the 4xx/429/502/503
   statuses of C44 and C48 were chosen to fit it)

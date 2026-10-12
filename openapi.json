@@ -4862,12 +4862,12 @@
         "security": []
       },
       "post": {
-        "description": "Answers 200 before the events are processed. Each `messages` change goes to the session live in this process for its `phone_number_id`; a change for any other number is logged and dropped.",
+        "description": "Answers 200 before the events are processed. Each `messages` change goes to the session live in this process for its `phone_number_id`; a change for a number with no Cloud API account here is logged and dropped. A body naming a number that has an account but no live session in this process (restarting, not started) is refused with 503 and nothing in it is processed, so Meta delivers it again later.",
         "operationId": "MetaCloudWebhookController_receive",
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Accepted (also for a duplicate delivery and for a number with no live session)"
+            "description": "Accepted (also for a duplicate delivery and for a number with no Cloud API account here)"
           },
           "401": {
             "description": "`X-Hub-Signature-256` is missing or is not the HMAC of the body"
@@ -4876,7 +4876,7 @@
             "description": "META_CLOUD_ENABLED is not `true`: Cloud API sessions are switched off"
           },
           "503": {
-            "description": "META_APP_SECRET is not set, so no delivery can be verified"
+            "description": "META_APP_SECRET is not set, so no delivery can be verified; or the body names a number whose Cloud API session is not live in this process, so Meta retries it later"
           }
         },
         "summary": "Receive WhatsApp Cloud API events from Meta",

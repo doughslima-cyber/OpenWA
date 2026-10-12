@@ -206,6 +206,10 @@ No painel da Meta, o webhook do app aponta para `https://openmsg.devsrun.com/api
   de restaurar, a conta volta sem token e a sessão não inicia. Informe o token de novo com
   `PUT /api/sessions/<sessionId>/meta/account` e inicie a sessão; faça o mesmo depois de trocar a
   `META_CLOUD_ENCRYPTION_KEY`. A mesma rota troca um token vencido.
+- Enquanto uma sessão Cloud com conta salva não está pronta neste processo (durante um reinício, ou antes de ser
+  iniciada), o `POST /api/meta-webhook` com mensagens para o número dela responde 503 e não processa nada do corpo;
+  a Meta reenvia mais tarde e a mensagem chega quando a sessão estiver pronta. Uma sessão parada de propósito faz a
+  Meta reenviar por até 7 dias.
 
 ## Implantação
 

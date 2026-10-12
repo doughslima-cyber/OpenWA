@@ -13,12 +13,16 @@ describe('MetaCloudWebhookController', () => {
   const prevEnv = { enabled: process.env.META_CLOUD_ENABLED, secret: process.env.META_APP_SECRET };
 
   let app: INestApplication<App>;
-  const router = { handle: jest.fn<Promise<void>, [unknown]>() };
+  const router = {
+    handle: jest.fn<Promise<void>, [unknown]>(),
+    knownNumbersNotLive: jest.fn<Promise<string[]>, [unknown]>(),
+  };
 
   beforeEach(async () => {
     process.env.META_CLOUD_ENABLED = 'true';
     process.env.META_APP_SECRET = SECRET;
     router.handle.mockReset();
+    router.knownNumbersNotLive.mockReset().mockResolvedValue([]);
     const moduleRef = await Test.createTestingModule({
       controllers: [MetaCloudWebhookController],
       providers: [{ provide: MetaCloudWebhookRouter, useValue: router }],
@@ -65,6 +69,49 @@ describe('MetaCloudWebhookController', () => {
     const causes = logged.mock.calls.filter(([message]) => String(message).includes('META_APP_SECRET'));
     expect(causes).toHaveLength(1);
     expect(router.handle).not.toHaveBeenCalled();
+  });
+
+  describe('a body naming a stored number whose session is not live here (Landing 16)', () => {
+    it('C96 answers 503 and starts no router run', async () => {
+      router.knownNumbersNotLive.mockResolvedValue(['444000444']);
+
+      await post().expect(503);
+      await flush();
+
+      expect(router.knownNumbersNotLive).toHaveBeenCalledTimes(1);
+      expect(router.handle).not.toHaveBeenCalled();
+    });
+
+    it('C97 a body whose numbers no stored account holds answers 200 and goes to the router, which drops it', async () => {
+      router.knownNumbersNotLive.mockResolvedValue([]);
+      router.handle.mockResolvedValue(undefined);
+
+      await post().expect(200);
+      await flush();
+
+      expect(router.handle).toHaveBeenCalledTimes(1);
+    });
+
+    it('C98 a body with one live and one stored-but-not-live number answers 503 and none of it reaches the router', async () => {
+      router.knownNumbersNotLive.mockResolvedValue(['444000444']);
+
+      await post().expect(503);
+      await flush();
+
+      expect(router.handle).not.toHaveBeenCalled();
+    });
+
+    it('C98 a body whose numbers are all live answers 200 without waiting for its processing, then is processed', async () => {
+      router.knownNumbersNotLive.mockResolvedValue([]);
+      // Processing that never finishes: the 200 cannot be waiting on it.
+      router.handle.mockReturnValue(new Promise<void>(() => undefined));
+
+      await post().expect(200);
+      await flush();
+
+      expect(router.knownNumbersNotLive).toHaveBeenCalledTimes(1);
+      expect(router.handle).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('C55 the 200 does not wait on processing', () => {

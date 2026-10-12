@@ -82,16 +82,25 @@ export class MetaCloudWebhookController {
     summary: 'Receive WhatsApp Cloud API events from Meta',
     description:
       'Answers 200 before the events are processed. Each `messages` change goes to the session live in this ' +
-      'process for its `phone_number_id`; a change for any other number is logged and dropped.',
+      'process for its `phone_number_id`; a change for a number with no Cloud API account here is logged and ' +
+      'dropped. A body naming a number that has an account but no live session in this process (restarting, ' +
+      'not started) is refused with 503 and nothing in it is processed, so Meta delivers it again later.',
   })
-  @ApiOkResponse({ description: 'Accepted (also for a duplicate delivery and for a number with no live session)' })
+  @ApiOkResponse({
+    description: 'Accepted (also for a duplicate delivery and for a number with no Cloud API account here)',
+  })
   @ApiResponse({ status: 401, description: '`X-Hub-Signature-256` is missing or is not the HMAC of the body' })
   @ApiResponse({ status: 404, description: DISABLED_404 })
-  @ApiResponse({ status: 503, description: 'META_APP_SECRET is not set, so no delivery can be verified' })
-  receive(
+  @ApiResponse({
+    status: 503,
+    description:
+      'META_APP_SECRET is not set, so no delivery can be verified; or the body names a number whose Cloud API ' +
+      'session is not live in this process, so Meta retries it later',
+  })
+  async receive(
     @Req() req: Request & { rawBody?: Buffer },
     @Headers('x-hub-signature-256') signature: string | undefined,
-  ): void {
+  ): Promise<void> {
     this.assertEnabled();
     const secret = process.env.META_APP_SECRET ?? '';
     if (!secret) {
@@ -107,6 +116,16 @@ export class MetaCloudWebhookController {
       throw new UnauthorizedException('Invalid X-Hub-Signature-256');
     }
     const body: unknown = req.body;
+    // Meta never redelivers a 2xx: a message for a number whose session is not live here yet (a restart)
+    // is refused whole, and Meta's retry brings it back once the session is READY (Landing 16).
+    const notLive = await this.router.knownNumbersNotLive(body);
+    if (notLive.length > 0) {
+      this.logger.warn(`Refused a Meta webhook delivery with 503: no live session for ${notLive.join(', ')}`, {
+        phoneNumberIds: notLive,
+        action: 'meta_webhook_session_not_live',
+      });
+      throw new ServiceUnavailableException('A WhatsApp Cloud API session for this number is not live yet');
+    }
     // After the answer: Meta times a delivery out and retries it, so nothing downstream may hold the 200.
     setImmediate(() => {
       Promise.resolve()

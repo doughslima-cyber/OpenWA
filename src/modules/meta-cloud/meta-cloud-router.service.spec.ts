@@ -3,6 +3,17 @@ import type { MetaWebhookChangeValue } from '../../engine/adapters/meta-cloud-in
 import { INBOUND_MESSAGES, messagesValue, webhookBody } from '../../engine/adapters/__fixtures__/meta-cloud-webhooks';
 import { MetaCloudWebhookRouter } from './meta-cloud-router.service';
 
+/** The `meta_cloud_accounts` rows the router may look a number up in: `find` answers the stored ones asked for. */
+function accountsHolding(...stored: string[]) {
+  return {
+    find: jest.fn((options: { where: { phoneNumberId: { value: string[] } } }) =>
+      Promise.resolve(
+        options.where.phoneNumberId.value.filter(id => stored.includes(id)).map(phoneNumberId => ({ phoneNumberId })),
+      ),
+    ),
+  };
+}
+
 describe('MetaCloudWebhookRouter', () => {
   const deliveries: Array<{ session: string; wamid: string }> = [];
 
@@ -23,13 +34,16 @@ describe('MetaCloudWebhookRouter', () => {
   });
 
   let registry: MetaCloudNumberRegistry;
+  let accounts: ReturnType<typeof accountsHolding>;
   let router: MetaCloudWebhookRouter;
   let warn: jest.SpyInstance<void, unknown[]>;
 
   beforeEach(() => {
     deliveries.length = 0;
     registry = new MetaCloudNumberRegistry();
-    router = new MetaCloudWebhookRouter(registry);
+    // 111000111 and 222000222 are live below; 444000444 has an account but no live session here.
+    accounts = accountsHolding('111000111', '222000222', '444000444');
+    router = new MetaCloudWebhookRouter(registry, accounts as never);
     warn = jest
       .spyOn((router as unknown as { logger: { warn: (...args: unknown[]) => void } }).logger, 'warn')
       .mockImplementation();
@@ -88,6 +102,43 @@ describe('MetaCloudWebhookRouter', () => {
       { session: 'B', wamid: 'wamid.2' },
     ]);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  describe('knownNumbersNotLive: which numbers of a body make Meta retry it (Landing 16)', () => {
+    it('C96 a number with a stored account and no live session here is reported, from one query', async () => {
+      const body = webhookBody([change('444000444', 'wamid.not-live')]);
+
+      expect(await router.knownNumbersNotLive(body)).toEqual(['444000444']);
+      expect(accounts.find).toHaveBeenCalledTimes(1);
+    });
+
+    it('C97 a number with no stored account is not reported', async () => {
+      const body = webhookBody([change('999888777666', 'wamid.unknown')]);
+
+      expect(await router.knownNumbersNotLive(body)).toEqual([]);
+    });
+
+    it('C98 a body whose numbers are all live reports none and makes no query', async () => {
+      const body = webhookBody([change('111000111', 'wamid.1')], [change('222000222', 'wamid.2')]);
+
+      expect(await router.knownNumbersNotLive(body)).toEqual([]);
+      expect(accounts.find).not.toHaveBeenCalled();
+    });
+
+    it('C98 a mixed body reports only the stored number that is not live, asking once for each distinct number', async () => {
+      const body = webhookBody(
+        [change('111000111', 'wamid.1'), change('444000444', 'wamid.2')],
+        [
+          change('444000444', 'wamid.3'),
+          change('999888777666', 'wamid.4'),
+          { field: 'account_update', value: { metadata: { phone_number_id: '555000555' } } },
+        ],
+      );
+
+      expect(await router.knownNumbersNotLive(body)).toEqual(['444000444']);
+      expect(accounts.find).toHaveBeenCalledTimes(1);
+      expect(accounts.find.mock.calls[0][0].where.phoneNumberId.value).toEqual(['444000444', '999888777666']);
+    });
   });
 
   it('C67 a session that fails on its change does not stop the next one', async () => {
