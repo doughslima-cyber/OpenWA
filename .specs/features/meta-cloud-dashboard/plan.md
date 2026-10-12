@@ -148,18 +148,18 @@ template to reopen the conversation.
 
 ## Traceability
 
-| ID     | Slice | Criteria               | Status    |
-| ------ | ----- | ---------------------- | --------- |
-| MCD-01 | S1    | 1, 2, 3, 4, 5, 6       | In checks |
-| MCD-02 | S1    | 7, 8, 9                | In checks |
-| MCD-03 | S1    | 10, 11, 12, 13, 14     | In checks |
-| MCD-04 | S2    | 15, 16, 21             | In checks |
-| MCD-05 | S2    | 17, 18, 19, 20         | In checks |
-| MCT-01 | S3    | 22, 23, 24, 25         | In checks |
-| MCT-02 | S3    | 26, 27, 28, 29, 30     | In checks |
-| MCT-03 | S3    | 31, 32, 33, 34, 35, 36 | In checks |
-| MCD-06 | S4    | 37, 38                 | In checks |
-| MCD-07 | S5    | 39, 40                 | In checks |
+| ID     | Slice | Criteria               | Status       |
+| ------ | ----- | ---------------------- | ------------ |
+| MCD-01 | S1    | 1, 2, 3, 4, 5, 6       | Implementing |
+| MCD-02 | S1    | 7, 8, 9                | Implementing |
+| MCD-03 | S1    | 10, 11, 12, 13, 14     | Implementing |
+| MCD-04 | S2    | 15, 16, 21             | Implementing |
+| MCD-05 | S2    | 17, 18, 19, 20         | Implementing |
+| MCT-01 | S3    | 22, 23, 24, 25         | Implementing |
+| MCT-02 | S3    | 26, 27, 28, 29, 30     | Implementing |
+| MCT-03 | S3    | 31, 32, 33, 34, 35, 36 | Implementing |
+| MCD-06 | S4    | 37, 38                 | Implementing |
+| MCD-07 | S5    | 39, 40                 | Implementing |
 
 ## Observable
 

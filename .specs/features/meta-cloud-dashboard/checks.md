@@ -289,3 +289,7 @@ Intended split, with the arithmetic, written before any code. Budget 150k tokens
 - Boundary: C1-C43 closed at `15310ffd` (builder A); C44-C52 open for builder B.
 - Settled mid-build: none by the user. The 14 non-English catalogs carry the new keys in English so parity and the dashboard tests stay green; builder B translates them.
 - Abandoned: none.
+
+- Boundary: C44-C52 closed at `2f62529a` (builder B); C1-C52 all closed, ready for the Verifier.
+- Settled mid-build: none by the user. `metaCloud.account.errorTitle` was unused and is removed from all 15 catalogs. `check:contract-shapes` did not read `dashboard/src/services/metaCloud.ts`, so C49's account, template, window and send-body shapes were ungated; the gate now reads it with `api.ts` (4 pairs, floor 26). `Session.engine` stays ungated: the dashboard `Session` pair is excluded by design, and the hand type stays `engine?: string | null` because C1's test pins a `null` engine.
+- Abandoned: narrowing `Session.engine` to `string` (breaks C1's approved test).

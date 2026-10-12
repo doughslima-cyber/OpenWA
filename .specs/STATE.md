@@ -13,9 +13,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-dashboard
-**Where**: C1-C43 closed at `15310ffd` (builder A: S1-S4); C44-C52 open
+**Where**: C1-C52 closed; C1-C43 at `15310ffd` (builder A: S1-S4), C44-C52 at `2f62529a` (builder B: S5 and governance)
 **In progress**: none
-**Next step**: builder B: C44-C52 (translate the `metaCloud.*` and `campaigns.errors.CAMPAIGN_ENGINE_UNSUPPORTED` keys in the 14 non-English catalogs, the color-literal test, docs/06 sections, openapi, chat-scope gate, SDK and contract checks, OPENMSG.md and doc 32)
+**Next step**: orchestrator dispatches the Verifier over C1-C52
 **Blockers**: none for the build; go-live waits on plan open question 1
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-dashboard
