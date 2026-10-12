@@ -180,6 +180,8 @@ afterEach(async () => {
 
 async function renderSessions(): Promise<void> {
   sessions = fresh();
+  await queryClient?.cancelQueries();
+  queryClient?.clear();
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 1_000 } } });
   rtl.render(
     createElement(
@@ -222,9 +224,9 @@ test('C2 the New session form offers QR (checked) and the official Meta API, wit
   const cloud = rtl.screen.getByLabelText(en.metaCloud.engine.cloud) as HTMLInputElement;
   assert.equal(qr.checked, true);
   assert.equal(cloud.checked, false);
-  assert.equal(rtl.screen.queryByLabelText(en.metaCloud.fields.phoneNumberId), null);
-  assert.equal(rtl.screen.queryByLabelText(en.metaCloud.fields.wabaId), null);
-  assert.equal(rtl.screen.queryByLabelText(en.metaCloud.fields.accessToken), null);
+  assert.equal(rtl.screen.queryByLabelText(en.metaCloud.fields.phoneNumberId) === null, true);
+  assert.equal(rtl.screen.queryByLabelText(en.metaCloud.fields.wabaId) === null, true);
+  assert.equal(rtl.screen.queryByLabelText(en.metaCloud.fields.accessToken) === null, true);
 });
 
 test('C3 choosing the official Meta API shows the three labelled fields, the token as a password', async () => {
@@ -284,7 +286,7 @@ test('C6 a create refused with a Cloud code shows the catalog text, not the resp
 
     const shown = await rtl.screen.findAllByText(en.metaCloud.errors[code]);
     assert.ok(shown.length > 0, code);
-    assert.equal(rtl.screen.queryByText(`raw server text ${code}`), null, `${code} hides the raw message`);
+    assert.equal(rtl.screen.queryByText(`raw server text ${code}`) === null, true, `${code} hides the raw message`);
   }
 });
 
@@ -294,9 +296,17 @@ test('C7 a Cloud card shows the Official API badge and no QR placeholder, Show Q
   for (const name of ['cloud-starting', 'cloud-ready']) {
     const card = cardOf(name);
     assert.ok(rtl.within(card).getByText(en.metaCloud.badge), `${name} badge`);
-    assert.equal(card.querySelector('.qr-placeholder'), null, `${name} placeholder`);
-    assert.equal(rtl.within(card).queryByRole('button', { name: en.sessions.qr.showQr }), null, `${name} Show QR`);
-    assert.equal(rtl.within(card).queryByRole('button', { name: en.sessions.actions.unlink }), null, `${name} Unlink`);
+    assert.equal(card.querySelector('.qr-placeholder') === null, true, `${name} placeholder`);
+    assert.equal(
+      rtl.within(card).queryByRole('button', { name: en.sessions.qr.showQr }) === null,
+      true,
+      `${name} Show QR`,
+    );
+    assert.equal(
+      rtl.within(card).queryByRole('button', { name: en.sessions.actions.unlink }) === null,
+      true,
+      `${name} Unlink`,
+    );
   }
   assert.ok(rtl.within(cardOf('qr-device')).getByRole('button', { name: en.sessions.qr.showQr }));
 });
@@ -311,7 +321,7 @@ test('C8 starting a Cloud session opens no QR modal and requests no QR', async (
   // Room for the post-start re-read and any modal it would open.
   await new Promise(resolve => setTimeout(resolve, 300));
 
-  assert.equal(document.querySelector('.qr-modal'), null);
+  assert.equal(document.querySelector('.qr-modal') === null, true);
   assert.equal(
     calls.some(c => c.path.endsWith('/qr')),
     false,
@@ -349,7 +359,7 @@ test('C11 a Cloud detail shows no auto-reject-calls toggle', async () => {
   const dialog = await openDetail('cloud-ready');
   await rtl.within(dialog).findByText('+55 11 99999-0000');
 
-  assert.equal(rtl.within(dialog).queryByText(en.sessions.details.autoRejectCalls), null);
+  assert.equal(rtl.within(dialog).queryByText(en.sessions.details.autoRejectCalls) === null, true);
 });
 
 test('C12 Change token sends exactly the new token, confirms, empties the field and shows the new last 4', async () => {
@@ -408,6 +418,6 @@ test('C14 a NULL-engine detail requests no meta account, shows no Cloud section 
     calls.some(c => c.path.includes('/meta/')),
     false,
   );
-  assert.equal(rtl.within(dialog).queryByText(en.metaCloud.account.webhookUrl), null);
-  assert.equal(rtl.within(dialog).queryByText(en.metaCloud.account.title), null);
+  assert.equal(rtl.within(dialog).queryByText(en.metaCloud.account.webhookUrl) === null, true);
+  assert.equal(rtl.within(dialog).queryByText(en.metaCloud.account.title) === null, true);
 });

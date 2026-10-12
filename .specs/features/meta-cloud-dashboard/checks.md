@@ -64,25 +64,25 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 
 ### S2 - Chats on a Cloud session · 7 files · ~170 KB · ~43k
 
-**C15** - With a `meta-cloud` session selected, the Chats sidebar renders no Status and no Channels tab (MCD-04, AC 15)
+**C15** - With a `meta-cloud` session selected, the Chats sidebar renders no Status and no Channels tab (MCD-04, AC 15) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C15 " src/pages/Chats.metaCloud.test.ts`
 
-**C16** - With a `meta-cloud` session selected, an own message's menu has **Reply** and **React** and no **Delete**, and a message with interactive buttons renders them with no clickable button element (MCD-04, AC 16)
+**C16** - With a `meta-cloud` session selected, an own message's menu has **Reply** and **React** and no **Delete**, and a message with interactive buttons renders them with no clickable button element (MCD-04, AC 16) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C16 " src/pages/Chats.metaCloud.test.ts`
 
-**C17** - Opening a chat of a `meta-cloud` session requests `GET /api/sessions/:id/meta/chats/<encoded chatId>/window` once (MCD-05, AC 17)
+**C17** - Opening a chat of a `meta-cloud` session requests `GET /api/sessions/:id/meta/chats/<encoded chatId>/window` once (MCD-05, AC 17) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C17 " src/pages/Chats.metaCloud.test.ts`
 
-**C18** - With the window answering `open: false`, the composer shows the catalog's closed-window banner and a **Send template** button inside it (MCD-05, AC 18)
+**C18** - With the window answering `open: false`, the composer shows the catalog's closed-window banner and a **Send template** button inside it (MCD-05, AC 18) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C18 " src/pages/Chats.metaCloud.test.ts`
 
-**C19** - With the window answering `open: true`, no banner is shown and **Send template** is offered in the composer's action area; with the window request failing (500), no banner is shown and the text input stays enabled (MCD-05, AC 19 · Observable)
+**C19** - With the window answering `open: true`, no banner is shown and **Send template** is offered in the composer's action area; with the window request failing (500), no banner is shown and the text input stays enabled (MCD-05, AC 19 · Observable) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C19 " src/pages/Chats.metaCloud.test.ts`
 
-**C20** - A send answered with each of `META_OUTSIDE_SERVICE_WINDOW`, `META_RECIPIENT_UNAVAILABLE`, `META_LIMIT_REACHED`, `META_RATE_LIMITED`, `META_TOKEN_INVALID`, `META_ACCOUNT_RESTRICTED` (6 cases, table-driven) shows that code's English catalog text (MCD-05, AC 20)
+**C20** - A send answered with each of `META_OUTSIDE_SERVICE_WINDOW`, `META_RECIPIENT_UNAVAILABLE`, `META_LIMIT_REACHED`, `META_RATE_LIMITED`, `META_TOKEN_INVALID`, `META_ACCOUNT_RESTRICTED` (6 cases, table-driven) shows that code's English catalog text (MCD-05, AC 20) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C20 " src/pages/Chats.metaCloud.test.ts`
 
-**C21** - With a NULL-engine session selected under login `engineType` `whatsapp-web.js`, the Status and Channels tabs render, **Delete** is offered, no `/window` request is made, and there is no banner and no **Send template**; under `baileys` the Channels tab shows its existing not-supported state (MCD-04, AC 21)
+**C21** - With a NULL-engine session selected under login `engineType` `whatsapp-web.js`, the Status and Channels tabs render, **Delete** is offered, no `/window` request is made, and there is no banner and no **Send template**; under `baileys` the Channels tab shows its existing not-supported state (MCD-04, AC 21) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C21 " src/pages/Chats.metaCloud.test.ts`
 
 ### S3 - Send an approved template · 14 files · ~210 KB · ~53k
@@ -143,7 +143,7 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 **C39** - **Send** posts `.../meta/send-template` with `{ chatId, name, language, parameters: ["Ana", "42"] }` for a positional template and `{ ..., parameters: { first_name: "Ana" } }` for a named one, then closes the picker; a template with no placeholders posts no `parameters` key (MCT-03, AC 35 · door 2) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C39 " src/components/chats/TemplatePicker.test.ts`
 
-**C40** - After a picker send in Chats, the thread refetches and shows the sent message's text (MCT-03, AC 35)
+**C40** - After a picker send in Chats, the thread refetches and shows the sent message's text (MCT-03, AC 35) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C40 " src/pages/Chats.metaCloud.test.ts`
 
 **C41** - With no `APPROVED` template the picker shows the catalog's empty state naming WhatsApp Manager; with the list failing (502) it shows the error text and **Refresh** (MCT-03, AC 36 · Observable) ✅

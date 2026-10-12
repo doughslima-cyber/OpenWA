@@ -91,6 +91,7 @@ afterEach(async () => {
 });
 
 function renderPicker(): void {
+  queryClient?.clear();
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 1_000 } } });
   rtl.render(
     createElement(
@@ -138,8 +139,8 @@ test('C35 lists only the approved templates, ordered by name then language, and 
     .filter(b => b.classList.contains('template-picker-item'))
     .map(b => b.textContent);
   assert.deepEqual(names, ['alphaen_USAUTHENTICATION', 'alphapt_BRUTILITY', 'zetaen_USMARKETING']);
-  assert.equal(rtl.screen.queryByText('pending_one'), null);
-  assert.equal(rtl.screen.queryByText('rejected_one'), null);
+  assert.equal(rtl.screen.queryByText('pending_one') === null, true);
+  assert.equal(rtl.screen.queryByText('rejected_one') === null, true);
 
   rtl.fireEvent.click(rtl.screen.getByRole('button', { name: en.metaCloud.templates.refresh }));
   await rtl.waitFor(() => assert.equal(listCalls().length, 2));
@@ -153,14 +154,14 @@ test('C36 shows one labelled input per placeholder and a live preview of the bod
   rtl.fireEvent.click(await rtl.screen.findByRole('button', { name: /^order_shipped\b/ }));
   const first = rtl.screen.getByLabelText('{{1}}') as HTMLInputElement;
   const second = rtl.screen.getByLabelText('{{2}}') as HTMLInputElement;
-  assert.equal(rtl.screen.queryByLabelText('{{3}}'), null);
+  assert.equal(rtl.screen.queryByLabelText('{{3}}') === null, true);
   rtl.fireEvent.change(first, { target: { value: 'Ana' } });
   rtl.fireEvent.change(second, { target: { value: '42' } });
   assert.ok(rtl.screen.getByText('Olá Ana, seu pedido 42 saiu'));
 
   rtl.fireEvent.click(item('greeting'));
   assert.ok(rtl.screen.getByLabelText('{{first_name}}'));
-  assert.equal(rtl.screen.queryByLabelText('{{1}}'), null);
+  assert.equal(rtl.screen.queryByLabelText('{{1}}') === null, true);
 });
 
 test('C37 a header with media, a header with a variable and a button with a parameter are not sendable', async () => {

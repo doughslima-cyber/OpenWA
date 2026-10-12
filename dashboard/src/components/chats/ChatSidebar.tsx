@@ -6,6 +6,7 @@ import { useRole } from '../../hooks/useRole';
 import ChatAvatar from './ChatAvatar';
 
 export type ChatsTab = 'chats' | 'channels' | 'status';
+const ALL_TABS: readonly ChatsTab[] = ['chats', 'channels', 'status'];
 
 interface ChatSidebarProps {
   sessions: Session[];
@@ -16,6 +17,8 @@ interface ChatSidebarProps {
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   onComposeStatus: () => void;
+  /** The tabs offered; all three when absent. A Cloud API session has Chats only (OpenMsg, docs/32 F3). */
+  tabs?: readonly ChatsTab[];
   formatChatTime: (timestamp?: number) => string;
   chatsTab: {
     loading: boolean;
@@ -52,6 +55,7 @@ function ChatSidebar({
   searchQuery,
   onSearchQueryChange,
   onComposeStatus,
+  tabs = ALL_TABS,
   formatChatTime,
   chatsTab,
   channelsTab,
@@ -151,7 +155,7 @@ function ChatSidebar({
 
         {/* Chats / Channels / Status tabs */}
         <div className="chats-tabs" role="tablist">
-          {(['chats', 'channels', 'status'] as const).map(tab => (
+          {tabs.map(tab => (
             <button
               key={tab}
               type="button"

@@ -8,6 +8,7 @@ import { buildMediaSendPayload, buildOptimisticMetadata, quotedIdOf } from '../.
 import { messagesQueryKey, useChatMessagesActions, upsertCachedMessage } from '../../hooks/useChatMessages';
 import { useRole } from '../../hooks/useRole';
 import { useToast } from '../../hooks/useToast';
+import { metaErrorText } from '../../services/metaCloud';
 import type { ScrollDirection } from '../../utils/scrollDecision';
 
 // Map an attachment MIME type to the neutral MessageType for the optimistic outgoing bubble, so the
@@ -46,6 +47,8 @@ interface ChatComposerProps {
   setAttachment: Dispatch<SetStateAction<StagedAttachment | null>>;
   previewUrl: string | null;
   setPreviewUrl: Dispatch<SetStateAction<string | null>>;
+  /** OpenMsg (docs/32 F3): on a Cloud API session, the service window and the template picker. */
+  metaCloud?: { windowClosed: boolean; onSendTemplate: () => void };
 }
 
 // The composer half of the chat room: attachment preview, emoji panel, reply banner, and the input
@@ -65,6 +68,7 @@ function ChatComposer({
   setAttachment,
   previewUrl,
   setPreviewUrl,
+  metaCloud,
 }: ChatComposerProps) {
   const { t } = useTranslation();
   const { canWrite } = useRole();
@@ -300,7 +304,7 @@ function ChatComposer({
       const sentAt = Math.floor(Date.now() / 1000);
       onSent(selectedSessionId, activeChat.id, snippet, sentAt);
     } catch (err) {
-      showErrorToast(t('chats.errors.send'), err instanceof Error ? err.message : undefined);
+      showErrorToast(t('chats.errors.send'), metaErrorText(t, err));
       updateMessage(selectedSessionId, activeChat.id, tempId, { status: 'failed' });
     } finally {
       setSending(false);
@@ -359,6 +363,25 @@ function ChatComposer({
           </div>
           <button className="btn-close-reply" onClick={() => setReplyingTo(null)}>
             <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Cloud API: free text is refused once the customer's 24-hour window has closed. */}
+      {metaCloud?.windowClosed && (
+        <div className="meta-cloud-window-banner" role="status">
+          <span>{t('metaCloud.window.closed')}</span>
+          {canWrite && (
+            <button type="button" className="meta-cloud-template-button" onClick={metaCloud.onSendTemplate}>
+              {t('metaCloud.templates.open')}
+            </button>
+          )}
+        </div>
+      )}
+      {metaCloud && !metaCloud.windowClosed && canWrite && (
+        <div className="meta-cloud-template-action">
+          <button type="button" className="meta-cloud-template-button" onClick={metaCloud.onSendTemplate}>
+            {t('metaCloud.templates.open')}
           </button>
         </div>
       )}
