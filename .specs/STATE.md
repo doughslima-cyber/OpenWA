@@ -13,9 +13,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-api
-**Where**: C1-C90 built and verified - round 2 PASS (`fffbb8e0`), `validate_verification.py` exit 0
+**Where**: C1-C90 verified (round 2 PASS, `fffbb8e0`); C91-C92 (`a9f6e003`) and the PR review decisions C93-C98 (`5c035908`, `9af46dfe`) built, not yet verified
 **In progress**: none
-**Next step**: user decides on push and PR; go-live needs a Meta app, WABA and number (plan open questions 1 and 2), then doc 32 F0 to replace documented webhook fixtures with captured ones
+**Next step**: the orchestrator re-verifies (C81 amended, C91-C98) and pushes to PR #6; go-live needs a Meta app, WABA and number (plan open questions 1 and 2), then doc 32 F0 to replace documented webhook fixtures with captured ones
 **Blockers**: none for merging; go-live waits on plan open questions 1 and 2
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
