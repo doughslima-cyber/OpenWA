@@ -92,8 +92,11 @@ O token de usuário de sistema envia mensagens em nome da empresa e dura indefin
   aplicativos.
 - O token nunca aparece em log, resposta ou exportação. `GET /api/sessions/:id/meta/account` devolve os campos
   públicos e `accessTokenLast4`. `PUT` no mesmo caminho troca só o token (rotação) sem recriar a sessão; trocar de número exige uma sessão nova.
-- O export/import de dados de `/infra` **não** leva a tabela: a documentação diz que, após restaurar um backup,
-  cada conta Cloud precisa do token de novo. É o mesmo tratamento que o `.env` recebe.
+- O export/import de dados de `/infra` leva a conta (`metaCloudAccounts`) **sem o token**: `accessTokenEnc` e
+  `accessTokenLast4` ficam fora do export e o import nunca os grava, então, após restaurar um backup, cada conta
+  Cloud volta com o token NULL e precisa dele de novo por `PUT .../meta/account` (decisão de 2026-10-12, AD-005;
+  antes a tabela inteira ficava fora, e a sessão restaurada não tinha conta para receber o token). Os contatos
+  (`meta_cloud_contacts`) ficam fora do backup.
 
 ### D3. Ciclo de vida sem QR
 

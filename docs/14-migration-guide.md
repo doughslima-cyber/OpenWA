@@ -119,7 +119,7 @@ curl -X POST 'http://localhost:2785/api/infra/import-data' \
 ```
 
 > [!IMPORTANT]
-> Post the whole exported file, as the `-d @data-backup.json` above does. The import empties all 16
+> Post the whole exported file, as the `-d @data-backup.json` above does. The import empties all 17
 > migration tables before repopulating, so a hand-built body carrying only some keys restores the rest
 > **empty**. The export also bounds the inline media it carries
 > (`EXPORT_INLINE_MEDIA_BUDGET_BYTES`, 8 MiB by default); for a byte-exact copy including media, use
@@ -186,7 +186,8 @@ curl -X POST 'http://localhost:2785/api/infra/import-data' \
     "webhookOutboxEvents": [...],
     "integrationDeliveryFailures": [...],
     "statusUpdates": [...],
-    "automationRules": [...]
+    "automationRules": [...],
+    "metaCloudAccounts": [...]
   },
   "counts": {
     "sessions": 5,
@@ -204,7 +205,8 @@ curl -X POST 'http://localhost:2785/api/infra/import-data' \
     "webhookOutboxEvents": 0,
     "integrationDeliveryFailures": 0,
     "statusUpdates": 19,
-    "automationRules": 7
+    "automationRules": 7,
+    "metaCloudAccounts": 1
   },
   "skippedTables": []
 }

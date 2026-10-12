@@ -18,7 +18,7 @@ import { DateTransformer } from '../../common/transformers/date.transformer';
  * One row per session, deleted with it. A number belongs to at most one session: the unique index
  * is what turns a second create for the same number, including two sent at once, into a 409.
  * The token is stored only encrypted (`meta-cloud-crypto.ts`) and never returned by any route;
- * the table is excluded from `/infra` backups.
+ * `/infra` backups carry the row without its token (AD-005), so a restore leaves the token NULL.
  */
 @Entity('meta_cloud_accounts')
 @Index('UQ_meta_cloud_accounts_phoneNumberId', ['phoneNumberId'], { unique: true })

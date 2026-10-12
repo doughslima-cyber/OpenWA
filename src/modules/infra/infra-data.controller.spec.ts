@@ -44,6 +44,7 @@ import { WebhookOutboxService } from '../webhook/webhook-outbox.service';
 import { IntegrationDeliveryFailure } from '../integration/entities/integration-delivery-failure.entity';
 import { StatusUpdate } from '../status-store/entities/status-update.entity';
 import { AutomationRule } from '../automation/entities/automation-rule.entity';
+import { MetaCloudAccount } from '../../engine/adapters/meta-cloud-account.entity';
 import { AuditAction } from '../audit/entities/audit-log.entity';
 import { ScopeBindingService } from '../integration/scope-binding.service';
 import { PluginInstanceService } from '../integration/plugin-instance.service';
@@ -85,6 +86,7 @@ describe('InfraDataController.importData round-trips export-data (no silent mess
         IntegrationDeliveryFailure,
         StatusUpdate,
         AutomationRule,
+        MetaCloudAccount,
       ],
       synchronize: true,
     });
@@ -1483,6 +1485,7 @@ describe('InfraDataController.import/export preserves every data-DB table', () =
         IntegrationDeliveryFailure,
         StatusUpdate,
         AutomationRule,
+        MetaCloudAccount,
       ],
       synchronize: true,
     });
@@ -1929,6 +1932,7 @@ describe('InfraDataController audit trail — import emits only on a committed r
         IntegrationDeliveryFailure,
         StatusUpdate,
         AutomationRule,
+        MetaCloudAccount,
       ],
       synchronize: true,
     });
@@ -2227,6 +2231,7 @@ describe('InfraDataController.importData status_updates + runtime reconciliation
         IntegrationDeliveryFailure,
         StatusUpdate,
         AutomationRule,
+        MetaCloudAccount,
       ],
       synchronize: true,
     });
@@ -2962,6 +2967,7 @@ describe('InfraDataController.importData re-syncs plugin instance bindings', () 
         IntegrationDeliveryFailure,
         StatusUpdate,
         AutomationRule,
+        MetaCloudAccount,
       ],
       synchronize: true,
     });

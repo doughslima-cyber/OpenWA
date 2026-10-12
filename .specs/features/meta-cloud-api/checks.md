@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/meta-cloud-api/plan.md`
 
-92 checks in 5 slices, governance, verification round 1 and PR review · 11 one-way doors · 2 open, of which 0 block building (both block go-live)
+95 checks in 5 slices, governance, verification round 1, PR review and PR review decisions · 11 one-way doors · 2 open, of which 0 block building (both block go-live)
 
 Proof commands, from `package.json` and `.github/workflows/ci.yml`:
 
@@ -292,6 +292,8 @@ Proof: `npm run check:contract-shapes` (run on an LF checkout; on a CRLF Windows
 **C81** - Both new tables are excluded from the `/infra` export with a reason, and the export registry, importers and DTO keys still agree (Impact - stored data) ✅
 Proof: `npx jest src/modules/infra/export-tables.parity.spec.ts -t "exports or explicitly excludes every data-connection entity table|gives every exclusion a one-line reason"`
 
+Note (2026-10-12): the claim of C81 was amended by the user after the PR #6 review (Landing 15, AD-005). `meta_cloud_contacts` stays excluded with a reason; `meta_cloud_accounts` is no longer excluded, it is exported without its token (C93-C95). Read the claim as: `meta_cloud_contacts` is excluded from the `/infra` export with a reason, `meta_cloud_accounts` is exported without its token, and the export registry, importers and DTO keys still agree. Its proofs are unchanged and stay green.
+
 **C82** - Both migrations are listed under "Migration Files" in `docs/05`, and the entity DDL (`engine` column, both tables, both named unique indexes) matches the migrations exactly (doors 1, 3, 5) ✅
 Proof: `npx jest src/database/migrations/__tests__/migration-drift.spec.ts -t "data connection: drift is EXACTLY the pinned set" --testPathIgnorePatterns=/node_modules/`
 Proof: `npx jest src/database/docs-schema-accuracy.spec.ts -t "lists every migration file under Migration Files"`
@@ -341,6 +343,23 @@ Proof: `npx jest src/modules/infra/table-importers.spec.ts -t "C91 "`
 **C92** - `GET .../meta/account` reports `webhookUrl` as `<BASE_URL without trailing slashes>/api/meta-webhook` when `BASE_URL` is set (`https://openmsg.example.com/` gives `https://openmsg.example.com/api/meta-webhook`), and as `<protocol>://<host>/api/meta-webhook` of the request when it is unset (MCA-03, AC 23) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C92 "`
 
+### PR review decisions
+
+Two behaviour changes the user decided on 2026-10-12 after the review of [doughslima-cyber/OpenWA#6](https://github.com/doughslima-cyber/OpenWA/pull/6): Cloud accounts go into the `/infra` backup without their token (Landing 15, AD-005, amends C81), and Meta retries the changes for a known number whose session is not live here (Landing 16, extends door 7).
+
+**C93** - The export of a database holding a Cloud account contains one `metaCloudAccounts` row with its `phoneNumberId` and `wabaId`, neither `accessTokenEnc` nor `accessTokenLast4` holds a value (absent or NULL), and no 8-character run of the token appears anywhere in the export body (Impact - stored data · Landing 15) ✅
+Proof: `npx jest src/modules/infra/meta-cloud-backup.spec.ts -t "C93 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-backup.e2e-spec.ts -t "C93 "`
+
+**C94** - Restoring that export recreates the account row with `accessTokenEnc` and `accessTokenLast4` NULL (also when a hand-edited archive carries both); then `PUT .../meta/account` with a token answers 200 and the session starts to READY against the fake Graph server (Impact - stored data · Landing 15 · MCA-03, AC 25) ✅
+Proof: `npx jest src/modules/infra/meta-cloud-backup.spec.ts -t "C94 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-backup.e2e-spec.ts -t "C94 "`
+
+**C95** - The export response's `counts` carries `metaCloudAccounts` equal to the exported rows (1 for one Cloud account), and the registry, the importers and the published DTO keys agree with `metaCloudAccounts` among them (Landing 15) ✅
+Proof: `npx jest src/modules/infra/meta-cloud-backup.spec.ts -t "C95 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-backup.e2e-spec.ts -t "C95 "`
+Proof: `npx jest src/modules/infra/export-tables.parity.spec.ts -t "exports and imports the same tables in the same FK-safe order|publishes exactly the registry keys in the export response DTOs|flags exactly the tables with an FK to sessions"`
+
 ## Coverage
 
 | Set (size)                                                                     | Member -> proof                                                                                                                                                                                                                                                         | Unproven |
@@ -378,9 +397,11 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.
 | startup config: new variables (4 places)                                       | `.env.example` C83 · `docker-compose.yml` C83 · `docker-compose.dev.yml` C83 · `BLANK_SHADOWED_ENV_KEYS` C83                                                                                                                                                            | -        |
 | token sinks named by AC 15 (3)                                                 | HTTP bodies C20 · log lines C21 · outbound `message.*` webhook payloads C87                                                                                                                                                                                             | -        |
 | send idempotency after a Cloud send failure (2)                                | Meta 4xx refusal frees the key C89 · 502 keeps it as outcome unknown C89                                                                                                                                                                                                | -        |
+| `meta_cloud_accounts` columns in the backup (2 groups)                         | the ten exported columns C93, C94 (restored) · the two token columns, absent from the export C93 and NULL after a restore C94, also from a hand-edited archive C94                                                                                                      | -        |
+| a restored Cloud session (2 steps)                                             | `PUT .../meta/account` on the NULL-token row answers 200 C94 · the session then starts to READY C94                                                                                                                                                                     | -        |
 
 - Claims naming a status code, route or response shape: C1, C4, C5, C11, C15, C16, C17, C18, C19, C20, C29, C30, C31,
-  C32, C33, C38, C40, C43, C45, C49, C50, C52, C54, C56, C57, C60, C62, C63, C64, C65, C66, C70, C76, C77, C84, C85, C87, C88, C89. Each has
+  C32, C33, C38, C40, C43, C45, C49, C50, C52, C54, C56, C57, C60, C62, C63, C64, C65, C66, C70, C76, C77, C84, C85, C87, C88, C89, C93, C94, C95. Each has
   a proof that crosses the HTTP boundary. C53 and C55 are proven at the controller with a real Nest testing
   module, because the log count and the never-settling router are not reachable from supertest.
 - C44 (17 rows) and C58 (14 rows) are decision tables proven at their own layer, each with one boundary row
@@ -434,7 +455,7 @@ signature check are proven only by the one path each e2e test happens to take.
 - authorization: C51, C52, C50 (webhook); existing - `@RequireUnscopedKey()` on create and on the account routes
   (C79 holds the fence)
 - concurrency: C19 (two creates for one number), C47 (per-number rate limiter), C65 (status order)
-- data lifecycle: C34 (logout clears the token), C35 (delete cascades), C81 (backup exclusion), C91 (restore keeps the engine)
+- data lifecycle: C34 (logout clears the token), C35 (delete cascades), C81 (backup exclusion of the contacts), C91 (restore keeps the engine), C93, C94 (the account is backed up and restored without its token), C95 (its count)
 - dependency failure: C27, C28, C46, C48
 - state transitions: C22, C25, C26, C27, C34
 - observability: C53 (secret unset, logged once), C66 (dropped change logged); metrics are doc 32 F5

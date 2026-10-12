@@ -19,6 +19,7 @@ import type {
   IntegrationDeliveryFailureRow,
   StatusUpdateRow,
   AutomationRuleRow,
+  MetaCloudAccountRow,
 } from './migration-tables.types';
 
 // A per-table restore step for importData: which backup key to read, the exact INSERT text (kept in
@@ -544,6 +545,29 @@ export const TABLE_IMPORTERS: AnyTableImporter[] = [
       rule.updatedAt,
     ],
   }),
+
+  // OpenMsg (docs/32, AD-005): Cloud API accounts (FK sessions ON DELETE CASCADE, restored above). The
+  // token columns are not in the INSERT, so a restored account holds a NULL token even when a
+  // hand-edited archive carries one; the session takes a new token through PUT .../meta/account.
+  defineTableImporter({
+    key: 'metaCloudAccounts',
+    label: 'Cloud API account',
+    sql: `INSERT INTO meta_cloud_accounts ("sessionId", "phoneNumberId", "wabaId", "displayPhoneNumber", "verifiedName", "qualityRating", "messagingLimitTier", "lastCheckedAt", "createdAt", "updatedAt")
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    id: (account: MetaCloudAccountRow) => account.sessionId,
+    map: (account: MetaCloudAccountRow) => [
+      account.sessionId,
+      account.phoneNumberId,
+      account.wabaId,
+      account.displayPhoneNumber ?? null,
+      nulFree(account.verifiedName ?? null),
+      account.qualityRating ?? null,
+      account.messagingLimitTier ?? null,
+      account.lastCheckedAt ?? null,
+      account.createdAt,
+      account.updatedAt,
+    ],
+  }),
 ];
 
 // The `as TableCounts` cast in importData means a dropped or mis-keyed descriptor is invisible to
@@ -566,6 +590,7 @@ const EXPECTED_TABLE_KEYS: ReadonlyArray<keyof MigrationTables> = [
   'integrationDeliveryFailures',
   'statusUpdates',
   'automationRules',
+  'metaCloudAccounts',
 ];
 const importerKeys = TABLE_IMPORTERS.map(importer => importer.key);
 for (const key of EXPECTED_TABLE_KEYS) {

@@ -202,9 +202,10 @@ No painel da Meta, o webhook do app aponta para `https://openmsg.devsrun.com/api
 - Campanhas são recusadas numa sessão Cloud (400 `CAMPAIGN_ENGINE_UNSUPPORTED`) até a F4 trazer os modelos da Meta.
   Grupos, etiquetas, canais, status e o que mais a coluna Cloud API do [docs/29](docs/29-engine-capability-matrix.md)
   marca com ❌ respondem 501.
-- O token nunca vai para o backup de `/infra`. Depois de restaurar um backup, ou de trocar a
-  `META_CLOUD_ENCRYPTION_KEY`, informe o token de novo com `PUT /api/sessions/<sessionId>/meta/account` e
-  reinicie a sessão. A mesma rota troca um token vencido.
+- O backup de `/infra` leva a conta Cloud de cada sessão (número, WABA, dados do perfil), mas nunca o token: depois
+  de restaurar, a conta volta sem token e a sessão não inicia. Informe o token de novo com
+  `PUT /api/sessions/<sessionId>/meta/account` e inicie a sessão; faça o mesmo depois de trocar a
+  `META_CLOUD_ENCRYPTION_KEY`. A mesma rota troca um token vencido.
 
 ## Implantação
 

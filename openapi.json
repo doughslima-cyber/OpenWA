@@ -24009,6 +24009,12 @@
             "items": {
               "type": "object"
             }
+          },
+          "metaCloudAccounts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
@@ -24027,7 +24033,8 @@
           "webhookOutboxEvents",
           "integrationDeliveryFailures",
           "statusUpdates",
-          "automationRules"
+          "automationRules",
+          "metaCloudAccounts"
         ]
       },
       "TableCountsDto": {
@@ -24096,6 +24103,10 @@
           "automationRules": {
             "type": "number",
             "example": 2
+          },
+          "metaCloudAccounts": {
+            "type": "number",
+            "example": 1
           }
         },
         "required": [
@@ -24114,7 +24125,8 @@
           "webhookOutboxEvents",
           "integrationDeliveryFailures",
           "statusUpdates",
-          "automationRules"
+          "automationRules",
+          "metaCloudAccounts"
         ]
       },
       "OmittedInlineMediaDto": {
@@ -24191,7 +24203,7 @@
         "properties": {
           "tables": {
             "type": "object",
-            "description": "Every one of the 16 migration tables is emptied before the restore runs, so a key omitted here is restored EMPTY rather than left untouched. Post the whole GET /api/infra/export-data payload, not a hand-built subset.",
+            "description": "Every one of the 17 migration tables is emptied before the restore runs, so a key omitted here is restored EMPTY rather than left untouched. Post the whole GET /api/infra/export-data payload, not a hand-built subset.",
             "properties": {
               "sessions": {
                 "type": "array"
@@ -24239,6 +24251,9 @@
                 "type": "array"
               },
               "automationRules": {
+                "type": "array"
+              },
+              "metaCloudAccounts": {
                 "type": "array"
               }
             }
