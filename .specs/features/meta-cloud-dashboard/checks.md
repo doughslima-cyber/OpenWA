@@ -128,25 +128,25 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spe
 **C34** - A template send on a Cloud session that is not started answers 409; bodies missing `chatId`, `name` and `language` (3 cases), and one whose `parameters` is a number, each answer 400; a NULL-engine session answers 501 (MCT-02, AC 30 · Surface) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C34 "`
 
-**C35** - The picker requests the templates route once on open and lists only the `APPROVED` templates (a `PENDING` and a `REJECTED` one are absent), each with name, language and category, ordered by name then language; **Refresh** requests it again with `refresh=true` (MCT-03, AC 31)
+**C35** - The picker requests the templates route once on open and lists only the `APPROVED` templates (a `PENDING` and a `REJECTED` one are absent), each with name, language and category, ordered by name then language; **Refresh** requests it again with `refresh=true` (MCT-03, AC 31) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C35 " src/components/chats/TemplatePicker.test.ts`
 
-**C36** - Selecting a positional template with body `Olá {{1}}, seu pedido {{2}} saiu` shows two inputs labelled `{{1}}` and `{{2}}`; a named template `Oi {{first_name}}` shows one input labelled `{{first_name}}`; typing `Ana` and `42` makes the preview read `Olá Ana, seu pedido 42 saiu` (MCT-03, AC 32)
+**C36** - Selecting a positional template with body `Olá {{1}}, seu pedido {{2}} saiu` shows two inputs labelled `{{1}}` and `{{2}}`; a named template `Oi {{first_name}}` shows one input labelled `{{first_name}}`; typing `Ana` and `42` makes the preview read `Olá Ana, seu pedido 42 saiu` (MCT-03, AC 32) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C36 " src/components/chats/TemplatePicker.test.ts`
 
-**C37** - A template with a `HEADER` of format `IMAGE`, one with a `HEADER` text holding `{{1}}`, and one with a `BUTTONS` component whose URL holds `{{1}}` (3 cases) are listed with the catalog's "not sendable from the dashboard" text and **Send** disabled (MCT-03, AC 33)
+**C37** - A template with a `HEADER` of format `IMAGE`, one with a `HEADER` text holding `{{1}}`, and one with a `BUTTONS` component whose URL holds `{{1}}` (3 cases) are listed with the catalog's "not sendable from the dashboard" text and **Send** disabled (MCT-03, AC 33) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C37 " src/components/chats/TemplatePicker.test.ts`
 
-**C38** - With one of two placeholder inputs empty, **Send** is disabled and clicking it sends nothing (MCT-03, AC 34)
+**C38** - With one of two placeholder inputs empty, **Send** is disabled and clicking it sends nothing (MCT-03, AC 34) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C38 " src/components/chats/TemplatePicker.test.ts`
 
-**C39** - **Send** posts `.../meta/send-template` with `{ chatId, name, language, parameters: ["Ana", "42"] }` for a positional template and `{ ..., parameters: { first_name: "Ana" } }` for a named one, then closes the picker; a template with no placeholders posts no `parameters` key (MCT-03, AC 35 · door 2)
+**C39** - **Send** posts `.../meta/send-template` with `{ chatId, name, language, parameters: ["Ana", "42"] }` for a positional template and `{ ..., parameters: { first_name: "Ana" } }` for a named one, then closes the picker; a template with no placeholders posts no `parameters` key (MCT-03, AC 35 · door 2) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C39 " src/components/chats/TemplatePicker.test.ts`
 
 **C40** - After a picker send in Chats, the thread refetches and shows the sent message's text (MCT-03, AC 35)
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C40 " src/pages/Chats.metaCloud.test.ts`
 
-**C41** - With no `APPROVED` template the picker shows the catalog's empty state naming WhatsApp Manager; with the list failing (502) it shows the error text and **Refresh** (MCT-03, AC 36 · Observable)
+**C41** - With no `APPROVED` template the picker shows the catalog's empty state naming WhatsApp Manager; with the list failing (502) it shows the error text and **Refresh** (MCT-03, AC 36 · Observable) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C41 " src/components/chats/TemplatePicker.test.ts`
 
 ### S4 - Campaigns page on a Cloud session · 3 files · ~40 KB · ~10k

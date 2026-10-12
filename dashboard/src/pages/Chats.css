@@ -1663,3 +1663,153 @@
   color: var(--text-muted);
   margin-top: 0.375rem;
 }
+
+/* OpenMsg (docs/32 F3): the Cloud API service-window banner and the approved-template picker. */
+.chats-page .meta-cloud-window-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--border);
+  border-left: 3px solid var(--warning);
+  background: var(--bg-light);
+  color: var(--warning-text);
+  font-size: 0.85rem;
+}
+
+.chats-page .meta-cloud-template-action {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.25rem 1rem 0;
+}
+
+.chats-page .meta-cloud-template-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chats-page .meta-cloud-template-button:hover {
+  background: var(--primary);
+  color: var(--bg-white);
+}
+
+.chats-page .template-picker {
+  max-width: 760px;
+}
+
+.chats-page .template-picker-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chats-page .template-picker-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  color: var(--text-secondary);
+}
+
+.chats-page .template-picker-error {
+  color: var(--error-text);
+}
+
+.chats-page .template-picker-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 2fr;
+  gap: 1rem;
+}
+
+.chats-page .template-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.chats-page .template-picker-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: baseline;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-white);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.chats-page .template-picker-item.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.chats-page .template-picker-name {
+  font-weight: 600;
+}
+
+.chats-page .template-picker-language,
+.chats-page .template-picker-category {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.chats-page .template-picker-unsendable {
+  flex-basis: 100%;
+  color: var(--warning-text);
+  font-size: 0.75rem;
+}
+
+.chats-page .template-picker-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.chats-page .template-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chats-page .template-picker-field label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.chats-page .template-picker-preview {
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  background: var(--bg-light);
+  white-space: pre-wrap;
+}
+
+.chats-page .template-picker-preview p {
+  margin: 0.25rem 0 0;
+}
+
+.chats-page .template-picker-preview-label {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .chats-page .template-picker-layout {
+    grid-template-columns: 1fr;
+  }
+}
