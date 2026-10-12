@@ -188,8 +188,16 @@ carries its own self-test (`:38`), and its section lookup fails when the heading
 
 ## User walk
 
-Pending. This is user-facing UI and the human walk was not run by the Verifier. The orchestrator should walk these
-5 flows with the user:
+Done 2026-10-12 by the orchestrator with the user, on a local stack at `07c3740c` (API with
+`META_CLOUD_ENABLED=true` and `ENGINE_TYPE=baileys`, dashboard dev server, a fake Graph server seeded with five
+templates, inbound messages delivered as a signed Meta webhook: Ana 2 days ago, window closed; Bruno 1 hour ago,
+window open). **All 5 flows: pass, as reported by the user.** No finding to log. The fake Graph recorded the
+template sends in the documented shapes: `hello_world` with no `components` to Ana, and `welcome_back` with
+`{ type: "body", parameters: [{ type: "text", parameter_name: "first_name", text: "Bruno" }] }` to Bruno. Before
+Start, the webhook for the known number answered 503 and stored nothing; after Start it answered 200 and stored
+both messages (Landing row 16 of the F1 + F2 plan, seen live).
+
+The flows walked:
 
 1. Create a Cloud session: **New session** -> "Official Meta API" -> fill Phone Number ID, WABA ID, token -> Create
    -> Start. Expected: no QR, the "Official API" badge on the card.

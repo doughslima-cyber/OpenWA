@@ -15,7 +15,7 @@
 **Feature**: meta-cloud-dashboard
 **Where**: C1-C56 verified - round 2 PASS (`874f238c`), `validate_verification.py` exit 0
 **In progress**: none
-**Next step**: human walk of the 5 flows in verification.md, then push and open the PR
+**Next step**: push and open the PR (human walk passed 2026-10-12)
 **Blockers**: none for merging; go-live waits on a Meta app, WABA, number and an approved template
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-dashboard
