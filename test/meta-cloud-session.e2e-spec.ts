@@ -164,16 +164,32 @@ describe('Meta Cloud API sessions (e2e)', () => {
     },
   );
 
-  // The Cloud session C11 creates; C14, C20, C23 and C29-C33 work on it.
-  let createdId = '';
-  let createBody = '';
+  // The Cloud session C11 creates and C23 starts; C14, C18, C20 and C29-C33 work on it. Created (and
+  // started) on first use, so each check's proof also runs on its own with `-t`.
+  let created: { id: string; body: string } | undefined;
+  let started = false;
+  const cloudSession = async (): Promise<{ id: string; body: string }> => {
+    if (!created) {
+      const res = await createCloud(`e2e-cloud-c11-${Date.now()}`, credentials(PHONE_NUMBER_ID));
+      expect(res.status).toBe(201);
+      created = { id: (res.body as { id: string }).id, body: JSON.stringify(res.body) };
+    }
+    return created;
+  };
+  const startedCloudSession = async (): Promise<string> => {
+    const { id } = await cloudSession();
+    if (!started) {
+      await http().post(`/api/sessions/${id}/start`).set('X-API-Key', operatorKey).expect(200);
+      await sessionWhen(id, s => s.status === 'ready');
+      started = true;
+    }
+    return id;
+  };
 
   it('C11 POST /api/sessions with engine meta-cloud and complete metaCloud answers 201 and writes both rows', async () => {
-    const res = await createCloud(`e2e-cloud-c11-${Date.now()}`, credentials(PHONE_NUMBER_ID)).expect(201);
-    createBody = JSON.stringify(res.body);
-    createdId = (res.body as { id: string }).id;
+    const { id: createdId, body } = await cloudSession();
 
-    expect((res.body as { engine: string }).engine).toBe('meta-cloud');
+    expect((JSON.parse(body) as { engine: string }).engine).toBe('meta-cloud');
     expect(await sessions.countBy({ id: createdId })).toBe(1);
     const rows = await accounts.findBy({ sessionId: createdId });
     expect(rows).toHaveLength(1);
@@ -181,6 +197,7 @@ describe('Meta Cloud API sessions (e2e)', () => {
   });
 
   it('C14 stores the C11 token encrypted: it differs from the token and decrypts to it with the key', async () => {
+    const { id: createdId } = await cloudSession();
     const row = await accounts.findOneByOrFail({ sessionId: createdId });
 
     expect(row.accessTokenEnc).not.toBe(TOKEN);
@@ -209,6 +226,7 @@ describe('Meta Cloud API sessions (e2e)', () => {
   );
 
   it('C18 a second create for a bound phoneNumberId answers 409 META_PHONE_NUMBER_IN_USE and adds no session', async () => {
+    await cloudSession();
     const before = await sessions.count();
 
     const res = await createCloud(`e2e-cloud-c18-${Date.now()}`, credentials(PHONE_NUMBER_ID)).expect(409);
@@ -233,7 +251,7 @@ describe('Meta Cloud API sessions (e2e)', () => {
   });
 
   it('C23 starting the C11 session moves it to READY with the phone digits and the verified name', async () => {
-    await http().post(`/api/sessions/${createdId}/start`).set('X-API-Key', operatorKey).expect(200);
+    const createdId = await startedCloudSession();
 
     const session = await sessionWhen(createdId, s => s.status === 'ready');
 
@@ -241,6 +259,7 @@ describe('Meta Cloud API sessions (e2e)', () => {
   });
 
   it('C29 POST /api/sessions/:id/pairing-code on a meta-cloud session answers 501', async () => {
+    const { id: createdId } = await cloudSession();
     await http()
       .post(`/api/sessions/${createdId}/pairing-code`)
       .set('X-API-Key', operatorKey)
@@ -249,6 +268,7 @@ describe('Meta Cloud API sessions (e2e)', () => {
   });
 
   it('C30 GET .../meta/account answers 200 with exactly the public keys, the token last 4 and the webhook URL', async () => {
+    const createdId = await startedCloudSession();
     const res = await get(`/api/sessions/${createdId}/meta/account`).expect(200);
     const body = res.body as Record<string, unknown>;
 
@@ -293,6 +313,7 @@ describe('Meta Cloud API sessions (e2e)', () => {
     ['an empty accessToken', { accessToken: '' }],
     ['an extra phoneNumberId', { accessToken: ROTATED, phoneNumberId: '200000000000033' }],
   ])('C33 PUT .../meta/account with %s answers 400 and leaves the stored token unchanged', async (_l, body) => {
+    const { id: createdId } = await cloudSession();
     const before = (await accounts.findOneByOrFail({ sessionId: createdId })).accessTokenEnc;
 
     await http().put(`/api/sessions/${createdId}/meta/account`).set('X-API-Key', operatorKey).send(body).expect(400);
@@ -301,6 +322,7 @@ describe('Meta Cloud API sessions (e2e)', () => {
   });
 
   it('C20 no response body carries the token or any 8-character run of it', async () => {
+    const { id: createdId, body: createBody } = await cloudSession();
     const bodies = [
       createBody,
       JSON.stringify((await get('/api/sessions').expect(200)).body),
@@ -322,6 +344,7 @@ describe('Meta Cloud API sessions (e2e)', () => {
   });
 
   it("C32 PUT .../meta/account with a new token answers its last 4, and the session's next Graph call sends it", async () => {
+    const createdId = await startedCloudSession();
     const res = await http()
       .put(`/api/sessions/${createdId}/meta/account`)
       .set('X-API-Key', operatorKey)
