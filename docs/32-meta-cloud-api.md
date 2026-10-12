@@ -1,6 +1,7 @@
 # 32 - API oficial da Meta (WhatsApp Cloud API): plano de adoção
 
-> **Status:** proposta (OpenMsg). Nada deste documento está implementado. Ele descreve como o OpenMsg passa a
+> **Status:** F1 e F2 implementadas no ramo `claude/tlc-spec-lean-meta-cloud-api-5902e1` (OpenMsg); F3, F4 e F5
+> continuam propostas. O documento descreve como o OpenMsg passa a
 > aceitar, lado a lado com as sessões de dispositivo vinculado (Baileys e whatsapp-web.js), sessões ligadas à
 > **WhatsApp Business Platform / Cloud API**, a API oficial da Meta. O documento é em português porque é parte
 > do fork; os documentos do projeto original continuam em inglês.
