@@ -43,6 +43,37 @@ describe('Meta Cloud API accounts in the /infra backup (e2e)', () => {
   const NEW_TOKEN = 'EAAGm0PX4ZCpsBAJ7ZBZCkQZDZD-e2e-after-restore-9d41';
   const PHONE_NUMBER_ID = '106540352249393';
   const WABA_ID = '102290129349393';
+  // The columns the account row gets after its create, each distinctive and non-null, so every one of
+  // the ten exported columns (export-tables.ts) is compared in the export and after the restore.
+  const SEEDED_AFTER_CREATE = {
+    displayPhoneNumber: '+55 11 98888-0393',
+    verifiedName: 'Acme Backup',
+    qualityRating: 'YELLOW',
+    messagingLimitTier: 'TIER_10K',
+    lastCheckedAt: new Date('2026-03-04T05:06:07.890Z'),
+    createdAt: new Date('2025-01-02T03:04:05.000Z'),
+    updatedAt: new Date('2025-06-07T08:09:10.000Z'),
+  };
+  const seededRow = (id: string): Record<string, unknown> => ({
+    sessionId: id,
+    phoneNumberId: PHONE_NUMBER_ID,
+    wabaId: WABA_ID,
+    ...SEEDED_AFTER_CREATE,
+  });
+  const DATE_COLUMNS = new Set(['lastCheckedAt', 'createdAt', 'updatedAt']);
+  /** The ten exported columns of `row`, dates as ISO instants (SQLite stores UTC text without a zone). */
+  const exportedColumnsOf = (row: Record<string, unknown>): Record<string, unknown> =>
+    Object.fromEntries(
+      Object.keys(seededRow('')).map(column => {
+        const value = row[column];
+        if (!DATE_COLUMNS.has(column) || value === undefined || value === null) return [column, value];
+        if (value instanceof Date) return [column, value.toISOString()];
+        if (typeof value !== 'string') return [column, value];
+        const text = value;
+        const zoned = /(Z|[+-]dd:?dd)$/.test(text) ? text : `${text.replace(' ', 'T')}Z`;
+        return [column, new Date(zoned).toISOString()];
+      }),
+    );
 
   beforeAll(async () => {
     graph = await startFakeGraph();
@@ -104,6 +135,8 @@ describe('Meta Cloud API accounts in the /infra backup (e2e)', () => {
       })
       .expect(201);
     sessionId = (created.body as { id: string }).id;
+    // The session is never started before the export, so Graph never fills these: seed them directly.
+    await accounts.update({ sessionId }, SEEDED_AFTER_CREATE);
     return sessionId;
   };
 
@@ -122,6 +155,7 @@ describe('Meta Cloud API accounts in the /infra backup (e2e)', () => {
     expect(row?.accessTokenEnc ?? null).toBeNull();
     expect(row?.accessTokenLast4 ?? null).toBeNull();
     expect(tokenRunsIn(res.text, TOKEN)).toEqual([]);
+    expect(exportedColumnsOf(row ?? {})).toEqual(exportedColumnsOf(seededRow(id)));
   });
 
   it('C95 the export counts carry metaCloudAccounts equal to the exported account rows', async () => {
@@ -149,6 +183,10 @@ describe('Meta Cloud API accounts in the /infra backup (e2e)', () => {
       accessTokenEnc: null,
       accessTokenLast4: null,
     });
+    const restoredRow = await accounts.findOneByOrFail({ sessionId: id });
+    expect(exportedColumnsOf(restoredRow as unknown as Record<string, unknown>)).toEqual(
+      exportedColumnsOf(seededRow(id)),
+    );
 
     const put = await http()
       .put(`/api/sessions/${id}/meta/account`)

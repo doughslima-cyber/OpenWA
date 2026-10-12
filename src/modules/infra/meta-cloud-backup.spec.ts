@@ -34,6 +34,34 @@ describe('meta_cloud_accounts in the /infra backup', () => {
   const SESSION_ID = 'cloud-backup-1';
   const key = randomBytes(32);
   const cfg = { get: (k: string, def?: unknown) => (k === 'dataDatabase.type' ? 'sqlite' : def) };
+  // Every column the export lists (export-tables.ts), each with a distinctive non-null value, so a
+  // column dropped from the export or from the importer turns the comparison red.
+  const SEEDED = {
+    sessionId: SESSION_ID,
+    phoneNumberId: PHONE_NUMBER_ID,
+    wabaId: WABA_ID,
+    displayPhoneNumber: '+55 11 99999-0000',
+    verifiedName: 'Acme',
+    qualityRating: 'YELLOW',
+    messagingLimitTier: 'TIER_10K',
+    lastCheckedAt: new Date('2026-03-04T05:06:07.890Z'),
+    createdAt: new Date('2025-01-02T03:04:05.000Z'),
+    updatedAt: new Date('2025-06-07T08:09:10.000Z'),
+  };
+  const DATE_COLUMNS = new Set(['lastCheckedAt', 'createdAt', 'updatedAt']);
+  /** The ten exported columns of `row`, dates as ISO instants (SQLite stores UTC text without a zone). */
+  const exportedColumnsOf = (row: Record<string, unknown>): Record<string, unknown> =>
+    Object.fromEntries(
+      Object.keys(SEEDED).map(column => {
+        const value = row[column];
+        if (!DATE_COLUMNS.has(column) || value === undefined || value === null) return [column, value];
+        if (value instanceof Date) return [column, value.toISOString()];
+        if (typeof value !== 'string') return [column, value];
+        const text = value;
+        const zoned = /(Z|[+-]dd:?dd)$/.test(text) ? text : `${text.replace(' ', 'T')}Z`;
+        return [column, new Date(zoned).toISOString()];
+      }),
+    );
 
   let ds: DataSource;
   let service: InfraDataService;
@@ -78,13 +106,9 @@ describe('meta_cloud_accounts in the /infra backup', () => {
       }),
     );
     await ds.getRepository(MetaCloudAccount).insert({
-      sessionId: SESSION_ID,
-      phoneNumberId: PHONE_NUMBER_ID,
-      wabaId: WABA_ID,
+      ...SEEDED,
       accessTokenEnc: encryptMetaToken(TOKEN, key),
       accessTokenLast4: TOKEN.slice(-4),
-      displayPhoneNumber: '+55 11 99999-0000',
-      verifiedName: 'Acme',
     });
   });
 
@@ -115,6 +139,14 @@ describe('meta_cloud_accounts in the /infra backup', () => {
     expect(tokenRunsIn(JSON.stringify(dump))).toEqual([]);
   });
 
+  it('C93 the exported row carries each of the ten exported columns with its seeded value', async () => {
+    const dump = await service.exportData();
+
+    const rows = accountRows(dump.tables);
+    expect(rows).toHaveLength(1);
+    expect(exportedColumnsOf(rows[0])).toEqual(exportedColumnsOf(SEEDED));
+  });
+
   it('C94 restoring the export recreates the account row with a NULL token', async () => {
     const dump = await service.exportData();
 
@@ -131,6 +163,19 @@ describe('meta_cloud_accounts in the /infra backup', () => {
       accessTokenLast4: null,
     });
     expect((await ds.getRepository(Session).findOneByOrFail({ id: SESSION_ID })).engine).toBe('meta-cloud');
+  });
+
+  it('C94 the restored row holds each of the ten exported columns with its seeded value', async () => {
+    const dump = await service.exportData();
+    await ds.getRepository(MetaCloudAccount).clear();
+
+    const res = await service.importData({ tables: dump.tables });
+
+    expect(res.imported).toBe(true);
+    const restored = await ds.getRepository(MetaCloudAccount).findOneByOrFail({ sessionId: SESSION_ID });
+    expect(exportedColumnsOf(restored as unknown as Record<string, unknown>)).toEqual(exportedColumnsOf(SEEDED));
+    expect(restored.accessTokenEnc).toBeNull();
+    expect(restored.accessTokenLast4).toBeNull();
   });
 
   it('C94 a hand-edited archive carrying both token columns still restores them as NULL', async () => {
