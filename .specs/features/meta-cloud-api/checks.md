@@ -58,44 +58,44 @@ Proof: `npx jest src/engine/engine.factory.spec.ts -t "C10 "`
 
 ### S2 - Connect a Cloud session · 18 files · ~260 KB · ~65k
 
-**C11** - `POST /api/sessions` with `engine: "meta-cloud"` and a complete `metaCloud` answers 201 with `engine: "meta-cloud"`; one `sessions` row and one `meta_cloud_accounts` row exist with the given `phoneNumberId` and `wabaId` (MCA-01, AC 9)
+**C11** - `POST /api/sessions` with `engine: "meta-cloud"` and a complete `metaCloud` answers 201 with `engine: "meta-cloud"`; one `sessions` row and one `meta_cloud_accounts` row exist with the given `phoneNumberId` and `wabaId` (MCA-01, AC 9) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C11 "`
 
-**C12** - When the account insert throws inside the create, no `sessions` row is left behind (MCA-01, AC 9)
+**C12** - When the account insert throws inside the create, no `sessions` row is left behind (MCA-01, AC 9) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-account.service.spec.ts -t "C12 "`
 
 **C13** - The cipher writes `v1.<iv>.<tag>.<ciphertext>` (four dot-separated parts, base64url, 12-byte IV, 16-byte tag), never equal to and never containing the plaintext; it decrypts back to the plaintext; changing one byte of the tag, IV or ciphertext throws; decrypting with another 32-byte key throws (MCA-01, AC 10 · door 4) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-crypto.spec.ts -t "C13 "`
 
-**C14** - The stored `accessTokenEnc` of the C11 row differs from the submitted token and decrypts to it with the suite's key (MCA-01, AC 10)
+**C14** - The stored `accessTokenEnc` of the C11 row differs from the submitted token and decrypts to it with the suite's key (MCA-01, AC 10) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C14 "`
 
-**C15** - With `META_CLOUD_ENCRYPTION_KEY` unset, non-base64, decoding to 31 bytes, and decoding to 33 bytes, the create answers 400 with `code: "META_CLOUD_NOT_CONFIGURED"` and no row is written (MCA-01, AC 11)
+**C15** - With `META_CLOUD_ENCRYPTION_KEY` unset, non-base64, decoding to 31 bytes, and decoding to 33 bytes, the create answers 400 with `code: "META_CLOUD_NOT_CONFIGURED"` and no row is written (MCA-01, AC 11) ✅
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-account.service.spec.ts -t "C15 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C15 "`
 
-**C16** - With `engine: "meta-cloud"`, the cases `metaCloud` missing, `phoneNumberId: ""`, `wabaId: ""` and `accessToken: ""` each answer 400 and write no row (MCA-01, AC 12)
+**C16** - With `engine: "meta-cloud"`, the cases `metaCloud` missing, `phoneNumberId: ""`, `wabaId: ""` and `accessToken: ""` each answer 400 and write no row (MCA-01, AC 12) ✅
 Proof: `npx jest src/modules/session/dto/create-session.dto.spec.ts -t "C16 "`
 
-**C17** - `metaCloud` present with no `engine` answers 400 and writes no row (MCA-01, AC 13)
+**C17** - `metaCloud` present with no `engine` answers 400 and writes no row (MCA-01, AC 13) ✅
 Proof: `npx jest src/modules/session/dto/create-session.dto.spec.ts -t "C17 "`
 
-**C18** - A second create with a `phoneNumberId` already bound answers 409 with `code: "META_PHONE_NUMBER_IN_USE"` and the `sessions` count is unchanged (MCA-01, AC 14 · door 3)
+**C18** - A second create with a `phoneNumberId` already bound answers 409 with `code: "META_PHONE_NUMBER_IN_USE"` and the `sessions` count is unchanged (MCA-01, AC 14 · door 3) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C18 "`
 
-**C19** - Two creates for the same `phoneNumberId` sent at once end with exactly one 201 and one 409 `META_PHONE_NUMBER_IN_USE`, and exactly one `meta_cloud_accounts` row (MCA-01, AC 14 · door 3)
+**C19** - Two creates for the same `phoneNumberId` sent at once end with exactly one 201 and one 409 `META_PHONE_NUMBER_IN_USE`, and exactly one `meta_cloud_accounts` row (MCA-01, AC 14 · door 3) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C19 "`
 
-**C20** - Across the bodies of create, `GET /api/sessions`, `GET /api/sessions/:id`, `GET /api/sessions/:id/config`, `GET` and `PUT .../meta/account`, no body contains the token or any 8-character substring of it (MCA-01, AC 15)
+**C20** - Across the bodies of create, `GET /api/sessions`, `GET /api/sessions/:id`, `GET /api/sessions/:id/config`, `GET` and `PUT .../meta/account`, no body contains the token or any 8-character substring of it (MCA-01, AC 15) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C20 "`
 
-**C21** - When Graph answers 401 with code `190` and an error body that echoes the request, and when it times out, every logger call made by the Graph client and the account service carries no 8-character substring of the token (MCA-01, AC 15)
+**C21** - When Graph answers 401 with code `190` and an error body that echoes the request, and when it times out, every logger call made by the Graph client and the account service carries no 8-character substring of the token (MCA-01, AC 15) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C21 "`
 
 **C22** - `initialize()` against a Graph that answers `GET /<PHONE_NUMBER_ID>` with `display_phone_number: "+55 11 99999-0000"` and `verified_name: "Acme"` calls `POST /<WABA_ID>/subscribed_apps` once, then `onReady("5511999990000", "Acme")` (MCA-02, AC 16) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C22 "`
 
-**C23** - Starting the C11 session moves it to `READY` with `phone: "5511999990000"` and `pushName: "Acme"` (MCA-02, AC 16)
+**C23** - Starting the C11 session moves it to `READY` with `phone: "5511999990000"` and `pushName: "Acme"` (MCA-02, AC 16) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C23 "`
 
 **C24** - During `initialize()` the adapter never calls `onQRCode` and never reports `EngineStatus.QR_READY`, and `getQRCode()` resolves `null` (MCA-02, AC 17) ✅
@@ -107,32 +107,32 @@ Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C25 "`
 **C26** - With no stored token, `initialize()` calls `onActionRequired("META_TOKEN_MISSING")`, reports `ACTION_REQUIRED`, and the fake Graph records zero requests (MCA-02, AC 19) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C26 "`
 
-**C27** - When Graph refuses the connection, and when it answers 500, `initialize()` rejects with an `EngineTransportError` and never calls `onReady`; through the API the session ends in a status other than `READY` with `lastError` set (MCA-02, AC 20)
+**C27** - When Graph refuses the connection, and when it answers 500, `initialize()` rejects with an `EngineTransportError` and never calls `onReady`; through the API the session ends in a status other than `READY` with `lastError` set (MCA-02, AC 20) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C27 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C27 "`
 
 **C28** - `probeLiveness()` returns `true` for a 200 and `false` for a refused connection, a 500 and a 503 (MCA-02, AC 21) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C28 "`
 
-**C29** - `POST /api/sessions/:id/pairing-code` on a `meta-cloud` session answers 501 (MCA-02, AC 22)
+**C29** - `POST /api/sessions/:id/pairing-code` on a `meta-cloud` session answers 501 (MCA-02, AC 22) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C29 "`
 
-**C30** - `GET /api/sessions/:id/meta/account` answers 200 with exactly the keys `phoneNumberId`, `wabaId`, `displayPhoneNumber`, `verifiedName`, `qualityRating`, `messagingLimitTier`, `accessTokenLast4`, `webhookUrl`; `accessTokenLast4` equals the token's last 4 characters, and `webhookUrl` ends with `/api/meta-webhook` (MCA-03, AC 23)
+**C30** - `GET /api/sessions/:id/meta/account` answers 200 with exactly the keys `phoneNumberId`, `wabaId`, `displayPhoneNumber`, `verifiedName`, `qualityRating`, `messagingLimitTier`, `accessTokenLast4`, `webhookUrl`; `accessTokenLast4` equals the token's last 4 characters, and `webhookUrl` ends with `/api/meta-webhook` (MCA-03, AC 23) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C30 "`
 
-**C31** - `GET` and `PUT /api/sessions/:id/meta/account` on a session whose `engine` is NULL answer 501, and on an unknown session id answer 404 (MCA-03, AC 24)
+**C31** - `GET` and `PUT /api/sessions/:id/meta/account` on a session whose `engine` is NULL answer 501, and on an unknown session id answer 404 (MCA-03, AC 24) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C31 "`
 
-**C32** - `PUT .../meta/account` with a new `accessToken` answers 200 with the new `accessTokenLast4`, and the session's next Graph request, recorded by the fake server, carries `Authorization: Bearer <new token>` (MCA-03, AC 25)
+**C32** - `PUT .../meta/account` with a new `accessToken` answers 200 with the new `accessTokenLast4`, and the session's next Graph request, recorded by the fake server, carries `Authorization: Bearer <new token>` (MCA-03, AC 25) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C32 "`
 
-**C33** - `PUT .../meta/account` with no `accessToken`, with an empty one, and with an extra `phoneNumberId` key each answers 400 and leaves the stored token unchanged (MCA-03, Surface)
+**C33** - `PUT .../meta/account` with no `accessToken`, with an empty one, and with an extra `phoneNumberId` key each answers 400 and leaves the stored token unchanged (MCA-03, Surface) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C33 "`
 
 **C34** - `logout()` sets the account's `accessTokenEnc` to NULL and reports `EngineStatus.DISCONNECTED` (MCA-03, AC 26) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C34 "`
 
-**C35** - `DELETE /api/sessions/:id` on a `meta-cloud` session with one contact row leaves zero `meta_cloud_accounts` and zero `meta_cloud_contacts` rows for that id (MCA-03, AC 27 · doors 3, 5)
+**C35** - `DELETE /api/sessions/:id` on a `meta-cloud` session with one contact row leaves zero `meta_cloud_accounts` and zero `meta_cloud_contacts` rows for that id (MCA-03, AC 27 · doors 3, 5) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C35 "`
 
 **C36** - `AddMetaCloudTables` creates `meta_cloud_accounts` (PK `sessionId`, FK to `sessions(id)` `ON DELETE CASCADE`, unique index `UQ_meta_cloud_accounts_phoneNumberId`) and `meta_cloud_contacts` (FK `ON DELETE CASCADE`, unique index `UQ_meta_cloud_contacts_sessionId_waId`); `down` drops both (doors 3, 5) ✅

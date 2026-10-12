@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsDefined,
   IsIn,
   IsObject,
   IsOptional,
@@ -10,6 +11,7 @@ import {
   MaxLength,
   MinLength,
   Validate,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { META_CLOUD_ENGINE } from '../../../engine/session-engine';
@@ -102,15 +104,19 @@ export class CreateSessionDto {
       'META_CLOUD_DISABLED otherwise).',
     enum: [META_CLOUD_ENGINE],
   })
-  @IsOptional()
+  // Validated whenever it is sent, and also when `metaCloud` is: credentials need a Cloud session.
+  @ValidateIf((o: CreateSessionDto) => o.engine != null || o.metaCloud != null)
   @IsIn([META_CLOUD_ENGINE])
   engine?: typeof META_CLOUD_ENGINE;
 
   @ApiPropertyOptional({
     type: () => MetaCloudCredentialsDto,
-    description: 'The Cloud API number of a `meta-cloud` session.',
+    description:
+      'The Cloud API number of a `meta-cloud` session: required with `engine: "meta-cloud"`, refused without it.',
   })
-  @IsOptional()
+  // Required for a Cloud session: one created without its number could never start.
+  @ValidateIf((o: CreateSessionDto) => o.engine === META_CLOUD_ENGINE || o.metaCloud != null)
+  @IsDefined()
   @ValidateNested()
   @Type(() => MetaCloudCredentialsDto)
   metaCloud?: MetaCloudCredentialsDto;

@@ -549,12 +549,14 @@ Create a new WhatsApp session.
 
 **Request body** — `CreateSessionDto`
 
-| Field       | Type                                      | Required | Constraints                                                                                                                                                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------- | ----------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`      | string                                    | Yes      | `@IsString`; length 3–50; `@Matches(/^[a-zA-Z0-9-]+$/)` (letters, numbers, hyphens only)                                                                                      | Unique session name; duplicate → `409`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `config`    | object                                    | No       | `@IsOptional`; `@IsObject`; `autoRejectCalls`, `maxReconnectAttempts` and `reconnectBaseDelay` validated as on `PATCH /config` (400 naming the key); other keys not validated | Session settings. Only `autoRejectCalls` (boolean, Baileys only), `maxReconnectAttempts` (integer 0-20, default unlimited) and `reconnectBaseDelay` (ms, integer 1000-300000, default 5000) are read; other keys are stored but ignored. Change them later with `PATCH /api/sessions/:sessionId/config`. Defaults to `{}`; never returned in responses                                                                                                                     |
-| `proxyUrl`  | string                                    | No       | `@IsOptional`; `@IsString`; max 255; `@IsUrl` (protocols `http`/`https`/`socks4`/`socks5`, `require_protocol`, `require_tld:false`, `allow_underscores`)                      | Per-session proxy egress; credentialed `http://user:pass@host` and single-label hosts allowed; trusted egress, not SSRF-blocked; setting it requires an ADMIN key (`403` otherwise). ⚠ **Must be a real, reachable proxy** — an unreachable value silently blocks the WhatsApp WebSocket (no QR; on whatsapp-web.js the start answers `504`, on Baileys it succeeds and the session keeps retrying); leave unset unless you need it. See "Per-session egress proxy" below. |
-| `proxyType` | `http` \| `https` \| `socks4` \| `socks5` | No       | `@IsOptional`; `@IsIn([...])`                                                                                                                                                 | Deprecated and ignored: the `proxyUrl` scheme selects the proxy protocol                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Field       | Type                                      | Required                    | Constraints                                                                                                                                                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------- | ----------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`      | string                                    | Yes                         | `@IsString`; length 3–50; `@Matches(/^[a-zA-Z0-9-]+$/)` (letters, numbers, hyphens only)                                                                                      | Unique session name; duplicate → `409`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `config`    | object                                    | No                          | `@IsOptional`; `@IsObject`; `autoRejectCalls`, `maxReconnectAttempts` and `reconnectBaseDelay` validated as on `PATCH /config` (400 naming the key); other keys not validated | Session settings. Only `autoRejectCalls` (boolean, Baileys only), `maxReconnectAttempts` (integer 0-20, default unlimited) and `reconnectBaseDelay` (ms, integer 1000-300000, default 5000) are read; other keys are stored but ignored. Change them later with `PATCH /api/sessions/:sessionId/config`. Defaults to `{}`; never returned in responses                                                                                                                     |
+| `proxyUrl`  | string                                    | No                          | `@IsOptional`; `@IsString`; max 255; `@IsUrl` (protocols `http`/`https`/`socks4`/`socks5`, `require_protocol`, `require_tld:false`, `allow_underscores`)                      | Per-session proxy egress; credentialed `http://user:pass@host` and single-label hosts allowed; trusted egress, not SSRF-blocked; setting it requires an ADMIN key (`403` otherwise). ⚠ **Must be a real, reachable proxy** — an unreachable value silently blocks the WhatsApp WebSocket (no QR; on whatsapp-web.js the start answers `504`, on Baileys it succeeds and the session keeps retrying); leave unset unless you need it. See "Per-session egress proxy" below. |
+| `proxyType` | `http` \| `https` \| `socks4` \| `socks5` | No                          | `@IsOptional`; `@IsIn([...])`                                                                                                                                                 | Deprecated and ignored: the `proxyUrl` scheme selects the proxy protocol                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `engine`    | `meta-cloud`                              | No                          | `@IsIn(['meta-cloud'])`, case-sensitive; required when `metaCloud` is sent                                                                                                    | OpenMsg: omit for a QR session on the deployment's `ENGINE_TYPE`. `meta-cloud` binds the session to a WhatsApp Cloud API number (docs/32) and needs `META_CLOUD_ENABLED=true`                                                                                                                                                                                                                                                                                              |
+| `metaCloud` | object                                    | With `engine: "meta-cloud"` | `phoneNumberId` and `wabaId` non-empty strings up to 64 characters; `accessToken` a non-empty string up to 2048; refused without `engine: "meta-cloud"`                       | OpenMsg: the Cloud API number. The token is stored encrypted under `META_CLOUD_ENCRYPTION_KEY` and never returned; read the account with `GET /api/sessions/:sessionId/meta/account`                                                                                                                                                                                                                                                                                       |
 
 ```json
 {
@@ -627,7 +629,9 @@ whichever proxy they go through.
 
 Like every other session route, this returns the `SessionResponseDto` shape (via `fromEntity`), so `config`, `proxyUrl` and `proxyType` are stripped and `lastActiveAt` appears as `lastActive`. Newly created `status` is `created`. Masked proxy details come only from `GET /api/sessions/{sessionId}/proxy`.
 
-**Errors:** `400` validation (bad `name`/`proxyUrl`/`proxyType`, or an extra non-whitelisted field) · `401` · `403` key lacks OPERATOR role, `proxyUrl` set by a key below ADMIN, or the key is restricted to specific sessions · `409` session name already exists
+A `meta-cloud` session is written together with its Cloud API account, in one transaction: either both rows exist or neither does. It has no QR and no pairing code; `POST /start` reads the number from Graph and moves it to `ready`.
+
+**Errors:** `400` validation (bad `name`/`proxyUrl`/`proxyType`/`engine`/`metaCloud`, or an extra non-whitelisted field), `META_CLOUD_DISABLED` (`META_CLOUD_ENABLED` is not `true`) or `META_CLOUD_NOT_CONFIGURED` (`META_CLOUD_ENCRYPTION_KEY` is unset or not 32 bytes in base64) · `401` · `403` key lacks OPERATOR role, `proxyUrl` set by a key below ADMIN, or the key is restricted to specific sessions · `409` session name already exists, or `META_PHONE_NUMBER_IN_USE`: the `phoneNumberId` is already bound to another session
 
 #### POST /api/sessions/:sessionId/start
 
@@ -849,7 +853,7 @@ Request an 8-char pairing code to link via phone number (alternative to QR).
 
 `status` is the lowercase session status.
 
-**Errors:** `400` validation, or session not started, or already authenticated · `401` · `403` · `404` not found · `409` session not waiting to be linked yet; wait for `status` to read `qr_ready` and retry (after a code was accepted, wait for `ready` instead). On Baileys a session that already reads `qr_ready` can still answer `409` while its socket is closing, for up to the WebSocket close timeout (30 s); that is retryable and the status follows shortly. · `503` whatsapp-web.js only: the gateway stopped waiting after its attempt budget, usually because WhatsApp Web kept reloading its QR page; retryable, and the last attempt's reason rides in the message. An attempt that timed out may still have reached WhatsApp, and a retry starts the linking flow again, so the unlink warning above applies to the retry too.
+**Errors:** `400` validation, or session not started, or already authenticated · `401` · `403` · `404` not found · `409` session not waiting to be linked yet; wait for `status` to read `qr_ready` and retry (after a code was accepted, wait for `ready` instead). On Baileys a session that already reads `qr_ready` can still answer `409` while its socket is closing, for up to the WebSocket close timeout (30 s); that is retryable and the status follows shortly. · `501` the session is a WhatsApp Cloud API (`meta-cloud`) session, which links no device · `503` whatsapp-web.js only: the gateway stopped waiting after its attempt budget, usually because WhatsApp Web kept reloading its QR page; retryable, and the last attempt's reason rides in the message. An attempt that timed out may still have reached WhatsApp, and a retry starts the linking flow again, so the unlink warning above applies to the retry too.
 
 #### POST /api/sessions/:sessionId/presence/subscribe
 
@@ -7300,6 +7304,53 @@ Cancel a running campaign. Every `pending` recipient becomes `cancelled` and no 
 ```
 
 **Errors:** `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted with `allowedChats` · `404` no such campaign in this session · `409` `CAMPAIGN_NOT_RUNNING`: the campaign is already completed or cancelled
+
+### 6.4.19 WhatsApp Cloud API account (OpenMsg)
+
+The Cloud API number behind a `meta-cloud` session (`MetaCloudAccountController`, `@Controller('sessions/:sessionId/meta')`; an OpenMsg fork resource, not exposed in the SDKs: rotating a token is an operator action). The access token is never returned, only its last 4 characters. Both routes refuse a key restricted to specific sessions (`@RequireUnscopedKey`), like `POST /api/sessions`.
+
+#### GET /api/sessions/:sessionId/meta/account
+
+The session's Cloud API number, without its token.
+
+**Auth:** API key (any role) that is not restricted to specific sessions
+
+**Response** `200`
+
+```json
+{
+  "phoneNumberId": "106540352242922",
+  "wabaId": "102290129340398",
+  "displayPhoneNumber": "+55 11 99999-0000",
+  "verifiedName": "Acme",
+  "qualityRating": "GREEN",
+  "messagingLimitTier": "TIER_1K",
+  "accessTokenLast4": "x9Zq",
+  "webhookUrl": "https://openmsg.example.com/api/meta-webhook"
+}
+```
+
+`displayPhoneNumber`, `verifiedName`, `qualityRating` and `messagingLimitTier` are what Graph reported at the session's last start, `null` before the first. `accessTokenLast4` is `null` after a logout cleared the token. `webhookUrl` is the callback to register in the Meta app, built from the host this request reached.
+
+**Errors:** `400` the session id is not a UUID · `401` missing/invalid key · `403` the key is restricted to specific sessions · `404` no session with this id, or it has no Cloud API account · `501` the session is not a `meta-cloud` session
+
+#### PUT /api/sessions/:sessionId/meta/account
+
+Replace the session's access token. Only `accessToken` can change: another number means a new session.
+
+**Auth:** API key (OPERATOR) that is not restricted to specific sessions
+
+**Request body**
+
+| Field       | Type   | Required | Description                                                    |
+| ----------- | ------ | -------- | -------------------------------------------------------------- |
+| accessToken | string | yes      | The new system-user token, not empty, at most 2048 characters. |
+
+**Response** `200` — the same body as `GET`, with the new `accessTokenLast4`.
+
+The session's next Graph call sends the new token. A session in `action_required` because Meta refused the old token needs `POST /stop` and `POST /start` to return to `ready`.
+
+**Errors:** `400` validation (missing or empty `accessToken`, or any other field) or `META_CLOUD_NOT_CONFIGURED` · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted to specific sessions · `404` no session with this id, or it has no Cloud API account · `501` the session is not a `meta-cloud` session
 
 ## 6.5 Real-time API (WebSocket)
 
