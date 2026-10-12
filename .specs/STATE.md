@@ -13,9 +13,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-dashboard
-**Where**: C1-C56 verified - round 2 PASS (`874f238c`), `validate_verification.py` exit 0
+**Where**: C1-C57 verified - round 4 PASS (`07c99271`), human walk passed 2026-10-12, `validate_verification.py` exit 0
 **In progress**: none
-**Next step**: push and open the PR (human walk passed 2026-10-12)
+**Next step**: PR against main; CI runs by hand on this fork (`gh workflow run ci.yml` / `sdk-ci.yml --ref <branch>`)
 **Blockers**: none for merging; go-live waits on a Meta app, WABA, number and an approved template
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-dashboard
