@@ -178,17 +178,17 @@ answer 501.
 
 ## Traceability
 
-| ID     | Slice | Criteria                                       | Status       |
-| ------ | ----- | ---------------------------------------------- | ------------ |
-| ENG-01 | S1    | 1, 2, 3, 4, 5, 6, 7, 8                         | Implementing |
-| MCA-01 | S2    | 9, 10, 11, 12, 13, 14, 15                      | Implementing |
-| MCA-02 | S2    | 16, 17, 18, 19, 20, 21, 22                     | Implementing |
-| MCA-03 | S2    | 23, 24, 25, 26, 27                             | Implementing |
-| MCS-01 | S3    | 28, 29, 30, 31, 32                             | Implementing |
-| MCS-02 | S3    | 33, 34, 35, 36                                 | Implementing |
-| MCW-01 | S4    | 37, 38, 39, 40, 41, 42                         | Implementing |
-| MCW-02 | S4    | 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54 | Implementing |
-| MCR-01 | S5    | 55, 56, 57, 58, 59, 60, 61, 62                 | Implementing |
+| ID     | Slice | Criteria                                       | Status   |
+| ------ | ----- | ---------------------------------------------- | -------- |
+| ENG-01 | S1    | 1, 2, 3, 4, 5, 6, 7, 8                         | Verified |
+| MCA-01 | S2    | 9, 10, 11, 12, 13, 14, 15                      | Verified |
+| MCA-02 | S2    | 16, 17, 18, 19, 20, 21, 22                     | Verified |
+| MCA-03 | S2    | 23, 24, 25, 26, 27                             | Verified |
+| MCS-01 | S3    | 28, 29, 30, 31, 32                             | Verified |
+| MCS-02 | S3    | 33, 34, 35, 36                                 | Verified |
+| MCW-01 | S4    | 37, 38, 39, 40, 41, 42                         | Verified |
+| MCW-02 | S4    | 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54 | Verified |
+| MCR-01 | S5    | 55, 56, 57, 58, 59, 60, 61, 62                 | Verified |
 
 ## Observable
 

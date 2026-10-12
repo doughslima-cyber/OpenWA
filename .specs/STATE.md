@@ -12,9 +12,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-api
-**Where**: S1-S5 and governance built - C1-C83 closed and committed (S5 and governance: `d3ff0df3`, `e6d5ba6b`, `f2b8b0e4`, `63526302`, `e31be1eb`)
+**Where**: C1-C90 built and verified - round 2 PASS (`fffbb8e0`), `validate_verification.py` exit 0
 **In progress**: none
-**Next step**: orchestrator dispatches the Verifier over all 83 checks of `.specs/features/meta-cloud-api/checks.md`
-**Blockers**: none for verifying; go-live waits on plan open questions 1 and 2. C69 says `kind: "direct"`, which `ChatKind` does not have; the build returns `individual` (see checks.md Handoff) and the wording needs the user's decision
+**Next step**: user decides on push and PR; go-live needs a Meta app, WABA and number (plan open questions 1 and 2), then doc 32 F0 to replace documented webhook fixtures with captured ones
+**Blockers**: none for merging; go-live waits on plan open questions 1 and 2
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
