@@ -265,8 +265,9 @@ class SessionResponse(TypedDict):
     # predates the field omits it, so read it with .get("engineLoaded") against one.
     engineLoaded: bool
     # The engine this session runs: 'meta-cloud' for a WhatsApp Cloud API session, otherwise the
-    # deployment engine ('whatsapp-web.js' or 'baileys'). Absent from a gateway that predates it.
-    engine: NotRequired[str]
+    # deployment engine ('whatsapp-web.js' or 'baileys'). Always sent by current gateways; a gateway
+    # that predates the field omits it, so read it with .get("engine") against one.
+    engine: str
 
 
 class SessionProxy(TypedDict):

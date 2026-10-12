@@ -284,7 +284,7 @@ Proof: `npm run openapi:export && git diff --exit-code openapi.json`
 **C80** - SDK coverage and routes pass with `meta` and `meta-webhook` in the "Deliberately not exposed" list of `sdk/README.md` and `docs/18`; the `engine` field on the session shape is in each SDK's hand-written types (Surface, door 8) ✅
 Proof: `npm run check:sdk-routes`
 Proof: `npm run check:sdk-coverage`
-Proof: `npm run check:contract-shapes` (fails on Windows with or without this change, per `AGENTS.md`; settled on Ubuntu CI or against a stashed-tree baseline)
+Proof: `npm run check:contract-shapes` (run on an LF checkout; on a CRLF Windows checkout the Python SDK pairs fail regardless)
 
 **C81** - Both new tables are excluded from the `/infra` export with a reason, and the export registry, importers and DTO keys still agree (Impact - stored data) ✅
 Proof: `npx jest src/modules/infra/export-tables.parity.spec.ts -t "exports or explicitly excludes every data-connection entity table|gives every exclusion a one-line reason"`
