@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/meta-cloud-api/plan.md`
 
-83 checks in 5 slices plus governance · 11 one-way doors · 2 open, of which 0 block building (both block go-live)
+90 checks in 5 slices, governance and verification round 1 · 11 one-way doors · 2 open, of which 0 block building (both block go-live)
 
 Proof commands, from `package.json` and `.github/workflows/ci.yml`:
 
@@ -76,9 +76,11 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.
 
 **C16** - With `engine: "meta-cloud"`, the cases `metaCloud` missing, `phoneNumberId: ""`, `wabaId: ""` and `accessToken: ""` each answer 400 and write no row (MCA-01, AC 12) ✅
 Proof: `npx jest src/modules/session/dto/create-session.dto.spec.ts -t "C16 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C16 "`
 
 **C17** - `metaCloud` present with no `engine` answers 400 and writes no row (MCA-01, AC 13) ✅
 Proof: `npx jest src/modules/session/dto/create-session.dto.spec.ts -t "C17 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C17 "`
 
 **C18** - A second create with a `phoneNumberId` already bound answers 409 with `code: "META_PHONE_NUMBER_IN_USE"` and the `sessions` count is unchanged (MCA-01, AC 14 · door 3) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C18 "`
@@ -122,6 +124,7 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.
 
 **C31** - `GET` and `PUT /api/sessions/:id/meta/account` on a session whose `engine` is NULL answer 501, and on an unknown session id answer 404 (MCA-03, AC 24) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C31 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-account.service.spec.ts -t "C31 "`
 
 **C32** - `PUT .../meta/account` with a new `accessToken` answers 200 with the new `accessTokenLast4`, and the session's next Graph request, recorded by the fake server, carries `Authorization: Bearer <new token>` (MCA-03, AC 25) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C32 "`
@@ -297,41 +300,75 @@ Proof: `npx jest src/database/docs-schema-accuracy.spec.ts -t "lists every migra
 Proof: `npx jest src/config/docs-env-example.spec.ts -t "lists every key the validator, the precedence list or compose knows about" --testPathIgnorePatterns=/node_modules/`
 Proof: `npx jest src/config/env-precedence.spec.ts -t "C83 "`
 
+### Verification round 1 additions
+
+Added after the round-1 Verifier report (`verification.md`, ranked gaps 3-7 and its note on the idempotency
+interceptor). Each proves a member the Coverage recount found unproven; C90 names the test that already proved the sixth
+`META_CLOUD_ENABLED` reader, so the Coverage join can cite it.
+
+**C84** - `PUT /api/sessions/:id/meta/account` on a `meta-cloud` session with `META_CLOUD_ENCRYPTION_KEY` unset answers 400 with `code: "META_CLOUD_NOT_CONFIGURED"` and leaves the stored token unchanged (MCA-03, AC 25) ✅
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-account.service.spec.ts -t "C84 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C84 "`
+
+**C85** - `GET` and `PUT /api/sessions/:id/meta/account` on a `meta-cloud` session whose `meta_cloud_accounts` row is missing (as after an `/infra` restore, which excludes the table) each answer 404 (MCA-03, AC 23, 24 · Impact - stored data) ✅
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-account.service.spec.ts -t "C85 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C85 "`
+
+**C86** - An inbound message whose `type` is not one of the 14 mapped types (`ephemeral`, `system`; 2 cases) maps to type `unknown` from `<wa_id>@c.us`, with `metadata.reason` naming the unhandled type (MCW-02, AC 47) ✅
+Proof: `npx jest src/engine/adapters/meta-cloud-inbound.mapper.spec.ts -t "C86 "`
+
+**C87** - No `message.*` webhook payload dispatched for a Cloud session's send and receive (`message.sent`, `message.received`, `message.ack`, `message.failed`) contains the access token or any 8-character substring of it (MCA-01, AC 15) ✅
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C87 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C87 "`
+
+**C88** - `GET` and `PUT /api/sessions/:id/meta/account` with a session id that is not a UUID each answer 400 (Surface) ✅
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C88 "`
+
+**C89** - After a Meta 4xx refusal (`131047`, 409) of a Cloud `send-text` sent with an `Idempotency-Key`, a retry with the same key is admitted and answers 201; after a 502 `META_UPSTREAM_ERROR` (Graph 500), a retry with the same key answers 409 `IDEMPOTENCY_OUTCOME_UNKNOWN` (MCS-02, AD-004) ✅
+Proof: `npx jest src/modules/message/idempotency/send-idempotency.interceptor.spec.ts -t "C89 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C89 "`
+
+**C90** - With `META_CLOUD_ENABLED` unset and `ENGINE_TYPE=baileys`, `EngineFactory.create` for a `meta-cloud` row throws an error naming `META_CLOUD_ENABLED`, and neither the `meta-cloud` nor the Baileys plugin's `createEngine` is called (ENG-01, AC 6) ✅
+Proof: `npx jest src/engine/engine.factory.spec.ts -t "C90 "`
+
 ## Coverage
 
-| Set (size)                                                                | Member -> proof                                                                                                                                                                       | Unproven |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `POST /api/sessions` statuses (3)                                         | 201 C11 · 400 C4, C5, C15, C16, C17 · 409 C18, C19                                                                                                                                    | -        |
-| `GET /api/sessions`, `GET /api/sessions/:id` statuses (2)                 | 200 C1 · 404 C31 (unknown id, existing lookup)                                                                                                                                        | -        |
-| `GET /api/sessions/:id/meta/account` statuses (3)                         | 200 C30 · 404 C31 · 501 C31                                                                                                                                                           | -        |
-| `PUT /api/sessions/:id/meta/account` statuses (4)                         | 200 C32 · 400 C33 · 404 C31 · 501 C31                                                                                                                                                 | -        |
-| `GET /api/meta-webhook` statuses (3)                                      | 200 C49 · 403 C50 · 404 C54                                                                                                                                                           | -        |
-| `POST /api/meta-webhook` statuses (4)                                     | 200 C55, C56, C57 · 401 C52 · 404 C54 · 503 C53                                                                                                                                       | -        |
-| `/api/sessions/:id/messages/send-*` statuses added for Cloud sessions (6) | 400 C44 · 409 C44, C45 · 429 C44, C46 · 501 C75 · 502 C44 · 503 C48                                                                                                                   | -        |
-| `POST /api/sessions/:id/campaigns` status added (1)                       | 400 C77                                                                                                                                                                               | -        |
-| Meta error table (17 cases)                                               | C44, table-driven over all 17; boundary row 131047 C45                                                                                                                                | -        |
-| `engine` request values (5)                                               | `meta-cloud` C11 · `baileys` C4 · `whatsapp-web.js` C4 · `META-CLOUD` C4 · `""` C4                                                                                                    | -        |
-| `metaCloud` field presence (4)                                            | missing C16 · `phoneNumberId` empty C16 · `wabaId` empty C16 · `accessToken` empty C16                                                                                                | -        |
-| encryption key shapes (5)                                                 | valid C11 · unset C15 · non-base64 C15 · 31 bytes C15 · 33 bytes C15                                                                                                                  | -        |
-| token-invalid Graph codes x entry point (6)                               | `190` start C25 · `10` start C25 · `200` start C25 · `190` probe C25 · `10` probe C25 · `200` probe C25                                                                               | -        |
-| `probeLiveness` outcomes (5)                                              | 200 C28 · refused C28 · 500 C28 · 503 C28 · 190 C25                                                                                                                                   | -        |
-| session states a Cloud session enters (4)                                 | `READY` C22, C23 · `ACTION_REQUIRED` C25, C26 · `DISCONNECTED` C34 · not `READY` on start failure C27                                                                                 | -        |
-| outbound kinds (11)                                                       | text C37 · image C39, C40 · video C39 · audio C39 · PTT C39 · document C39 · sticker C39 · location C41 · contacts C41 · reply C41 · reaction C41                                     | -        |
-| inbound message types (14)                                                | C58, table-driven over all 14 fixtures                                                                                                                                                | -        |
-| inbound status values (4)                                                 | C61, table-driven; boundary `delivered` C62 · `failed` C63 · `read` C65                                                                                                               | -        |
-| webhook signature outcomes (6)                                            | valid C51 · no header C51, C52 · no prefix C51 · other secret C51, C52 · re-serialized body C51 · length mismatch C51                                                                 | -        |
-| verify-handshake outcomes (4)                                             | match C49 · other mode C50 · wrong token C50 · token unset C50                                                                                                                        | -        |
-| webhook change routing (3)                                                | live session C57 · unknown `phone_number_id` C66 · non-`messages` field C67                                                                                                           | -        |
-| read-side methods served from the store (5)                               | `getChats` C69, C70 · `getChatHistory` C71 · `getContactById` C72 · `sendSeen` C73 · `sendChatState` C74                                                                              | -        |
-| not-available methods of the `cloud` column (1 table)                     | C75, one `it.each` over the whole column, its size asserted equal to the matrix's count                                                                                               | -        |
-| Landing doors (11)                                                        | 1 C8, C82 · 2 C3, C9, C75 · 3 C18, C19, C35, C36 · 4 C13, C14 · 5 C36, C68 · 6 C49, C56, C79 · 7 C52, C53, C54, C66 · 8 C1, C11, C80 · 9 C44, C79 · 10 C37, C57, C58 · 11 C6, C7, C10 | -        |
-| Relations entities (3)                                                    | `Session.engine` C8 · `MetaCloudAccount` C36, C35 · `MetaCloudContact` C36, C68                                                                                                       | -        |
-| startup config: `META_CLOUD_ENABLED` read at boot (2 places)              | factory `onModuleInit` C6 · webhook/create gate C5, C54                                                                                                                               | -        |
-| startup config: raw request body (1 shared assembly)                      | `configureApp`, used by `main.ts:156` and by the webhook e2e suite, C52, C57                                                                                                          | -        |
-| startup config: new variables (4 places)                                  | `.env.example` C83 · `docker-compose.yml` C83 · `docker-compose.dev.yml` C83 · `BLANK_SHADOWED_ENV_KEYS` C83                                                                          | -        |
+| Set (size)                                                                     | Member -> proof                                                                                                                                                                                                                                                         | Unproven |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `POST /api/sessions` statuses (3)                                              | 201 C11 · 400 C4, C5, C15, C16, C17 (each at HTTP) · 409 C18, C19                                                                                                                                                                                                       | -        |
+| `GET /api/sessions`, `GET /api/sessions/:id` statuses this feature changes (1) | 200 with `engine` C1; the 404 for an unknown id is existing and unchanged (`session.service.spec.ts:1023`)                                                                                                                                                              | -        |
+| `GET /api/sessions/:id/meta/account` statuses (5)                              | 200 C30 · 400 non-UUID id C88 · 403 fence C79 · 404 unknown session C31, no account row C85 · 501 C31                                                                                                                                                                   | -        |
+| `PUT /api/sessions/:id/meta/account` statuses (5)                              | 200 C32 · 400 DTO C33, `META_CLOUD_NOT_CONFIGURED` C84, non-UUID id C88 · 403 fence C79 (and the existing operator-role guard) · 404 unknown session C31, no account row C85 · 501 C31                                                                                  | -        |
+| `GET /api/meta-webhook` statuses (3)                                           | 200 C49 · 403 C50 · 404 C54                                                                                                                                                                                                                                             | -        |
+| `POST /api/meta-webhook` statuses (4)                                          | 200 C55, C56, C57 · 401 C52 · 404 C54 · 503 C53                                                                                                                                                                                                                         | -        |
+| `/api/sessions/:id/messages/send-*` statuses added for Cloud sessions (6)      | 400 C44 · 409 C44, C45 · 429 C44, C46 · 501 C75 · 502 C44 · 503 C48                                                                                                                                                                                                     | -        |
+| `POST /api/sessions/:id/campaigns` status added (1)                            | 400 C77                                                                                                                                                                                                                                                                 | -        |
+| Meta error table (17 cases)                                                    | C44, table-driven over all 17; boundary row 131047 C45                                                                                                                                                                                                                  | -        |
+| `engine` request values (5)                                                    | `meta-cloud` C11 · `baileys` C4 · `whatsapp-web.js` C4 · `META-CLOUD` C4 · `""` C4                                                                                                                                                                                      | -        |
+| `metaCloud` field presence (4)                                                 | missing C16 · `phoneNumberId` empty C16 · `wabaId` empty C16 · `accessToken` empty C16 (pipe and HTTP); `metaCloud` without `engine` C17                                                                                                                                | -        |
+| encryption key shapes (5)                                                      | valid C11 · unset C15 · non-base64 C15 · 31 bytes C15 · 33 bytes C15                                                                                                                                                                                                    | -        |
+| token-invalid Graph codes x entry point (6)                                    | `190` start C25 · `10` start C25 · `200` start C25 · `190` probe C25 · `10` probe C25 · `200` probe C25                                                                                                                                                                 | -        |
+| `probeLiveness` outcomes (5)                                                   | 200 C28 · refused C28 · 500 C28 · 503 C28 · 190 C25                                                                                                                                                                                                                     | -        |
+| session states a Cloud session enters (4)                                      | `READY` C22, C23 · `ACTION_REQUIRED` C25, C26 · `DISCONNECTED` C34 · not `READY` on start failure C27                                                                                                                                                                   | -        |
+| outbound kinds (11)                                                            | text C37 · image C39, C40 · video C39 · audio C39 · PTT C39 · document C39 · sticker C39 · location C41 · contacts C41 · reply C41 · reaction C41                                                                                                                       | -        |
+| inbound message types (14)                                                     | C58, table-driven over all 14 fixtures                                                                                                                                                                                                                                  | -        |
+| inbound message types outside the 14 (1)                                       | any other type (the `default:` branch) C86                                                                                                                                                                                                                              | -        |
+| inbound status values (4)                                                      | C61, table-driven; boundary `delivered` C62 · `failed` C63 · `read` C65                                                                                                                                                                                                 | -        |
+| webhook signature outcomes (6)                                                 | valid C51 · no header C51, C52 · no prefix C51 · other secret C51, C52 · re-serialized body C51 · length mismatch C51                                                                                                                                                   | -        |
+| verify-handshake outcomes (4)                                                  | match C49 · other mode C50 · wrong token C50 · token unset C50                                                                                                                                                                                                          | -        |
+| webhook change routing (3)                                                     | live session C57 · unknown `phone_number_id` C66 · non-`messages` field C67                                                                                                                                                                                             | -        |
+| read-side methods served from the store (5)                                    | `getChats` C69, C70 · `getChatHistory` C71 · `getContactById` C72 · `sendSeen` C73 · `sendChatState` C74                                                                                                                                                                | -        |
+| not-available methods of the `cloud` column (1 table)                          | C75, one `it.each` over the whole column, its size asserted equal to the matrix's count                                                                                                                                                                                 | -        |
+| Landing doors (11)                                                             | 1 C8, C82 · 2 C3, C9, C75 · 3 C18, C19, C35, C36 · 4 C13, C14 · 5 C36, C68 · 6 C49, C56, C79 · 7 C52, C53, C54, C66 · 8 C1, C11, C80 · 9 C44, C79 · 10 C37, C57, C58 · 11 C6, C7, C10                                                                                   | -        |
+| Relations entities (3)                                                         | `Session.engine` C8 · `MetaCloudAccount` C36, C35 · `MetaCloudContact` C36, C68                                                                                                                                                                                         | -        |
+| startup config: `META_CLOUD_ENABLED` readers (6 places)                        | `engine.factory.ts:119` (`onModuleInit`) C6 · `engine.factory.ts:155` (refuses to start a Cloud row while off) C90 · `plugin-lifecycle.ts:70` C6 (real loader) · `plugins.service.ts:186` C7 · `session.service.ts:346` C5 · `meta-cloud-webhook.controller.ts:125` C54 | -        |
+| startup config: raw request body (1 shared assembly)                           | `configureApp`, used by `main.ts:156` and by the webhook e2e suite, C52, C57                                                                                                                                                                                            | -        |
+| startup config: new variables (4 places)                                       | `.env.example` C83 · `docker-compose.yml` C83 · `docker-compose.dev.yml` C83 · `BLANK_SHADOWED_ENV_KEYS` C83                                                                                                                                                            | -        |
+| token sinks named by AC 15 (3)                                                 | HTTP bodies C20 · log lines C21 · outbound `message.*` webhook payloads C87                                                                                                                                                                                             | -        |
+| send idempotency after a Cloud send failure (2)                                | Meta 4xx refusal frees the key C89 · 502 keeps it as outcome unknown C89                                                                                                                                                                                                | -        |
 
-- Claims naming a status code, route or response shape: C1, C4, C5, C11, C15, C18, C19, C20, C29, C30, C31,
-  C32, C33, C38, C40, C43, C45, C49, C50, C52, C54, C56, C57, C60, C62, C63, C64, C65, C66, C70, C76, C77. Each has
+- Claims naming a status code, route or response shape: C1, C4, C5, C11, C15, C16, C17, C18, C19, C20, C29, C30, C31,
+  C32, C33, C38, C40, C43, C45, C49, C50, C52, C54, C56, C57, C60, C62, C63, C64, C65, C66, C70, C76, C77, C84, C85, C87, C88, C89. Each has
   a proof that crosses the HTTP boundary. C53 and C55 are proven at the controller with a real Nest testing
   module, because the log count and the never-settling router are not reachable from supertest.
 - C44 (17 rows) and C58 (14 rows) are decision tables proven at their own layer, each with one boundary row
@@ -363,6 +400,10 @@ Evidence (planned files, classified by the shape the plan fixes):
   boundary proof except C70
 - `meta-cloud-crypto.ts`: format and tamper detection -> decides (C13)
 - `meta-cloud-adapter.ts` send bodies: one payload shape per kind, 11 kinds -> decides (C37, C39, C41)
+- `meta-cloud-account.service.ts` (classified in verification round 1): decides 404 (unknown session; a `meta-cloud`
+  session with no account row), 501 (not a `meta-cloud` session), 400 `META_CLOUD_NOT_CONFIGURED` (create and
+  rotate) and 409 (number bound) -> decides, reached across a boundary. Own layer, `meta-cloud-account.service.spec.ts`:
+  404/501 C31, no-account 404 C85, 400 on create C15 and on rotate C84, 409 C12; at HTTP: C31, C85, C15, C84, C18, C19
 - the account controller's GET: maps a row onto a DTO, no conditional -> instrumentation (proven through C30)
 - closest analogues in the repo: `src/engine/adapters/baileys-message-mapper.spec.ts` (`it.each` over message
   types, 91 cases) and `src/modules/integration/ingress-signature.spec.ts` (signature outcomes at their own layer,
@@ -375,8 +416,9 @@ signature check are proven only by the one path each e2e test happens to take.
 
 - validation: C4, C15, C16, C17, C33, C51
 - failure modes: C12, C27, C48, C55
-- idempotency: C64, C65; a 4xx/501 send releases its idempotency key and a 502/503 is kept as unknown (existing -
-  `send-idempotency.interceptor.ts:31`, which the 4xx/429/502/503 statuses of C44 and C48 were chosen to fit)
+- idempotency: C64, C65; C89 - a Meta 4xx refusal frees the send's idempotency key and a 502 keeps it as unknown
+  (this branch added the `EngineRejectedSendError` case to `send-idempotency.interceptor.ts:34`; the 4xx/429/502/503
+  statuses of C44 and C48 were chosen to fit it)
 - authorization: C51, C52, C50 (webhook); existing - `@RequireUnscopedKey()` on create and on the account routes
   (C79 holds the fence)
 - concurrency: C19 (two creates for one number), C47 (per-number rate limiter), C65 (status order)

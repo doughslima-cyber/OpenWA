@@ -194,4 +194,53 @@ describe('Meta Cloud API sends (e2e)', () => {
     expect(res.body).toMatchObject({ code: 'META_OUTSIDE_SERVICE_WINDOW', metaCode: 131047 });
     expect(res.body).toHaveProperty('fbtraceId', 'AZx9fbtraceQ1');
   });
+
+  /** Every 8-character run of `token` found in `text`. */
+  const tokenRunsIn = (text: string, token: string): string[] => {
+    const found: string[] = [];
+    for (let i = 0; i + 8 <= token.length; i++) {
+      if (text.includes(token.slice(i, i + 8))) found.push(token.slice(i, i + 8));
+    }
+    return found;
+  };
+
+  it('C87 no message.* webhook payload dispatched for a Cloud send carries the token or an 8-character run of it', async () => {
+    const id = await readyCloudSession();
+    const res = await send(id, 'send-text', { chatId: CHAT, text: 'no secrets here' }).expect(201);
+    const wamid = (res.body as { messageId: string }).messageId;
+    await eventually(() => sentDispatchesFor(wamid).length > 0);
+
+    const payloads = (dispatch.mock.calls as unknown[][]).filter(
+      ([sid, event]) => sid === id && String(event).startsWith('message.'),
+    );
+    expect(sentDispatchesFor(wamid)).toHaveLength(1);
+    for (const [, event, data] of payloads) {
+      expect({ event, runs: tokenRunsIn(JSON.stringify(data), TOKEN) }).toEqual({ event, runs: [] });
+    }
+  });
+
+  it('C89 after a Meta 4xx refusal the same Idempotency-Key is admitted again; after a 502 it is IDEMPOTENCY_OUTCOME_UNKNOWN', async () => {
+    const id = await readyCloudSession();
+    const failMessagesWith = (status: number, code: number) => {
+      graph.script = r =>
+        r.path.split('?')[0].endsWith('/messages') ? graphError(status, code, 'Graph refused') : sendingGraph(r);
+    };
+    const sendWithKey = (key: string, text: string) =>
+      send(id, 'send-text', { chatId: CHAT, text }).set('Idempotency-Key', key);
+
+    const refusedKey = `c89-refused-${Date.now()}`;
+    failMessagesWith(400, 131047);
+    await sendWithKey(refusedKey, 'refused by Meta').expect(409);
+    graph.script = sendingGraph;
+    const retried = await sendWithKey(refusedKey, 'refused by Meta').expect(201);
+    expect((retried.body as { messageId: string }).messageId).toMatch(/^wamid\./);
+
+    const upstreamKey = `c89-upstream-${Date.now()}`;
+    failMessagesWith(500, 2);
+    const upstream = await sendWithKey(upstreamKey, 'unknown outcome').expect(502);
+    expect((upstream.body as { code?: string }).code).toBe('META_UPSTREAM_ERROR');
+    graph.script = sendingGraph;
+    const unknown = await sendWithKey(upstreamKey, 'unknown outcome').expect(409);
+    expect((unknown.body as { code?: string }).code).toBe('IDEMPOTENCY_OUTCOME_UNKNOWN');
+  });
 });

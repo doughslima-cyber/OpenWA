@@ -126,6 +126,21 @@ describe('mapCloudChange - messages', () => {
     expect(message.metadata).toMatchObject({ reason, errors: [expect.objectContaining({ code })] });
   });
 
+  it.each(['ephemeral', 'system'])(
+    'C86 maps a message of the unmapped type %s to type unknown with the reason naming the type',
+    type => {
+      const events = mapCloudChange(
+        messagesValue({ messages: [{ from: FIXTURE_WA_ID, id: `wamid.C86-${type}`, timestamp: '1700000000', type }] }),
+      );
+      expect(events).toHaveLength(1);
+      const { message } = messageOf(events[0]);
+
+      expect(message.type).toBe('unknown');
+      expect(message.chatId).toBe(CHAT);
+      expect(String((message.metadata as { reason?: unknown } | undefined)?.reason)).toContain(type);
+    },
+  );
+
   it('C58 covers the 14 fixtures, and every chatId ends in @c.us', () => {
     const names = Object.keys(INBOUND_MESSAGES);
     expect(names).toHaveLength(14);

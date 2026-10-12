@@ -225,6 +225,35 @@ describe('Meta Cloud API sessions (e2e)', () => {
     },
   );
 
+  it.each([
+    ['metaCloud missing', undefined],
+    ['an empty phoneNumberId', { phoneNumberId: '', wabaId: WABA_ID, accessToken: TOKEN }],
+    ['an empty wabaId', { phoneNumberId: '200000000000016', wabaId: '', accessToken: TOKEN }],
+    ['an empty accessToken', { phoneNumberId: '200000000000016', wabaId: WABA_ID, accessToken: '' }],
+  ])('C16 POST /api/sessions with engine meta-cloud and %s answers 400 and creates no row', async (_l, metaCloud) => {
+    const before = await sessions.count();
+
+    await http()
+      .post('/api/sessions')
+      .set('X-API-Key', operatorKey)
+      .send({ name: `e2e-cloud-c16-${Date.now()}`, engine: 'meta-cloud', ...(metaCloud ? { metaCloud } : {}) })
+      .expect(400);
+
+    expect(await sessions.count()).toBe(before);
+  });
+
+  it('C17 POST /api/sessions with metaCloud and no engine answers 400 and creates no row', async () => {
+    const before = await sessions.count();
+
+    await http()
+      .post('/api/sessions')
+      .set('X-API-Key', operatorKey)
+      .send({ name: `e2e-cloud-c17-${Date.now()}`, metaCloud: credentials('200000000000017') })
+      .expect(400);
+
+    expect(await sessions.count()).toBe(before);
+  });
+
   it('C18 a second create for a bound phoneNumberId answers 409 META_PHONE_NUMBER_IN_USE and adds no session', async () => {
     await cloudSession();
     const before = await sessions.count();
@@ -319,6 +348,44 @@ describe('Meta Cloud API sessions (e2e)', () => {
     await http().put(`/api/sessions/${createdId}/meta/account`).set('X-API-Key', operatorKey).send(body).expect(400);
 
     expect((await accounts.findOneByOrFail({ sessionId: createdId })).accessTokenEnc).toBe(before);
+  });
+
+  it('C84 PUT .../meta/account with META_CLOUD_ENCRYPTION_KEY unset answers 400 META_CLOUD_NOT_CONFIGURED and keeps the token', async () => {
+    const { id: createdId } = await cloudSession();
+    const before = (await accounts.findOneByOrFail({ sessionId: createdId })).accessTokenEnc;
+    delete process.env.META_CLOUD_ENCRYPTION_KEY;
+
+    const res = await http()
+      .put(`/api/sessions/${createdId}/meta/account`)
+      .set('X-API-Key', operatorKey)
+      .send({ accessToken: ROTATED })
+      .expect(400);
+
+    expect((res.body as { code?: string }).code).toBe('META_CLOUD_NOT_CONFIGURED');
+    expect((await accounts.findOneByOrFail({ sessionId: createdId })).accessTokenEnc).toBe(before);
+  });
+
+  it('C85 GET and PUT .../meta/account answer 404 on a meta-cloud session whose account row is missing', async () => {
+    // The row written directly in beforeAll has engine meta-cloud and no account, as after an /infra restore.
+    expect(await accounts.countBy({ sessionId: cloudSessionId })).toBe(0);
+
+    await get(`/api/sessions/${cloudSessionId}/meta/account`).expect(404);
+    await http()
+      .put(`/api/sessions/${cloudSessionId}/meta/account`)
+      .set('X-API-Key', operatorKey)
+      .send({ accessToken: ROTATED })
+      .expect(404);
+
+    expect(await accounts.countBy({ sessionId: cloudSessionId })).toBe(0);
+  });
+
+  it('C88 GET and PUT .../meta/account with a session id that is not a UUID answer 400', async () => {
+    await get('/api/sessions/not-a-uuid/meta/account').expect(400);
+    await http()
+      .put('/api/sessions/not-a-uuid/meta/account')
+      .set('X-API-Key', operatorKey)
+      .send({ accessToken: ROTATED })
+      .expect(400);
   });
 
   it('C20 no response body carries the token or any 8-character run of it', async () => {

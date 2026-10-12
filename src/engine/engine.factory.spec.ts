@@ -509,7 +509,7 @@ describe('EngineFactory', () => {
       expect(created.baileys).not.toHaveBeenCalled();
     });
 
-    it('refuses to start a meta-cloud session while META_CLOUD_ENABLED is off', () => {
+    it('C90 refuses to start a meta-cloud session while META_CLOUD_ENABLED is off', () => {
       delete process.env.META_CLOUD_ENABLED;
       const { factory, created } = factoryWithPlugins('baileys');
 

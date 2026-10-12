@@ -362,6 +362,39 @@ describe('Meta Cloud API webhook (e2e)', () => {
     warn.mockRestore();
   });
 
+  it('C87 no message.* payload dispatched for sent, received, ack and failed carries the token or an 8-character run of it', async () => {
+    const id = await readyCloudSession();
+    const delivered = await sentMessage(id);
+    const failed = await sentMessage(id);
+    const inbound = { ...INBOUND_MESSAGES.text, id: 'wamid.C87-inbound', text: { body: 'C87 inbound' } };
+
+    await postWebhook(messagesBody(messagesValue({ messages: [inbound] }))).expect(200);
+    await postWebhook(statusFor(delivered, 'delivered')).expect(200);
+    await postWebhook(statusFor(failed, 'failed')).expect(200);
+    await routerIdle(3);
+    await eventually(
+      () =>
+        dispatchesOf('message.received', d => d.id === inbound.id).length > 0 &&
+        dispatchesOf('message.ack', d => d.id === delivered).length > 0 &&
+        dispatchesOf('message.failed', d => d.id === failed).length > 0,
+    );
+
+    const payloads = (dispatch.mock.calls as unknown[][]).filter(
+      ([sid, event]) => sid === id && String(event).startsWith('message.'),
+    );
+    const events = new Set(payloads.map(([, event]) => event));
+    for (const event of ['message.sent', 'message.received', 'message.ack', 'message.failed']) {
+      expect(events.has(event)).toBe(true);
+    }
+    for (const [, event, data] of payloads) {
+      const text = JSON.stringify(data);
+      const runs: string[] = [];
+      for (let i = 0; i + 8 <= TOKEN.length; i++)
+        if (text.includes(TOKEN.slice(i, i + 8))) runs.push(TOKEN.slice(i, i + 8));
+      expect({ event, runs }).toEqual({ event, runs: [] });
+    }
+  });
+
   it('C70 after the C57 inbound message, GET .../chats returns one chat for the sender with unreadCount 1', async () => {
     const id = await readyCloudSession();
     // A clean slate for this session, so the count does not depend on which checks ran before.

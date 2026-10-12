@@ -127,7 +127,7 @@ describe('MetaCloudAccountService', () => {
     expect(decryptMetaToken(row.accessTokenEnc as string, parseMetaCloudKey() as Buffer)).toBe('EAAG-new-token-wxyz');
   });
 
-  it('answers 404 for an unknown session and 501 for a session that is not meta-cloud', async () => {
+  it('C31 answers 404 for an unknown session and 501 for a session that is not meta-cloud', async () => {
     const qr = await sessions.save(sessions.create({ name: 'qr', config: {} }));
 
     await expect(service.getAccount('00000000-0000-4000-8000-000000000000', WEBHOOK_URL)).rejects.toBeInstanceOf(
@@ -135,5 +135,29 @@ describe('MetaCloudAccountService', () => {
     );
     await expect(service.getAccount(qr.id, WEBHOOK_URL)).rejects.toBeInstanceOf(NotImplementedException);
     await expect(service.rotateToken(qr.id, 'EAAG-x', WEBHOOK_URL)).rejects.toBeInstanceOf(NotImplementedException);
+  });
+
+  it('C84 rotating the token with META_CLOUD_ENCRYPTION_KEY unset answers 400 META_CLOUD_NOT_CONFIGURED and keeps the token', async () => {
+    const saved = await service.createSession(newSession(), CREDENTIALS);
+    const before = (await accounts.findOneByOrFail({ sessionId: saved.id })).accessTokenEnc;
+    delete process.env.META_CLOUD_ENCRYPTION_KEY;
+
+    const error = await failure(service.rotateToken(saved.id, 'EAAG-new-token-wxyz', WEBHOOK_URL));
+
+    expect(error).toBeInstanceOf(BadRequestException);
+    expect((error as BadRequestException).getResponse()).toEqual(
+      expect.objectContaining({ statusCode: 400, code: 'META_CLOUD_NOT_CONFIGURED' }),
+    );
+    const row = await accounts.findOneByOrFail({ sessionId: saved.id });
+    expect(row.accessTokenEnc).toBe(before);
+    expect(row.accessTokenLast4).toBe(TOKEN.slice(-4));
+  });
+
+  it('C85 reading and rotating answer 404 for a meta-cloud session whose account row is missing', async () => {
+    const orphan = await sessions.save(newSession('restored'));
+
+    await expect(service.getAccount(orphan.id, WEBHOOK_URL)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.rotateToken(orphan.id, 'EAAG-x', WEBHOOK_URL)).rejects.toBeInstanceOf(NotFoundException);
+    expect(await accounts.count()).toBe(0);
   });
 });
