@@ -12,9 +12,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-api
-**Where**: S1 and S2 built - C1-C36 closed and committed (S2: `4f93ae05`, `64eff37f`, `c8e70441`, `39036f01`)
+**Where**: S1, S2 and S3 built - C1-C48 closed and committed (S3: `4b441bd7`, `48ab00ee`, `97b8bd32`, `01a66335`, `ecc5ed86`)
 **In progress**: none
-**Next step**: builder B starts S3 (C37-C48): sends through Graph, the full error table, the pacing exemption and the per-number rate limiter, extending `meta-cloud-graph.client.ts`
+**Next step**: next builder starts S4 (C49-C68): the `/api/meta-webhook` receiver, its signature check, the inbound mapper and the router, reusing `meta-cloud-adapter.ts` callbacks and the fake Graph server
 **Blockers**: none for building; go-live waits on plan open questions 1 and 2
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
