@@ -161,19 +161,19 @@ Proof: `npx jest src/modules/message/send-pacing.service.spec.ts -t "C42 "`
 **C43** - With `SEND_PACING_ENABLED=true` and a daily cap of 1, two `send-text` calls on a Cloud session both answer 201 (MCS-01, AC 32)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C43 "`
 
-**C44** - The Graph client maps each of the 16 Meta error codes in the plan's table (`190`, `10`, `200`, `131005`, `131047`, `131048`, `131049`, `131056`, `130429` after retries, `131026`, `131021`, `131008`, `131009`, `133010`, `131031`, an unlisted `100`) plus a bare Graph 500 (17 cases) to the row's HTTP status and `code`, with `metaCode` and `fbtraceId` in the response body (MCS-02, AC 33 · door 9)
+**C44** - The Graph client maps each of the 16 Meta error codes in the plan's table (`190`, `10`, `200`, `131005`, `131047`, `131048`, `131049`, `131056`, `130429` after retries, `131026`, `131021`, `131008`, `131009`, `133010`, `131031`, an unlisted `100`) plus a bare Graph 500 (17 cases) to the row's HTTP status and `code`, with `metaCode` and `fbtraceId` in the response body (MCS-02, AC 33 · door 9) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C44 "`
 
 **C45** - `send-text` against a fake Graph answering `131047` returns 409 with `code: "META_OUTSIDE_SERVICE_WINDOW"` and `metaCode: 131047` (MCS-02, AC 33)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C45 "`
 
-**C46** - On `130429`, the client makes exactly 3 attempts in total and then raises 429 `META_RATE_LIMITED`; when the second attempt succeeds, it makes exactly 2 attempts and returns the `wamid` (MCS-02, AC 34)
+**C46** - On `130429`, the client makes exactly 3 attempts in total and then raises 429 `META_RATE_LIMITED`; when the second attempt succeeds, it makes exactly 2 attempts and returns the `wamid` (MCS-02, AC 34) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C46 "`
 
-**C47** - With `META_CLOUD_MAX_RPS=2` and fake timers, three calls for one phone number all resolve; the third starts no earlier than 1000 ms after the first; a call for a second phone number in the same second is not delayed (MCS-02, AC 35)
+**C47** - With `META_CLOUD_MAX_RPS=2` and fake timers, three calls for one phone number all resolve; the third starts no earlier than 1000 ms after the first; a call for a second phone number in the same second is not delayed (MCS-02, AC 35) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C47 "`
 
-**C48** - A call that outlives `META_CLOUD_TIMEOUT_MS` is aborted and raises an `EngineTransportError` (503); a refused connection raises the same (MCS-02, AC 36)
+**C48** - A call that outlives `META_CLOUD_TIMEOUT_MS` is aborted and raises an `EngineTransportError` (503); a refused connection raises the same (MCS-02, AC 36) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C48 "`
 
 ### S4 - Receive through the Meta webhook · 12 files · ~170 KB · ~43k

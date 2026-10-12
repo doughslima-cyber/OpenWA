@@ -32,6 +32,26 @@ export const happyGraph: GraphScript = request =>
     ? { status: 200, body: { success: true } }
     : { status: 200, body: FAKE_PROFILE };
 
+let sent = 0;
+
+/** As happyGraph, plus a fresh `wamid` for each message sent and a fresh id for each media upload. */
+export const sendingGraph: GraphScript = request => {
+  const path = request.path.split('?')[0];
+  if (request.method === 'POST' && path.endsWith('/messages')) {
+    const n = ++sent;
+    return {
+      status: 200,
+      body: {
+        messaging_product: 'whatsapp',
+        contacts: [{ input: '5511988887777', wa_id: '5511988887777' }],
+        messages: [{ id: `wamid.HBgNNTUxMTk4ODg4Nzc3NxUCABEYEjAw${n}` }],
+      },
+    };
+  }
+  if (request.method === 'POST' && path.endsWith('/media')) return { status: 200, body: { id: `1037543291${++sent}` } };
+  return happyGraph(request);
+};
+
 /** A Meta error envelope as Graph sends it. */
 export function graphError(
   status: number,

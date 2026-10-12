@@ -386,6 +386,8 @@ export function validateEnv(config: EnvConfig): EnvConfig {
     'SESSION_PROXY_TIMEOUT_MS',
     // OpenMsg: each Graph call's limit; read with parseInt, so `15s` would become 15 ms.
     'META_CLOUD_TIMEOUT_MS',
+    // OpenMsg: read with parseInt and a `> 0` guard, so `0` would silently mean the default of 40.
+    'META_CLOUD_MAX_RPS',
     // Positive-only is the POINT here, not a convention: 0 arms no Puppeteer timer at all, so a
     // wedged renderer holds the request forever (see wwebjs-lifecycle.ts).
     'PUPPETEER_PROTOCOL_TIMEOUT_MS',

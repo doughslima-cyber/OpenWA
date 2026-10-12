@@ -105,6 +105,13 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ENGINE_TYPE: 'baileys' })).not.toThrow();
   });
 
+  it('rejects a META_CLOUD_MAX_RPS that is not a positive integer', () => {
+    for (const value of ['0', '-1', '40/s', 'fast']) {
+      expect(() => validateEnv({ META_CLOUD_MAX_RPS: value })).toThrow(/META_CLOUD_MAX_RPS/);
+    }
+    expect(() => validateEnv({ META_CLOUD_MAX_RPS: '80' })).not.toThrow();
+  });
+
   it('rejects a META_CLOUD_ENABLED typo and accepts true, false and blank', () => {
     expect(() => validateEnv({ META_CLOUD_ENABLED: 'yes' })).toThrow(/META_CLOUD_ENABLED/);
     for (const value of ['true', 'false', '']) {
