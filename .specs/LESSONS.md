@@ -32,6 +32,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: verification.md gaps 3-7 - meta-cloud-account.service.ts:74, meta-cloud-inbound.mapper.ts:192 (coverage)
 - last seen: 2026-10-12T02:57:01Z
 
+### L-004 - Assert every column a backup or restore claims to carry, by comparing the whole restored row
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `infra` · harmful: 0
+- features: meta-cloud-api
+- evidence: verification.md round 3 gap 1 - src/modules/infra/meta-cloud-backup.spec.ts:126 (infra)
+- last seen: 2026-10-12T04:31:23Z
+
+### L-005 - Reclassify a file in the Test policy evidence when a fix adds a conditional to it
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `coverage` · harmful: 0
+- features: meta-cloud-api
+- evidence: verification.md round 3 gap 2 - meta-cloud-account.controller.ts:67 (coverage)
+- last seen: 2026-10-12T04:31:23Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
