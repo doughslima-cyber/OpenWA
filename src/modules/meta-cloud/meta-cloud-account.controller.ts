@@ -64,7 +64,7 @@ export class MetaCloudAccountController {
 }
 
 /** The callback URL as this request reached the gateway: the host the operator also reaches Meta through. */
-function webhookUrlOf(req: Request): string {
+export function webhookUrlOf(req: Request): string {
   // BASE_URL is the public address operators configure: behind a TLS proxy the request itself arrives
   // over plain HTTP (`trust proxy` is off), so it wins, and the request host is the fallback.
   const base = process.env.BASE_URL?.replace(/\/+$/, '') || `${req.protocol}://${req.get('host')}`;

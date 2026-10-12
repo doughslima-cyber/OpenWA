@@ -342,6 +342,7 @@ Proof: `npx jest src/modules/infra/table-importers.spec.ts -t "C91 "`
 
 **C92** - `GET .../meta/account` reports `webhookUrl` as `<BASE_URL without trailing slashes>/api/meta-webhook` when `BASE_URL` is set (`https://openmsg.example.com/` gives `https://openmsg.example.com/api/meta-webhook`), and as `<protocol>://<host>/api/meta-webhook` of the request when it is unset (MCA-03, AC 23) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C92 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-account.controller.spec.ts -t "C92 "`
 
 ### PR review decisions
 
@@ -457,7 +458,12 @@ Evidence (planned files, classified by the shape the plan fixes):
   session with no account row), 501 (not a `meta-cloud` session), 400 `META_CLOUD_NOT_CONFIGURED` (create and
   rotate) and 409 (number bound) -> decides, reached across a boundary. Own layer, `meta-cloud-account.service.spec.ts`:
   404/501 C31, no-account 404 C85, 400 on create C15 and on rotate C84, 409 C12; at HTTP: C31, C85, C15, C84, C18, C19
-- the account controller's GET: maps a row onto a DTO, no conditional -> instrumentation (proven through C30)
+- the account controller's GET: maps a row onto a DTO -> instrumentation (proven through C30); its one conditional,
+  the `webhookUrl` source, is `webhookUrlOf`, classified on the next line as a decision (verification round 3)
+- `meta-cloud-account.controller.ts` `webhookUrlOf` (PR review additions, used by the GET and the PUT): 2 outcomes -
+  `BASE_URL` set -> `<BASE_URL without trailing slashes>/api/meta-webhook`; unset -> `<protocol>://<host>` of the
+  request -> decides, reached across a boundary (own layer: `meta-cloud-account.controller.spec.ts` C92, with one,
+  none and three trailing slashes, and unset; at HTTP: C92 e2e, both outcomes)
 - closest analogues in the repo: `src/engine/adapters/baileys-message-mapper.spec.ts` (`it.each` over message
   types, 91 cases) and `src/modules/integration/ingress-signature.spec.ts` (signature outcomes at their own layer,
   plus `test/integration-fabric.e2e-spec.ts` at HTTP)
