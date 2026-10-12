@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IWhatsAppEngine } from './interfaces/whatsapp-engine.interface';
 import { PluginLoaderService, PluginType, IEnginePlugin, PluginManifest } from '../core/plugins';
@@ -12,6 +12,7 @@ import { createLogger } from '../common/services/logger.service';
 import { BaileysMessageStoreService } from './adapters/baileys-message-store.service';
 import { LidMappingStoreService } from './identity/lid-mapping-store.service';
 import { ChatStateStoreService } from './adapters/baileys-chat-state-store.service';
+import { MetaCloudAccountStore } from './adapters/meta-cloud-account-store.service';
 import { isSafeSessionName } from '../common/utils/path-safety';
 import { ensurePrivateDir } from '../common/utils/private-dir.util';
 import { baileysAuthDir, readAuthDirEntries, wwjsAuthDir } from './auth-dir-paths';
@@ -43,6 +44,9 @@ export class EngineFactory implements OnModuleInit {
     private readonly baileysMessageStore: BaileysMessageStoreService,
     private readonly lidMappingStore: LidMappingStoreService,
     private readonly chatStateStore: ChatStateStoreService,
+    // OpenMsg: the Cloud API account rows (docs/32). Trailing @Optional so direct-construction specs
+    // that never start a meta-cloud session need not build it.
+    @Optional() private readonly metaCloudAccounts?: MetaCloudAccountStore,
   ) {
     this.engineType = this.configService.get<string>('engine.type') ?? 'whatsapp-web.js';
   }
@@ -101,7 +105,11 @@ export class EngineFactory implements OnModuleInit {
       main: 'index.ts',
       provides: ['whatsapp-engine'],
     };
-    this.pluginLoader.registerBuiltInPlugin(metaCloudManifest, new MetaCloudPlugin(), engineConfig);
+    this.pluginLoader.registerBuiltInPlugin(
+      metaCloudManifest,
+      new MetaCloudPlugin(this.metaCloudAccounts),
+      engineConfig,
+    );
 
     // Auto-enable the configured engine, and the Cloud API engine beside it when switched on
     const toEnable = isMetaCloudEnabled() ? [this.engineType, META_CLOUD_ENGINE] : [this.engineType];

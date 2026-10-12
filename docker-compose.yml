@@ -215,6 +215,10 @@ services:
       - SEND_PACING_BREAKER_COOLDOWN_MS=${SEND_PACING_BREAKER_COOLDOWN_MS:-}
       # OpenMsg: WhatsApp Cloud API sessions beside the QR ones (docs/32).
       - META_CLOUD_ENABLED=${META_CLOUD_ENABLED:-}
+      - META_CLOUD_ENCRYPTION_KEY=${META_CLOUD_ENCRYPTION_KEY:-}
+      - META_GRAPH_API_VERSION=${META_GRAPH_API_VERSION:-}
+      - META_GRAPH_BASE_URL=${META_GRAPH_BASE_URL:-}
+      - META_CLOUD_TIMEOUT_MS=${META_CLOUD_TIMEOUT_MS:-}
       # Inbound media: the response budget for inline media on the message list, and the download
       # limits. Forwarded so they can be tuned from .env without editing this file.
       - MESSAGE_LIST_INLINE_MEDIA_BUDGET_BYTES=${MESSAGE_LIST_INLINE_MEDIA_BUDGET_BYTES:-}

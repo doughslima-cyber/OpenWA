@@ -77,6 +77,10 @@ export const BLANK_SHADOWED_ENV_KEYS: string[] = [
   'SEND_PACING_BREAKER_COOLDOWN_MS',
   // OpenMsg: WhatsApp Cloud API sessions (docs/32), blank-forwarded like the keys above.
   'META_CLOUD_ENABLED',
+  'META_CLOUD_ENCRYPTION_KEY',
+  'META_GRAPH_API_VERSION',
+  'META_GRAPH_BASE_URL',
+  'META_CLOUD_TIMEOUT_MS',
   // Server-side media conversion, same arrangement.
   'MEDIA_CONVERSION_ENABLED',
   'FFMPEG_PATH',

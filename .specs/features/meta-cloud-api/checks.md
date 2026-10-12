@@ -92,26 +92,26 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.
 **C21** - When Graph answers 401 with code `190` and an error body that echoes the request, and when it times out, every logger call made by the Graph client and the account service carries no 8-character substring of the token (MCA-01, AC 15)
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C21 "`
 
-**C22** - `initialize()` against a Graph that answers `GET /<PHONE_NUMBER_ID>` with `display_phone_number: "+55 11 99999-0000"` and `verified_name: "Acme"` calls `POST /<WABA_ID>/subscribed_apps` once, then `onReady("5511999990000", "Acme")` (MCA-02, AC 16)
+**C22** - `initialize()` against a Graph that answers `GET /<PHONE_NUMBER_ID>` with `display_phone_number: "+55 11 99999-0000"` and `verified_name: "Acme"` calls `POST /<WABA_ID>/subscribed_apps` once, then `onReady("5511999990000", "Acme")` (MCA-02, AC 16) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C22 "`
 
 **C23** - Starting the C11 session moves it to `READY` with `phone: "5511999990000"` and `pushName: "Acme"` (MCA-02, AC 16)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C23 "`
 
-**C24** - During `initialize()` the adapter never calls `onQRCode` and never reports `EngineStatus.QR_READY`, and `getQRCode()` resolves `null` (MCA-02, AC 17)
+**C24** - During `initialize()` the adapter never calls `onQRCode` and never reports `EngineStatus.QR_READY`, and `getQRCode()` resolves `null` (MCA-02, AC 17) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C24 "`
 
-**C25** - For each Graph error code `190`, `10` and `200`, answered to `initialize()` and to `probeLiveness()` (6 cases), the adapter calls `onActionRequired("META_TOKEN_INVALID")` and reports `EngineStatus.ACTION_REQUIRED`, and does not call `onReady` (MCA-02, AC 18)
+**C25** - For each Graph error code `190`, `10` and `200`, answered to `initialize()` and to `probeLiveness()` (6 cases), the adapter calls `onActionRequired("META_TOKEN_INVALID")` and reports `EngineStatus.ACTION_REQUIRED`, and does not call `onReady` (MCA-02, AC 18) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C25 "`
 
-**C26** - With no stored token, `initialize()` calls `onActionRequired("META_TOKEN_MISSING")`, reports `ACTION_REQUIRED`, and the fake Graph records zero requests (MCA-02, AC 19)
+**C26** - With no stored token, `initialize()` calls `onActionRequired("META_TOKEN_MISSING")`, reports `ACTION_REQUIRED`, and the fake Graph records zero requests (MCA-02, AC 19) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C26 "`
 
 **C27** - When Graph refuses the connection, and when it answers 500, `initialize()` rejects with an `EngineTransportError` and never calls `onReady`; through the API the session ends in a status other than `READY` with `lastError` set (MCA-02, AC 20)
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C27 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C27 "`
 
-**C28** - `probeLiveness()` returns `true` for a 200 and `false` for a refused connection, a 500 and a 503 (MCA-02, AC 21)
+**C28** - `probeLiveness()` returns `true` for a 200 and `false` for a refused connection, a 500 and a 503 (MCA-02, AC 21) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C28 "`
 
 **C29** - `POST /api/sessions/:id/pairing-code` on a `meta-cloud` session answers 501 (MCA-02, AC 22)
@@ -129,7 +129,7 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.
 **C33** - `PUT .../meta/account` with no `accessToken`, with an empty one, and with an extra `phoneNumberId` key each answers 400 and leaves the stored token unchanged (MCA-03, Surface)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C33 "`
 
-**C34** - `logout()` sets the account's `accessTokenEnc` to NULL and reports `EngineStatus.DISCONNECTED` (MCA-03, AC 26)
+**C34** - `logout()` sets the account's `accessTokenEnc` to NULL and reports `EngineStatus.DISCONNECTED` (MCA-03, AC 26) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C34 "`
 
 **C35** - `DELETE /api/sessions/:id` on a `meta-cloud` session with one contact row leaves zero `meta_cloud_accounts` and zero `meta_cloud_contacts` rows for that id (MCA-03, AC 27 · doors 3, 5)
