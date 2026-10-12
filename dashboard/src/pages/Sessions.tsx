@@ -31,6 +31,7 @@ import {
   canForceKillSession,
   canUnlinkSession,
   classifyUnlinkError,
+  isMetaCloudSession,
   isSessionStarted,
   replaceSession,
 } from '../utils/sessionActions';
@@ -51,6 +52,8 @@ import { useSessionCreateForm } from '../hooks/useSessionCreateForm';
 import { PageHeader } from '../components/PageHeader';
 import { CustomSelect } from '../components/CustomSelect';
 import { Modal } from '../components/Modal';
+import MetaCloudFields from '../components/sessions/MetaCloudFields';
+import MetaCloudAccountPanel from '../components/sessions/MetaCloudAccountPanel';
 import './Sessions.css';
 
 /**
@@ -221,6 +224,11 @@ export function Sessions() {
     setProxyUrl: setCreateProxyUrl,
     creating,
     handleCreate,
+    engine: createEngine,
+    setEngine: setCreateEngine,
+    metaCloud: createMetaCloud,
+    setMetaCloud: setCreateMetaCloud,
+    metaCloudIncomplete,
   } = useSessionCreateForm({
     onCreated: newSession => {
       // Functional append: never capture a stale `sessions` (a WS or fetch between the await and the
@@ -410,6 +418,8 @@ export function Sessions() {
       // holds: that state predates both the start response and the re-read, so it would let the
       // modal open over a connected session and then poll for a QR that can never arrive.
       if (row?.status === 'ready') return;
+      // OpenMsg (docs/32 F3): a Cloud API session has no QR to show.
+      if (isMetaCloudSession(row ?? sessionsRef.current.find(s => s.id === id))) return;
       if (!row || isSessionStarted(row)) handleShowQR(id);
     } catch (err) {
       console.error('Failed to start:', err);
@@ -430,7 +440,7 @@ export function Sessions() {
       const fresh = await fetchSessions();
       const current = fresh.find(s => s.id === id);
       if (current && isSessionStarted(current)) {
-        if (current.status !== 'ready') handleShowQR(id);
+        if (current.status !== 'ready' && !isMetaCloudSession(current)) handleShowQR(id);
         return;
       }
       // The answer to this request, not the row's lastError: that is shown on the card, and it can be the
@@ -654,10 +664,11 @@ export function Sessions() {
   const nameIssues = newSessionName ? sessionNameIssues(newSessionName, existingSessionNames) : [];
   // One term: isValidProxyUrl rejects '' too, so the emptiness check was redundant, and its
   // `string && boolean` shape widened this to `boolean | ""`, which the disabled prop rejects.
-  const createProxyInvalid = useProxy && !isValidProxyUrl(createProxyUrl.trim());
+  const createProxyInvalid = createEngine === 'qr' && useProxy && !isValidProxyUrl(createProxyUrl.trim());
   // Shared by the Create button and the name field's Enter key, which would otherwise post a name
   // the button refuses, or post the same name twice while the first create is in flight.
-  const createDisabled = creating || !canCreateSession(newSessionName, existingSessionNames) || createProxyInvalid;
+  const createDisabled =
+    creating || !canCreateSession(newSessionName, existingSessionNames) || createProxyInvalid || metaCloudIncomplete;
 
   if (loading) {
     return (
@@ -776,8 +787,15 @@ export function Sessions() {
             <p className="input-error">{t('sessions.create.tooLong', { length: newSessionName.length })}</p>
           )}
           {nameIssues.includes('duplicate') && <p className="input-error">{t('sessions.create.duplicate')}</p>}
-          {/* The API refuses proxyUrl from a key below ADMIN, so the section is not offered. */}
-          {canEditProxy && (
+          <MetaCloudFields
+            engine={createEngine}
+            onEngineChange={setCreateEngine}
+            value={createMetaCloud}
+            onChange={setCreateMetaCloud}
+          />
+          {/* The API refuses proxyUrl from a key below ADMIN, so the section is not offered. A Cloud API
+              session sends through Graph, which takes no proxy. */}
+          {canEditProxy && createEngine === 'qr' && (
             <div className="proxy-form-section">
               <label className="detail-toggle-row" htmlFor="create-use-proxy">
                 <span>{t('sessions.proxy.enabled')}</span>
@@ -996,7 +1014,7 @@ export function Sessions() {
                 {selectedSession.lastActive ? new Date(selectedSession.lastActive).toLocaleString() : t('common.never')}
               </span>
             </div>
-            {sessionConfig && (
+            {sessionConfig && !isMetaCloudSession(selectedSession) && (
               <div className="detail-item detail-item-toggle">
                 <div className="detail-toggle-row">
                   <span className="detail-label" id="auto-reject-calls-label">
@@ -1017,6 +1035,9 @@ export function Sessions() {
               </div>
             )}
           </div>
+          {isMetaCloudSession(selectedSession) && (
+            <MetaCloudAccountPanel sessionId={selectedSession.id} canWrite={canWrite} />
+          )}
         </Modal>
       )}
 
@@ -1236,6 +1257,7 @@ export function Sessions() {
               <div className="card-header">
                 <h3 title={session.name}>{session.name}</h3>
                 <span className={`status-pill ${session.status}`}>{formatStatus(session.status)}</span>
+                {isMetaCloudSession(session) && <span className="meta-cloud-badge">{t('metaCloud.badge')}</span>}
               </div>
 
               {awaitsPairing(session) ? (
@@ -1274,6 +1296,13 @@ export function Sessions() {
                       <span className="info-value error-text" title={session.lastError}>
                         {session.lastError}
                       </span>
+                    </div>
+                  ) : null}
+                  {isMetaCloudSession(session) &&
+                  session.status === 'action_required' &&
+                  (session.lastError === 'META_TOKEN_INVALID' || session.lastError === 'META_TOKEN_MISSING') ? (
+                    <div className="info-row meta-cloud-token-hint">
+                      <span className="info-value">{t('metaCloud.tokenHint')}</span>
                     </div>
                   ) : null}
                   {/* Not gated on status, unlike the error above: a reachout timelock applies to a

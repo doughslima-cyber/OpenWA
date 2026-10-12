@@ -70,6 +70,11 @@ export interface Session {
    * helpers fall back to the historical status set instead of trusting a stale value.
    */
   engineLoaded?: boolean;
+  /**
+   * OpenMsg (docs/32): the engine behind this session. `meta-cloud` is the official Cloud API, with no
+   * QR and no linked device; any other value (or none, from an older gateway) is a QR session.
+   */
+  engine?: string | null;
   phone?: string | null;
   pushName?: string | null;
   connectedAt?: string | null;

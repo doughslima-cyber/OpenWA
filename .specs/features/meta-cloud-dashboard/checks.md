@@ -20,46 +20,46 @@ Proof commands, from `package.json`, `dashboard/package.json` and `.github/workf
 
 ### S1 - Create and manage a Cloud session from the Sessions page · 8 files · ~150 KB · ~38k
 
-**C1** - `sessionActions` reads the session's `engine`: `awaitsPairing` returns `false` for a `meta-cloud` session in `initializing` with no phone and in `qr_ready`, and keeps its current answers for a NULL-engine session; `canUnlinkSession` returns `false` for any `meta-cloud` session (MCD-01, AC 1 · MCD-02, AC 7)
+**C1** - `sessionActions` reads the session's `engine`: `awaitsPairing` returns `false` for a `meta-cloud` session in `initializing` with no phone and in `qr_ready`, and keeps its current answers for a NULL-engine session; `canUnlinkSession` returns `false` for any `meta-cloud` session (MCD-01, AC 1 · MCD-02, AC 7) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C1 " src/utils/sessionActions.test.ts`
 
-**C2** - The New session form shows the choices "Linked device (QR)" (checked) and "Official Meta API", and no Cloud field until the second is chosen (MCD-01, AC 2)
+**C2** - The New session form shows the choices "Linked device (QR)" (checked) and "Official Meta API", and no Cloud field until the second is chosen (MCD-01, AC 2) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C2 " src/pages/Sessions.metaCloud.test.ts`
 
-**C3** - With "Official Meta API" chosen, the form shows Phone Number ID, WABA ID and access token inputs, each reachable by its label, the token input of `type="password"` (MCD-01, AC 3)
+**C3** - With "Official Meta API" chosen, the form shows Phone Number ID, WABA ID and access token inputs, each reachable by its label, the token input of `type="password"` (MCD-01, AC 3) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C3 " src/pages/Sessions.metaCloud.test.ts`
 
-**C4** - Submitting the Cloud form sends exactly one `POST /api/sessions` with body `{ name, engine: "meta-cloud", metaCloud: { phoneNumberId, wabaId, accessToken } }` and no `proxyUrl` key (MCD-01, AC 4)
+**C4** - Submitting the Cloud form sends exactly one `POST /api/sessions` with body `{ name, engine: "meta-cloud", metaCloud: { phoneNumberId, wabaId, accessToken } }` and no `proxyUrl` key (MCD-01, AC 4) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C4 " src/pages/Sessions.metaCloud.test.ts`
 
-**C5** - With any one of the three Cloud fields empty (3 cases), the submit button is disabled and clicking it sends no request (MCD-01, AC 5)
+**C5** - With any one of the three Cloud fields empty (3 cases), the submit button is disabled and clicking it sends no request (MCD-01, AC 5) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C5 " src/pages/Sessions.metaCloud.test.ts`
 
-**C6** - A create answered with 400 `META_CLOUD_DISABLED`, 400 `META_CLOUD_NOT_CONFIGURED` and 409 `META_PHONE_NUMBER_IN_USE` (3 cases) shows the English catalog text for that code, and not the response `message` (MCD-01, AC 6)
+**C6** - A create answered with 400 `META_CLOUD_DISABLED`, 400 `META_CLOUD_NOT_CONFIGURED` and 409 `META_PHONE_NUMBER_IN_USE` (3 cases) shows the English catalog text for that code, and not the response `message` (MCD-01, AC 6) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C6 " src/pages/Sessions.metaCloud.test.ts`
 
-**C7** - A `meta-cloud` session's card in `initializing` with no phone, and again in `ready`, shows the "Official API" badge and no QR placeholder, no **Show QR** and no **Unlink**; a NULL-engine card in `qr_ready` still shows **Show QR** (MCD-02, AC 7)
+**C7** - A `meta-cloud` session's card in `initializing` with no phone, and again in `ready`, shows the "Official API" badge and no QR placeholder, no **Show QR** and no **Unlink**; a NULL-engine card in `qr_ready` still shows **Show QR** (MCD-02, AC 7) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C7 " src/pages/Sessions.metaCloud.test.ts`
 
-**C8** - Clicking **Start** on a `meta-cloud` card sends the start request and no QR modal appears, and no `/qr` request is made (MCD-02, AC 8)
+**C8** - Clicking **Start** on a `meta-cloud` card sends the start request and no QR modal appears, and no `/qr` request is made (MCD-02, AC 8) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C8 " src/pages/Sessions.metaCloud.test.ts`
 
-**C9** - A `meta-cloud` card in `action_required` with `lastError` `META_TOKEN_INVALID`, and with `META_TOKEN_MISSING`, shows the catalog's "change the token" hint (MCD-02, AC 9)
+**C9** - A `meta-cloud` card in `action_required` with `lastError` `META_TOKEN_INVALID`, and with `META_TOKEN_MISSING`, shows the catalog's "change the token" hint (MCD-02, AC 9) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C9 " src/pages/Sessions.metaCloud.test.ts`
 
-**C10** - Opening a `meta-cloud` session's detail requests `GET /api/sessions/:id/meta/account` and shows the display phone number, verified name, quality rating, messaging limit tier, `•••• 1234` for `accessTokenLast4: "1234"`, the `webhookUrl` with a **Copy** button, and the text naming `META_WEBHOOK_VERIFY_TOKEN` (MCD-03, AC 10)
+**C10** - Opening a `meta-cloud` session's detail requests `GET /api/sessions/:id/meta/account` and shows the display phone number, verified name, quality rating, messaging limit tier, `•••• 1234` for `accessTokenLast4: "1234"`, the `webhookUrl` with a **Copy** button, and the text naming `META_WEBHOOK_VERIFY_TOKEN` (MCD-03, AC 10) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C10 " src/pages/Sessions.metaCloud.test.ts`
 
-**C11** - The `meta-cloud` detail shows no auto-reject-calls toggle (MCD-03, AC 11)
+**C11** - The `meta-cloud` detail shows no auto-reject-calls toggle (MCD-03, AC 11) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C11 " src/pages/Sessions.metaCloud.test.ts`
 
-**C12** - Submitting **Change token** with `new-token-5678` sends `PUT /api/sessions/:id/meta/account` with exactly `{ accessToken: "new-token-5678" }`, shows a success toast, empties the field and then shows `•••• 5678`; with the field empty the button is disabled (MCD-03, AC 12)
+**C12** - Submitting **Change token** with `new-token-5678` sends `PUT /api/sessions/:id/meta/account` with exactly `{ accessToken: "new-token-5678" }`, shows a success toast, empties the field and then shows `•••• 5678`; with the field empty the button is disabled (MCD-03, AC 12) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C12 " src/pages/Sessions.metaCloud.test.ts`
 
-**C13** - When `GET .../meta/account` answers 404, and when the PUT answers 400 `META_CLOUD_NOT_CONFIGURED`, the detail shows the error text (catalog text for the coded one, the message otherwise) and the session's name, status and id rows stay visible (MCD-03, AC 13)
+**C13** - When `GET .../meta/account` answers 404, and when the PUT answers 400 `META_CLOUD_NOT_CONFIGURED`, the detail shows the error text (catalog text for the coded one, the message otherwise) and the session's name, status and id rows stay visible (MCD-03, AC 13) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C13 " src/pages/Sessions.metaCloud.test.ts`
 
-**C14** - Opening a NULL-engine session's detail makes no `meta/account` request and shows no Cloud section, and still shows the auto-reject-calls toggle (MCD-03, AC 14)
+**C14** - Opening a NULL-engine session's detail makes no `meta/account` request and shows no Cloud section, and still shows the auto-reject-calls toggle (MCD-03, AC 14) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C14 " src/pages/Sessions.metaCloud.test.ts`
 
 ### S2 - Chats on a Cloud session · 7 files · ~170 KB · ~43k

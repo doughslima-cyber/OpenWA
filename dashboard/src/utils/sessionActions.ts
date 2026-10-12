@@ -3,6 +3,13 @@
 
 import type { Session } from '../services/api.ts';
 
+/** OpenMsg (docs/32): the `engine` of a session on Meta's official Cloud API rather than a linked device. */
+export const META_CLOUD_ENGINE = 'meta-cloud';
+
+export function isMetaCloudSession(session: { engine?: string | null } | null | undefined): boolean {
+  return session?.engine === META_CLOUD_ENGINE;
+}
+
 // Stop, Unlink and Force-Kill share one precondition: the gateway holds a live engine to act on.
 // Start has the exact complement — it answers 400 while one exists. So all four derive from the
 // gateway's own `engineLoaded`, which is read from the live engine map per request. Deriving them
@@ -32,14 +39,20 @@ export function isSessionStarted(session: Pick<Session, 'status' | 'engineLoaded
 // `connectedAt` is never cleared, so it would keep claiming "linked" for a session unlinked an hour
 // ago, and `engineLoaded` is dropped to undefined by the Sessions page on every websocket status push,
 // which is the very transition that lands a card here.
-export function awaitsPairing(session: Pick<Session, 'status' | 'phone'>): boolean {
+// OpenMsg (docs/32 F3): a Cloud API session never pairs, so it never gets the placeholder.
+export function awaitsPairing(session: Pick<Session, 'status' | 'phone' | 'engine'>): boolean {
+  if (isMetaCloudSession(session)) return false;
   return session.status === 'qr_ready' || (session.status === 'initializing' && !session.phone);
 }
 
 // Unlink calls POST /sessions/:id/logout, which needs a live engine to send the unlink through — the
 // same precondition as Stop, and what the API's own 400 tells the operator.
-export function canUnlinkSession(session: Pick<Session, 'status' | 'engineLoaded'>, canWrite: boolean): boolean {
-  return canWrite && isSessionStarted(session);
+// A Cloud API session has no linked device: its token is changed in the detail, not unlinked.
+export function canUnlinkSession(
+  session: Pick<Session, 'status' | 'engineLoaded' | 'engine'>,
+  canWrite: boolean,
+): boolean {
+  return canWrite && !isMetaCloudSession(session) && isSessionStarted(session);
 }
 
 // Force-kill is the emergency hatch for a WEDGED engine, so it is offered exactly when a live engine

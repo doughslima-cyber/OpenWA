@@ -217,3 +217,28 @@ test('awaitsPairing: no other status ever takes the placeholder', () => {
     assert.equal(awaitsPairing(makeSession({ status, phone: '+155512345' })), false, status);
   }
 });
+
+// OpenMsg (docs/32 F3): a Cloud API session has no QR and nothing to unlink, whatever its status says.
+test('C1 awaitsPairing is false for a meta-cloud session, and unchanged for a NULL-engine one', () => {
+  const cloud = { engine: 'meta-cloud' as const };
+  assert.equal(awaitsPairing(makeSession({ ...cloud, status: 'initializing', phone: null })), false);
+  assert.equal(awaitsPairing(makeSession({ ...cloud, status: 'qr_ready', phone: null })), false);
+
+  assert.equal(awaitsPairing(makeSession({ status: 'initializing', phone: null })), true);
+  assert.equal(awaitsPairing(makeSession({ status: 'qr_ready', phone: null })), true);
+  assert.equal(awaitsPairing(makeSession({ status: 'initializing', phone: '15550002222' })), false);
+  assert.equal(awaitsPairing(makeSession({ engine: null, status: 'qr_ready', phone: null })), true);
+});
+
+test('C1 canUnlinkSession is false for any meta-cloud session, started or not', () => {
+  for (const status of [...ENGINE_BACKED_STATUSES, ...ENGINELESS_STATUSES, 'disconnected'] as Session['status'][]) {
+    for (const engineLoaded of [true, false]) {
+      assert.equal(
+        canUnlinkSession(makeSession({ engine: 'meta-cloud', status, engineLoaded }), true),
+        false,
+        `${status} engineLoaded=${engineLoaded}`,
+      );
+    }
+  }
+  assert.equal(canUnlinkSession(makeSession({ status: 'ready', engineLoaded: true }), true), true);
+});

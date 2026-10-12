@@ -3,13 +3,7 @@
 // there merge without touching this fork's additions.
 import type { TFunction } from 'i18next';
 import { request, type Session } from './api';
-
-/** The `engine` of a session that talks to Meta's official Cloud API instead of a linked device. */
-export const META_CLOUD_ENGINE = 'meta-cloud';
-
-export function isMetaCloudSession(session: { engine?: string | null } | null | undefined): boolean {
-  return session?.engine === META_CLOUD_ENGINE;
-}
+import { META_CLOUD_ENGINE } from '../utils/sessionActions';
 
 /** The Cloud API number behind a session, without its token (`GET /api/sessions/:id/meta/account`). */
 export interface MetaCloudAccount {
