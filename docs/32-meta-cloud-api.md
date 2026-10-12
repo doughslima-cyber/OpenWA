@@ -1,7 +1,8 @@
 # 32 - API oficial da Meta (WhatsApp Cloud API): plano de adoção
 
-> **Status:** F1 e F2 implementadas e no `main` (OpenMsg, PR #6); F3 (painel) implementada no ramo
-> `claude/tlc-spec-lean-meta-cloud-dashboard`; F4 e F5 continuam propostas. O documento descreve como o OpenMsg passa a
+> **Status:** F1, F2 e F3 (painel) implementadas, no `main` (OpenMsg, PRs #6 e #7) e na VM com o motor ligado
+> desde 12/10/2026; falta o app da Meta (`META_APP_SECRET`) e o critério com um número real. F4 e F5 continuam
+> propostas. O documento descreve como o OpenMsg passa a
 > aceitar, lado a lado com as sessões de dispositivo vinculado (Baileys e whatsapp-web.js), sessões ligadas à
 > **WhatsApp Business Platform / Cloud API**, a API oficial da Meta. O documento é em português porque é parte
 > do fork; os documentos do projeto original continuam em inglês.
@@ -390,7 +391,7 @@ painel, `typecheck`, `lint`, `format:check`, `i18n:check` e `npm test`.
   de `GET .../meta/templates`, entregue aqui junto com o envio de modelo).
 - Critério: um operador cria, liga e usa uma sessão Cloud só pelo painel, sem tocar na API; `i18n:check` passa
   nos 15 idiomas.
-- **Implementada** (ramo `claude/tlc-spec-lean-meta-cloud-dashboard`, plano em
+- **Implementada** (PR #7, ramo `claude/tlc-spec-lean-meta-cloud-dashboard`, plano em
   `.specs/features/meta-cloud-dashboard/`): criação com Phone Number ID, WABA ID e token; selo "API oficial" e
   nenhum QR ou **Desvincular** no cartão; detalhe com a conta, o token mascarado, a URL do webhook e **Trocar
   token** (o verify token não aparece, só o nome da variável); em **Conversas**, sem as abas Status e Canais, sem

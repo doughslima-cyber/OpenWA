@@ -175,12 +175,15 @@ não exige rebuild dos containers nem publicação do workflow.
 
 ## Sessões da API oficial da Meta (Cloud API)
 
-As fases F1 e F2 do [docs/32](docs/32-meta-cloud-api.md) estão no `main` (PR #6) e na VM desde 12/10/2026; a F3
-(o painel) está implementada no ramo `claude/tlc-spec-lean-meta-cloud-dashboard` e ainda não está na VM. Uma sessão
-Cloud usa um número registrado na Meta, sem QR code, ao lado das sessões de QR do mesmo gateway: envia e recebe
-pelas mesmas rotas e webhooks.
+As fases F1, F2 e F3 (o painel) do [docs/32](docs/32-meta-cloud-api.md) estão no `main` (PRs #6 e #7) e na VM,
+com o motor ligado desde 12/10/2026. Uma sessão Cloud usa um número registrado na Meta, sem QR code, ao lado das
+sessões de QR do mesmo gateway: envia e recebe pelas mesmas rotas e webhooks.
 
-Para ligar, acrescente ao `.env` da VM e rode `docker compose up -d`:
+Na VM, o `.env` já tem `META_CLOUD_ENABLED=true`, a `META_CLOUD_ENCRYPTION_KEY` e o `META_WEBHOOK_VERIFY_TOKEN`
+(gerados com `openssl`). Falta o `META_APP_SECRET`, que só existe depois de criar o app da Meta: até lá, todo
+`POST /api/meta-webhook` responde 503 e o log avisa uma vez por processo.
+
+As variáveis, todas no `.env`, valendo depois de `docker compose up -d`:
 
 | Variável                    | Para quê                                                                                  |
 | --------------------------- | ----------------------------------------------------------------------------------------- |
@@ -190,15 +193,43 @@ Para ligar, acrescente ao `.env` da VM e rode `docker compose up -d`:
 | `META_WEBHOOK_VERIFY_TOKEN` | Texto escolhido por você, colado também no painel da Meta ao verificar o webhook          |
 | `META_GRAPH_API_VERSION`    | Opcional; padrão `v26.0`. `META_CLOUD_MAX_RPS` e `META_CLOUD_TIMEOUT_MS` também opcionais |
 
-Sem o painel da F3, a sessão é criada pela API, com uma API key sem restrição de conversas:
+### Ligar um número na Meta
+
+Feito uma vez por app da Meta, no [Meta for Developers](https://developers.facebook.com/apps) e no Business Manager
+da empresa:
+
+1. **Criar o app:** tipo "Business", ligado ao portfólio (Business Manager) da empresa, com o produto
+   **WhatsApp**. A Meta cria uma WABA de teste com um número de teste gratuito, que manda mensagens para até cinco
+   destinatários cadastrados em **WhatsApp → API Setup**; serve para o primeiro teste antes de um número real.
+2. **App Secret:** em **App settings → Basic**, copie o App Secret e, na VM, acrescente ao `~/openmsg/.env` a
+   variável `META_APP_SECRET` com esse valor entre aspas simples; depois rode `docker compose up -d`. Cole direto
+   no terminal da VM, nunca no chat nem no Git.
+3. **Webhook:** em **WhatsApp → Configuration**, Callback URL `https://openmsg.devsrun.com/api/meta-webhook` e
+   Verify token igual ao `META_WEBHOOK_VERIFY_TOKEN` (leia na VM com `grep META_WEBHOOK_VERIFY_TOKEN ~/openmsg/.env`).
+   Clique em **Verify and save** e assine o campo `messages`.
+4. **Token permanente:** o token de **API Setup** vence em 24 horas. Para produção, em **Business Settings →
+   Users → System users**, crie um usuário de sistema admin, atribua a ele o app e a WABA, e gere um token sem
+   validade com `whatsapp_business_messaging` e `whatsapp_business_management`.
+5. **Sessão:** no painel do OpenMsg, **Sessões → Nova sessão → API oficial da Meta**, com o Phone Number ID e o
+   WABA ID mostrados em **API Setup** e o token do passo 4; depois **Iniciar**. Ao iniciar, o gateway inscreve o
+   app na WABA (`subscribed_apps`), sem passo manual.
+6. **Modelo:** para falar com quem não escreveu nas últimas 24 horas, crie e aprove um modelo no WhatsApp
+   Manager; o número de teste já vem com `hello_world`.
+
+Para um número real, a Meta pede também o nome de exibição aprovado, um método de pagamento na WABA e, para passar
+de 250 conversas por dia, a verificação da empresa (ver os riscos no [docs/32](docs/32-meta-cloud-api.md)). O
+número não pode estar ligado ao mesmo tempo numa sessão de QR.
+
+Uma integração também cria a sessão pela API, com uma API key sem restrição de conversas:
 
 ```bash
 curl -X POST https://openmsg.devsrun.com/api/sessions -H "X-API-Key: $KEY" -H 'Content-Type: application/json'   -d '{"name":"meta-1","engine":"meta-cloud","metaCloud":{"phoneNumberId":"<id>","wabaId":"<waba>","accessToken":"<token>"}}'
 curl -X POST https://openmsg.devsrun.com/api/sessions/<sessionId>/start -H "X-API-Key: $KEY"
 ```
 
-No painel da Meta, o webhook do app aponta para `https://openmsg.devsrun.com/api/meta-webhook`, com o campo
-`messages` assinado; `GET /api/sessions/<sessionId>/meta/account` mostra essa URL e os dados do número.
+`GET /api/sessions/<sessionId>/meta/account` mostra a URL do webhook e os dados do número.
+
+### Limites de uma sessão Cloud
 
 - Campanhas são recusadas numa sessão Cloud (400 `CAMPAIGN_ENGINE_UNSUPPORTED`) até a F4 trazer os modelos da Meta.
   Grupos, etiquetas, canais, status e o que mais a coluna Cloud API do [docs/29](docs/29-engine-capability-matrix.md)
@@ -215,7 +246,7 @@ No painel da Meta, o webhook do app aponta para `https://openmsg.devsrun.com/api
 
 ### Operar uma sessão Cloud pelo painel
 
-Com a F3, o operador faz tudo pelo painel, sem chamar a API:
+Com o app da Meta pronto, o operador faz tudo pelo painel, sem chamar a API:
 
 - **Criar:** em **Sessões → Nova sessão**, escolha "API oficial da Meta" no lugar de "Dispositivo vinculado (QR)" e
   preencha Phone Number ID, WABA ID e token de acesso, copiados do app no Meta for Developers. O botão Criar só
@@ -272,17 +303,18 @@ services:
 
 **`.env`** (permissão 600): as chaves abaixo, com valores que nunca devem ir para o chat nem para o Git.
 
-| Variável                                    | Para quê                                                                  |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| `NODE_ENV=production`, `TZ`                 | Modo de produção e fuso horário dos logs                                  |
-| `ENGINE_TYPE=baileys`                       | Motor sem Chrome, mais leve                                               |
-| `DATABASE_TYPE=sqlite`                      | Banco local, no volume `openwa-data`                                      |
-| `BASE_URL`, `DASHBOARD_URL`, `CORS_ORIGINS` | O endereço público (`https://openmsg.devsrun.com`)                        |
-| `API_MASTER_KEY`, `API_KEY_PEPPER`          | Chave de admin da API (integrações) e o "sal" do hash das chaves          |
-| `TRUSTED_PROXIES`                           | Sub-rede da `openwa-network`, para o OpenMsg ver o IP real de quem acessa |
-| `TUNNEL_TOKEN`                              | Token do túnel `openmsg` na Cloudflare (Zero Trust → Networks → Tunnels)  |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD`             | Cria o primeiro admin. Apague `ADMIN_PASSWORD` depois do primeiro acesso. |
-| `SEND_PACING_ENABLED=true`                  | Liga o anti-banimento (cotas diárias e disjuntor), com as cotas padrão    |
+| Variável                                    | Para quê                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `NODE_ENV=production`, `TZ`                 | Modo de produção e fuso horário dos logs                                                      |
+| `ENGINE_TYPE=baileys`                       | Motor sem Chrome, mais leve                                                                   |
+| `DATABASE_TYPE=sqlite`                      | Banco local, no volume `openwa-data`                                                          |
+| `BASE_URL`, `DASHBOARD_URL`, `CORS_ORIGINS` | O endereço público (`https://openmsg.devsrun.com`)                                            |
+| `API_MASTER_KEY`, `API_KEY_PEPPER`          | Chave de admin da API (integrações) e o "sal" do hash das chaves                              |
+| `TRUSTED_PROXIES`                           | Sub-rede da `openwa-network`, para o OpenMsg ver o IP real de quem acessa                     |
+| `TUNNEL_TOKEN`                              | Token do túnel `openmsg` na Cloudflare (Zero Trust → Networks → Tunnels)                      |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`             | Cria o primeiro admin. Apague `ADMIN_PASSWORD` depois do primeiro acesso.                     |
+| `SEND_PACING_ENABLED=true`                  | Liga o anti-banimento (cotas diárias e disjuntor), com as cotas padrão                        |
+| `META_CLOUD_ENABLED`, `META_*`              | API oficial da Meta (ver [Sessões da API oficial](#sessões-da-api-oficial-da-meta-cloud-api)) |
 
 No Compose, ponha a senha entre aspas simples (`ADMIN_PASSWORD='...'`). Sem aspas, um `$` ou um ` #` na senha
 cortam o valor sem aviso.
@@ -341,9 +373,10 @@ registra cada migration pelo nome. Uma tabela que já foi para produção só mu
 
 ## Pendências conhecidas
 
-- A API oficial da Meta (WhatsApp Cloud API) tem as fases F1 e F2 do [docs/32](docs/32-meta-cloud-api.md) na VM e o
-  painel (F3) implementado num ramo ainda não publicado (ver [Sessões da API oficial da Meta](#sessões-da-api-oficial-da-meta-cloud-api));
-  campanhas por modelo e mensagens interativas (F4) e perfil, bloqueio e métricas (F5) continuam pendentes.
+- A API oficial da Meta (WhatsApp Cloud API) tem as fases F1 a F3 do [docs/32](docs/32-meta-cloud-api.md) na VM,
+  com o motor ligado, mas ainda sem app da Meta: faltam o `META_APP_SECRET` e o teste com um número real (ver
+  [Ligar um número na Meta](#ligar-um-número-na-meta)). Campanhas por modelo e mensagens interativas (F4) e perfil,
+  bloqueio e métricas (F5) continuam pendentes.
 - Campanhas não entram no backup de `/infra` (`GET /infra/export-data`): restaurar um backup deixa as sessões
   sem campanhas.
 
