@@ -12,10 +12,10 @@
 
 ## Handoff
 
-**Feature**: meta-cloud-dashboard
-**Where**: C1-C62 verified - round 6 PASS (`2f0ca69d`), human walk passed 2026-10-12, PR #7 review threads resolved
+**Feature**: meta-cloud-dashboard (deployment)
+**Where**: PR #7 merged (`5517e46d`) and running on the VM; 2026-10-12 the VM `.env` got `META_CLOUD_ENABLED=true`, `META_CLOUD_ENCRYPTION_KEY` and `META_WEBHOOK_VERIFY_TOKEN`; the webhook handshake answers 200 with the token and 403 without
 **In progress**: none
-**Next step**: merge PR #7 once CI (run by hand on this fork) is green on the head
-**Blockers**: none for merging; go-live waits on a Meta app, WABA, number and an approved template
+**Next step**: the user creates the Meta app (OPENMSG.md, "Ligar um número na Meta"), puts `META_APP_SECRET` in the VM `.env`, verifies the webhook, then the F3 real-number criterion is walked with the test number and `hello_world`
+**Blockers**: Meta app, WABA and number do not exist yet
 **Uncommitted**: none
-**Branch**: claude/tlc-spec-lean-meta-cloud-dashboard
+**Branch**: claude/meta-api-deployment-0203a8
