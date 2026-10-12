@@ -12,9 +12,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-api
-**Where**: S1, S2 and S3 built - C1-C48 closed and committed (S3: `4b441bd7`, `48ab00ee`, `97b8bd32`, `01a66335`, `ecc5ed86`)
+**Where**: S1-S4 built - C1-C68 closed and committed (S4: `082154ec`, `7384a2fd`)
 **In progress**: none
-**Next step**: next builder starts S4 (C49-C68): the `/api/meta-webhook` receiver, its signature check, the inbound mapper and the router, reusing `meta-cloud-adapter.ts` callbacks and the fake Graph server
+**Next step**: next builder starts S5 (C69-C78) and the governance checks (C79-C83): the read side of `meta-cloud-chat-store.service.ts` (getChats, getChatHistory, getContactById), sendSeen and typing from `meta_cloud_contacts.lastInboundWamid`, the matrix `cloud` column, the campaigns refusal and docs/29
 **Blockers**: none for building; go-live waits on plan open questions 1 and 2
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
