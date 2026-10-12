@@ -38,6 +38,7 @@ const DATA_ENTITY_ROOTS = [
   'modules/integration',
   'modules/status-store',
   'modules/automation',
+  'modules/campaign',
 ];
 // The main-connection (auth/audit) roots; their tables are not this endpoint's payload.
 const MAIN_ENTITY_ROOTS = ['modules/auth', 'modules/audit'];
@@ -221,6 +222,16 @@ describe('InfraDataService.exportData validates the registry against live entity
     };
     await expect(build(ds).exportData()).rejects.toThrow(/no backup decision/);
     expect(query).not.toHaveBeenCalled();
+  });
+
+  it('exports past the guard when the metadata carries the excluded tables, the campaign ones included', async () => {
+    const query = jest.fn().mockResolvedValue([]);
+    const excluded = Object.keys(EXPORT_TABLE_EXCLUSIONS);
+    expect(excluded).toEqual(expect.arrayContaining(['campaigns', 'campaign_recipients']));
+    const ds = { query, entityMetadatas: [...registryTables(), ...excluded].map(tableName => ({ tableName })) };
+
+    await expect(build(ds).exportData()).resolves.toBeDefined();
+    expect(query).toHaveBeenCalled();
   });
 });
 

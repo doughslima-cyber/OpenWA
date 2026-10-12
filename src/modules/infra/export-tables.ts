@@ -349,4 +349,8 @@ export const EXPORT_TABLE_EXCLUSIONS: Readonly<Record<string, string>> = {
   // OpenMsg (docs/32 D2). Both cascade from sessions, so a restore's sessions DELETE clears them too.
   meta_cloud_accounts: 'Cloud API access tokens must not travel in a backup; each Cloud session needs its token again',
   meta_cloud_contacts: 'Cloud API contacts learned from inbound messages; the next inbound message rebuilds them',
+  // OpenMsg campaigns (migrations 1791100000000/1791200000000). Not exported yet: adding them changes the
+  // published tables/counts DTO keys. Both cascade from sessions, so a restore clears them.
+  campaigns: 'paced campaign runs (OpenMsg); not in the backup yet, a restore leaves the session with none',
+  campaign_recipients: "a campaign's recipient list and delivery state, excluded with its campaign",
 };
