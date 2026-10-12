@@ -169,7 +169,7 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 
 ### Governance - what the repo's gates require of the new routes and strings · 12 files · ~80 KB · ~20k
 
-**C46** - The three new routes have `#### METHOD /api/...` sections in `docs/06` whose `**Errors:**` name each declared 409/429/5xx; `openapi.json` is regenerated and current (Surface, door 1)
+**C46** - The three new routes have `#### METHOD /api/...` sections in `docs/06` whose `**Errors:**` name each declared 409/429/5xx; `openapi.json` is regenerated and current (Surface, door 1) ✅
 Proof: `npx jest src/common/openapi/docs-06-contract.spec.ts -t "documents every contract operation|documents every route-specific status code" --testPathIgnorePatterns=/node_modules/`
 Proof: `npm run openapi:export && git diff --exit-code openapi.json`
 
