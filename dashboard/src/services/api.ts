@@ -72,9 +72,10 @@ export interface Session {
   engineLoaded?: boolean;
   /**
    * OpenMsg (docs/32): the engine behind this session. `meta-cloud` is the official Cloud API, with no
-   * QR and no linked device; any other value (or none, from an older gateway) is a QR session.
+   * QR and no linked device; any other value is a QR session. Always sent: a session with no engine of
+   * its own is reported as the deployment's `ENGINE_TYPE`.
    */
-  engine?: string | null;
+  engine: string;
   phone?: string | null;
   pushName?: string | null;
   connectedAt?: string | null;

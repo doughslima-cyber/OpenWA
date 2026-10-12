@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/meta-cloud-dashboard/plan.md`
 
-52 checks in 5 slices plus governance · 5 one-way doors · 1 open, which blocks go-live only
+53 checks in 5 slices plus governance and verification round 1 additions · 5 one-way doors · 1 open, which blocks go-live only
 
 Proof commands, from `package.json`, `dashboard/package.json` and `.github/workflows/ci.yml`:
 
@@ -196,6 +196,12 @@ Proof: `npx jest src/modules/meta-cloud src/modules/message/message-send.service
 **C52** - `OPENMSG.md` gains a short Portuguese section on operating a Cloud session from the dashboard (create, change token, the 24-hour window and templates), with no secret values, and `docs/32` marks F3 implemented (Observable - document) ✅
 Proof: `npx jest src/common/docs-governance.spec.ts -t "governance docs match the repository" --testPathIgnorePatterns=/node_modules/`
 
+### Verification round 1 additions
+
+**C53** - The dashboard `Session.engine` is a required `string`, matching `SessionResponseDto.engine` in `openapi.json` (a `string`, not nullable, listed in `required`); loosening either side turns the proof red (Surface · verification round 1, gap 2) ✅
+Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C53 " src/services/sessionEngine.contract.test.ts`
+Proof: `cd dashboard && npm run typecheck`
+
 ## Coverage
 
 | Set (size)                                                            | Member -> proof                                                                                                                           | Unproven |
@@ -215,6 +221,8 @@ Proof: `npx jest src/common/docs-governance.spec.ts -t "governance docs match th
 | Chats engine gates (5)                                                | Status tab C15, C21 · Channels tab C15, C21 · Delete C16, C21 · interactive buttons C16 · window request C17, C21                         | -        |
 | composer window states (3)                                            | closed C18 · open C19 · request failed C19                                                                                                | -        |
 | Landing doors (5)                                                     | 1 C23, C29, C46, C48 · 2 C28, C39 · 3 C22, C24 · 4 C32, C33 · 5 C27                                                                       | -        |
+| `Session.engine` values the dashboard branches on (3)                 | `meta-cloud` C1, C7, C15, C42 · `whatsapp-web.js` C1, C21 · `baileys` C1, C7, C14, C21, C42                                               | -        |
+| dashboard contract shapes this feature reads (5)                      | account C49 · template C49 · window C49 · send body C49 · `Session.engine` C53                                                            | -        |
 | Relations entities (0)                                                | none - no stored-data change                                                                                                              | -        |
 | startup config (1 place)                                              | the meta-cloud module registers the new controller and services, booted by every e2e suite through `AppModule` C23                        | -        |
 

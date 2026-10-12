@@ -27,6 +27,7 @@ import { holdConnect, lastSocket, resetSocketDouble } from '../test-helpers/sock
 const SESSION: Session = {
   id: 'session-1',
   name: 'Main',
+  engine: 'whatsapp-web.js',
   status: 'ready',
   phone: '15551234567',
   createdAt: '2026-01-01T00:00:00.000Z',
