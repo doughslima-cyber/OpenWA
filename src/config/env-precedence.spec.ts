@@ -389,3 +389,33 @@ describe.each(['docker-compose.yml', 'docker-compose.dev.yml'])('%s forwards the
     expect(forwards(key)).toBe(true);
   });
 });
+
+// OpenMsg (docs/32): the eight Cloud API variables are wired in every place an environment variable
+// must be, so a blank compose forward never shadows a saved value and an operator finds each one.
+describe('the Meta Cloud API variables', () => {
+  const META_KEYS = [
+    'META_CLOUD_ENABLED',
+    'META_APP_SECRET',
+    'META_WEBHOOK_VERIFY_TOKEN',
+    'META_CLOUD_ENCRYPTION_KEY',
+    'META_GRAPH_API_VERSION',
+    'META_GRAPH_BASE_URL',
+    'META_CLOUD_MAX_RPS',
+    'META_CLOUD_TIMEOUT_MS',
+  ];
+  const repoFile = (name: string): string => fs.readFileSync(path.join(__dirname, '..', '..', name), 'utf8');
+
+  it.each(META_KEYS)(
+    'C83 %s is commented out in .env.example, forwarded blank by both compose files and blank-shadowed',
+    key => {
+      expect(repoFile('.env.example')).toMatch(new RegExp(`^# *${key}=`, 'm'));
+      for (const compose of ['docker-compose.yml', 'docker-compose.dev.yml']) {
+        expect({ compose, forwarded: repoFile(compose).includes(`- ${key}=\${${key}:-}`) }).toEqual({
+          compose,
+          forwarded: true,
+        });
+      }
+      expect(BLANK_SHADOWED_ENV_KEYS).toContain(key);
+    },
+  );
+});

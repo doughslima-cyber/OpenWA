@@ -275,25 +275,25 @@ Proof: `npx jest src/engine/engine-inventory-parity.spec.ts -t "exposure mark" -
 
 ### Governance - what the repo's gates require of each new route, table and variable · 25 files · ~150 KB · ~38k
 
-**C79** - Every new route has a `#### METHOD /api/...` heading in `docs/06` whose `**Errors:**` names each declared 409/429/5xx; `openapi.json` is regenerated and current; `@Public()` webhook routes are in `PUBLIC_PATHS` and both lists of `swagger.config.spec.ts`; the account routes carry `@RequireUnscopedKey()` (Surface, doors 6, 8, 9)
+**C79** - Every new route has a `#### METHOD /api/...` heading in `docs/06` whose `**Errors:**` names each declared 409/429/5xx; `openapi.json` is regenerated and current; `@Public()` webhook routes are in `PUBLIC_PATHS` and both lists of `swagger.config.spec.ts`; the account routes carry `@RequireUnscopedKey()` (Surface, doors 6, 8, 9) ✅
 Proof: `npx jest src/common/openapi/docs-06-contract.spec.ts -t "documents every contract operation|documents every route-specific status code" --testPathIgnorePatterns=/node_modules/`
 Proof: `npx jest src/modules/auth/global-route-fence-coverage.spec.ts -t "no real controller exposes an unfenced deployment-global route" --testPathIgnorePatterns=/node_modules/`
 Proof: `npx jest src/config/swagger.config.spec.ts -t "EXPECTED_PUBLIC_CONTROLLERS|PUBLIC_PATHS is exactly the expected"`
 Proof: `npm run openapi:export && git diff --exit-code openapi.json`
 
-**C80** - SDK coverage and routes pass with `meta` and `meta-webhook` in the "Deliberately not exposed" list of `sdk/README.md` and `docs/18`; the `engine` field on the session shape is in each SDK's hand-written types (Surface, door 8)
+**C80** - SDK coverage and routes pass with `meta` and `meta-webhook` in the "Deliberately not exposed" list of `sdk/README.md` and `docs/18`; the `engine` field on the session shape is in each SDK's hand-written types (Surface, door 8) ✅
 Proof: `npm run check:sdk-routes`
 Proof: `npm run check:sdk-coverage`
 Proof: `npm run check:contract-shapes` (fails on Windows with or without this change, per `AGENTS.md`; settled on Ubuntu CI or against a stashed-tree baseline)
 
-**C81** - Both new tables are excluded from the `/infra` export with a reason, and the export registry, importers and DTO keys still agree (Impact - stored data)
+**C81** - Both new tables are excluded from the `/infra` export with a reason, and the export registry, importers and DTO keys still agree (Impact - stored data) ✅
 Proof: `npx jest src/modules/infra/export-tables.parity.spec.ts -t "exports or explicitly excludes every data-connection entity table|gives every exclusion a one-line reason"`
 
-**C82** - Both migrations are listed under "Migration Files" in `docs/05`, and the entity DDL (`engine` column, both tables, both named unique indexes) matches the migrations exactly (doors 1, 3, 5)
+**C82** - Both migrations are listed under "Migration Files" in `docs/05`, and the entity DDL (`engine` column, both tables, both named unique indexes) matches the migrations exactly (doors 1, 3, 5) ✅
 Proof: `npx jest src/database/migrations/__tests__/migration-drift.spec.ts -t "data connection: drift is EXACTLY the pinned set" --testPathIgnorePatterns=/node_modules/`
 Proof: `npx jest src/database/docs-schema-accuracy.spec.ts -t "lists every migration file under Migration Files"`
 
-**C83** - The 8 new variables are in `.env.example` (commented out), as `- KEY=${KEY:-}` in `docker-compose.yml` and `docker-compose.dev.yml`, and in `BLANK_SHADOWED_ENV_KEYS` (Impact - configuration)
+**C83** - The 8 new variables are in `.env.example` (commented out), as `- KEY=${KEY:-}` in `docker-compose.yml` and `docker-compose.dev.yml`, and in `BLANK_SHADOWED_ENV_KEYS` (Impact - configuration) ✅
 Proof: `npx jest src/config/docs-env-example.spec.ts -t "lists every key the validator, the precedence list or compose knows about" --testPathIgnorePatterns=/node_modules/`
 Proof: `npx jest src/config/env-precedence.spec.ts -t "C83 "`
 
