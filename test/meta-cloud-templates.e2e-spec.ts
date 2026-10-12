@@ -24,6 +24,7 @@ import { AuthService } from './../src/modules/auth/auth.service';
 import { ApiKeyRole } from './../src/modules/auth/entities/api-key.entity';
 import { Message } from './../src/modules/message/entities/message.entity';
 import { WebhookService } from './../src/modules/webhook/webhook.service';
+import { MetaCloudAccountStore } from './../src/engine/adapters/meta-cloud-account-store.service';
 import { MetaCloudContact } from './../src/engine/adapters/meta-cloud-contact.entity';
 import {
   FakeGraph,
@@ -439,5 +440,132 @@ describe('Meta Cloud API templates and service window (e2e)', () => {
     await sendTemplate(id, { ...valid, parameters: 42 }).expect(400);
 
     await sendTemplate(await qrSession(), valid).expect(501);
+  });
+
+  it('C54 a key restricted to chat A reaches the window and send-template of A, and gets 403 with no Graph call for B', async () => {
+    const id = await readyCloudSession();
+    const OTHER = '5511900000098@c.us';
+    const fenced = (
+      await app.get(AuthService).createApiKey({
+        name: 'e2e-templates-chat-a',
+        role: ApiKeyRole.OPERATOR,
+        allowedChats: [CHAT],
+      })
+    ).rawKey;
+    const windowAs = (chatId: string) =>
+      http()
+        .get(`/api/sessions/${id}/meta/chats/${encodeURIComponent(chatId)}/window`)
+        .set('X-API-Key', fenced);
+    const sendAs = (chatId: string) =>
+      http()
+        .post(`/api/sessions/${id}/meta/send-template`)
+        .set('X-API-Key', fenced)
+        .send({ chatId, name: 'order_shipped', language: 'pt_BR', parameters: ['Ana', '42'] });
+
+    await windowAs(CHAT).expect(200);
+    await windowAs(OTHER).expect(403);
+
+    const inside = await requestsDuring(() => sendAs(CHAT).expect(201));
+    expect(messageSends(inside)).toHaveLength(1);
+    const outside = await requestsDuring(() => sendAs(OTHER).expect(403));
+    expect(outside).toEqual([]);
+  });
+
+  it('C55 stores the template name when the template list cannot be read, and when it does not hold the template', async () => {
+    // A session of its own, so no earlier list read sits in the template cache.
+    const created = await post('/api/sessions', {
+      name: `e2e-cloud-fallback-${Date.now()}`,
+      engine: 'meta-cloud',
+      metaCloud: { phoneNumberId: '106540352242933', wabaId: WABA_ID, accessToken: TOKEN },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await post(`/api/sessions/${id}/start`, {}).expect(200);
+    await eventually(async () => ((await get(`/api/sessions/${id}`)).body as { status: string }).status === 'ready');
+
+    const storedBodyOf = async (body: object): Promise<string | undefined> => {
+      const res = await sendTemplate(id, body).expect(201);
+      const wamid = (res.body as { messageId: string }).messageId;
+      await eventually(async () => (await messages.findOne({ where: { sessionId: id, waMessageId: wamid } })) !== null);
+      return (await messages.findOne({ where: { sessionId: id, waMessageId: wamid } }))?.body;
+    };
+
+    graph.script = r => (r.path.split('?')[0].endsWith('/message_templates') ? { status: 500 } : templatesGraph(r));
+    expect(
+      await storedBodyOf({ chatId: CHAT, name: 'order_shipped', language: 'pt_BR', parameters: ['Ana', '42'] }),
+    ).toBe('order_shipped');
+
+    graph.script = templatesGraph;
+    expect(await storedBodyOf({ chatId: CHAT, name: 'not_in_the_list', language: 'pt_BR', parameters: ['Ana'] })).toBe(
+      'not_in_the_list',
+    );
+  });
+
+  it('C56 send-template answers 404 on an unknown session id', async () => {
+    await sendTemplate(randomUUID(), {
+      chatId: CHAT,
+      name: 'order_shipped',
+      language: 'pt_BR',
+      parameters: ['Ana', '42'],
+    }).expect(404);
+  });
+
+  it('C56 send-template answers 429 META_RATE_LIMITED after Graph throttles three attempts with 130429', async () => {
+    const id = await readyCloudSession();
+    graph.script = r =>
+      r.method === 'POST' && r.path.split('?')[0].endsWith('/messages')
+        ? graphError(400, 130429, 'Rate limit hit')
+        : templatesGraph(r);
+
+    let res: request.Response | undefined;
+    const requests = await requestsDuring(async () => {
+      res = await sendTemplate(id, {
+        chatId: CHAT,
+        name: 'order_shipped',
+        language: 'pt_BR',
+        parameters: ['Ana', '42'],
+      });
+    });
+
+    expect(res?.status).toBe(429);
+    expect(res?.body).toMatchObject({ code: 'META_RATE_LIMITED', metaCode: 130429 });
+    expect(messageSends(requests)).toHaveLength(3);
+  }, 30_000);
+
+  it('C56 send-template answers 502 META_UPSTREAM_ERROR on a Graph 500 and 503 when Graph does not answer', async () => {
+    const id = await readyCloudSession();
+    const body = { chatId: CHAT, name: 'order_shipped', language: 'pt_BR', parameters: ['Ana', '42'] };
+
+    graph.script = r =>
+      r.method === 'POST' && r.path.split('?')[0].endsWith('/messages') ? { status: 500 } : templatesGraph(r);
+    const upstream = await sendTemplate(id, body).expect(502);
+    expect(upstream.body).toMatchObject({ code: 'META_UPSTREAM_ERROR' });
+
+    const previous = process.env.META_GRAPH_BASE_URL;
+    process.env.META_GRAPH_BASE_URL = await refusedGraphUrl();
+    try {
+      await sendTemplate(id, body).expect(503);
+    } finally {
+      process.env.META_GRAPH_BASE_URL = previous;
+    }
+  });
+
+  it('C56 the templates route answers 409 on a Cloud session whose stored token is NULL', async () => {
+    const created = await post('/api/sessions', {
+      name: `e2e-cloud-tokenless-${Date.now()}`,
+      engine: 'meta-cloud',
+      metaCloud: { phoneNumberId: '106540352242934', wabaId: WABA_ID, accessToken: TOKEN },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    // What logout leaves behind (MetaCloudAdapter.logout), and a restore that carried no token.
+    await app.get(MetaCloudAccountStore, { strict: false }).clearToken(id);
+
+    const requests = await requestsDuring(async () => {
+      const res = await get(`/api/sessions/${id}/meta/templates?refresh=true`).expect(409);
+      expect(res.body).toMatchObject({
+        statusCode: 409,
+        message: 'The Cloud API session has no usable access token. Set one and restart it.',
+      });
+    });
+    expect(requests).toEqual([]);
   });
 });

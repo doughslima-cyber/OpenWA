@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/meta-cloud-dashboard/plan.md`
 
-53 checks in 5 slices plus governance and verification round 1 additions · 5 one-way doors · 1 open, which blocks go-live only
+56 checks in 5 slices plus governance and verification round 1 additions · 5 one-way doors · 1 open, which blocks go-live only
 
 Proof commands, from `package.json`, `dashboard/package.json` and `.github/workflows/ci.yml`:
 
@@ -202,18 +202,31 @@ Proof: `npx jest src/common/docs-governance.spec.ts -t "governance docs match th
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C53 " src/services/sessionEngine.contract.test.ts`
 Proof: `cd dashboard && npm run typecheck`
 
+**C54** - With a key whose `allowedChats` holds only chat A, `GET /api/sessions/:id/meta/chats/<A>/window` answers 200 and `.../<B>/window` answers 403; `POST /api/sessions/:id/meta/send-template` to chat A answers 201 with one Graph send, and to chat B answers 403 with no Graph call (MCT-02, AC 28 · verification round 1, gap 3) ✅
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C54 "`
+
+**C55** - The stored body of a template send is the template's `name` when the template list cannot be read (Graph answers 500), and again when the list does not hold that `name` in that `language` (2 cases); a listed template still renders (MCT-02, AC 27 · verification round 1, gap 4) ✅
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-templates.service.spec.ts -t "C55 "`
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C55 "`
+
+**C56** - Over HTTP, `POST /api/sessions/:id/meta/send-template` answers 404 on an unknown session id, 429 `META_RATE_LIMITED` after Graph answers `130429` to 3 attempts, 502 `META_UPSTREAM_ERROR` on a Graph 500 and 503 when Graph does not answer; `GET /api/sessions/:id/meta/templates` on a Cloud session whose stored token is NULL answers 409 with the message "The Cloud API session has no usable access token. Set one and restart it." and makes no Graph call; at its own layer the send service answers 404, 501 and 409 (no engine, `initializing`, `action_required`) before any send (MCT-01, MCT-02, Surface · verification round 1, gap 5) ✅
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C56 "`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-template-send.service.spec.ts -t "C56 "`
+
 ## Coverage
 
 | Set (size)                                                            | Member -> proof                                                                                                                           | Unproven |
 | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `GET /api/sessions/:sessionId/meta/templates` statuses (6)            | 200 C23 · 404 C25 · 409 C26 · 501 C25 · 502 C26 · 503 C26                                                                                 | -        |
-| `GET /api/sessions/:sessionId/meta/chats/:chatId/window` statuses (4) | 200 C27 · 403 C47 (fence) · 404 C25 · 501 C25                                                                                             | -        |
-| `POST /api/sessions/:sessionId/meta/send-template` statuses (9)       | 201 C29 · 400 C33, C34 · 403 C31 · 404 C34 · 409 C34 · 429 C32 (F2 table row) · 501 C34 · 502 C32 · 503 C32                               | -        |
+| `GET /api/sessions/:sessionId/meta/templates` statuses (6)            | 200 C23 · 404 C25 · 409 C26, C56 · 501 C25 · 502 C26 · 503 C26                                                                            | -        |
+| `GET /api/sessions/:sessionId/meta/templates` 409 causes (2)          | `META_TOKEN_INVALID` C26 · no usable stored token C56                                                                                     | -        |
+| `GET /api/sessions/:sessionId/meta/chats/:chatId/window` statuses (4) | 200 C27, C54 · 403 C54 · 404 C25 · 501 C25                                                                                                | -        |
+| `POST /api/sessions/:sessionId/meta/send-template` statuses (9)       | 201 C29, C54 · 400 C33, C34 · 403 C31, C54 · 404 C56 · 409 C34 · 429 C56 · 501 C34 · 502 C56 · 503 C56                                    | -        |
 | `POST /api/sessions` statuses the dashboard handles (3)               | 201 C4 · 400 C6 · 409 C6                                                                                                                  | -        |
 | create error codes (3)                                                | `META_CLOUD_DISABLED` C6 · `META_CLOUD_NOT_CONFIGURED` C6 · `META_PHONE_NUMBER_IN_USE` C6                                                 | -        |
 | send error codes shown in Chats (6)                                   | C20, table-driven over all 6                                                                                                              | -        |
 | template error codes 132000-132016 named by Meta (7)                  | C32, table-driven over all 7; boundary 132001 C33                                                                                         | -        |
 | template parameter shapes (3)                                         | none C28, C39 · positional C28, C29, C30, C39 · named C28, C30, C39                                                                       | -        |
+| stored template body outcomes (3)                                     | rendered C30, C55 · list unreadable C55 · template absent C55                                                                             | -        |
 | window answers (3)                                                    | open C27 · closed C27 · no contact C27                                                                                                    | -        |
 | template list behaviours (4)                                          | paging C22 · 500 cap C22 · cache hit C24 · `refresh=true` C24                                                                             | -        |
 | picker template kinds (6)                                             | body-only positional C36 · body-only named C36 · no placeholders C39 · header media C37 · header text variable C37 · button parameter C37 | -        |
@@ -227,7 +240,7 @@ Proof: `cd dashboard && npm run typecheck`
 | startup config (1 place)                                              | the meta-cloud module registers the new controller and services, booted by every e2e suite through `AppModule` C23                        | -        |
 
 - Claims naming a status code, route or response shape: C4, C6, C10, C12, C13, C17, C23, C25, C26, C27, C29, C30,
-  C31, C33, C34, C35, C39, C42, C43. The backend ones have an e2e proof across HTTP; the dashboard ones are proven
+  C31, C33, C34, C35, C39, C42, C43, C54, C55, C56. The backend ones have an e2e proof across HTTP; the dashboard ones are proven
   at the request the page sends and the response it renders, through a stubbed `fetch`, which is the boundary the
   dashboard owns.
 - C22, C24, C28 and C32 are decision tables proven at their own layer, each with an HTTP boundary row (C23, C29,
@@ -249,16 +262,23 @@ under (the same rows F1 + F2 ran under).
 Evidence (planned files, classified by the shape the plan fixes):
 
 - `meta-cloud-templates.service.ts`: paging loop with a cap, a TTL cache keyed by session with a bypass, 4 branch
-  points -> decides, reached across a boundary (C22, C24 at its layer; C23 at HTTP)
+  points -> decides, reached across a boundary (C22, C24 at its layer; C23 at HTTP). Its `renderBody` has 3 outcomes
+  (rendered, list unreadable, template absent): C55 at its layer over all 3; at HTTP rendered C30, the two fallbacks
+  C55. The no-usable-token branch of the list: 409 at HTTP C56
+- `meta-cloud-template-send.service.ts`: unknown session, not a Cloud session, not READY, then send -> decides,
+  reached across a boundary (C56 at its layer over all 4; at HTTP 404 C56, 501 and 409 C34, send C29)
 - `meta-cloud-window.service.ts` (or the chat-store method): 3 outcomes -> decides, reached across a boundary (C27 both)
 - adapter `sendTemplateMessage`: 3 parameter shapes -> decides (C28), reached across a boundary (C29, C30)
 - Graph client table rows `132xxx`: 7 codes -> decides (C32), boundary C33
 - `TemplatePicker.tsx`: approved filter, placeholder extraction (positional and named), sendability rule over 3
   disqualifying kinds, enablement -> decides (C35-C39, C41 at its own layer through its render test; C40 at the Chats
   page)
-- `sessionActions.ts`: engine branch in two helpers -> decides (C1)
-- the meta-cloud controller methods: forward to services, no conditional beyond validation pipes -> entry point that
-  decides nothing (C23, C25-C27, C29, C33, C34)
+- `sessionActions.ts`: engine branch in two helpers -> decides (C1, with `meta-cloud`, `baileys` and `whatsapp-web.js`
+  engines, the strings the API sends)
+- the meta-cloud controller methods: forward to services, no conditional beyond validation pipes and the chat fence
+  -> entry point that decides nothing. Templates: 200 C23, 404 and 501 C25, 409 C26 and C56, 502 and 503 C26.
+  Window: 200 C27, 403 C54, 404 and 501 C25. Send: 201 C29, 400 C33 and C34, 403 C31 and C54, 404 C56, 409 and 501
+  C34, 429, 502 and 503 C56
 - `services/metaCloud.ts` and `hooks/useMetaCloud.ts`: one request or query each -> instrumentation (covered by the
   page and picker proofs)
 - closest analogues: `meta-cloud-graph.client.spec.ts` (`it.each` over the F2 error table) and

@@ -167,4 +167,29 @@ describe('MetaCloudTemplatesService', () => {
     await service.list('sess-b');
     expect(templateRequests()).toHaveLength(4);
   });
+
+  it('C55 stores the template name when the template list cannot be read', async () => {
+    graph.script = () => ({ status: 500 });
+
+    await expect(
+      service.renderBody('sess-unreadable', { name: 'template_001', language: 'pt_BR', parameters: ['Ana'] }),
+    ).resolves.toBe('template_001');
+    expect(templateRequests()).toHaveLength(1);
+  });
+
+  it('C55 stores the template name when the list does not hold the template', async () => {
+    graph.script = pagedScript(1, 10);
+
+    await expect(
+      service.renderBody('sess-absent', { name: 'not_listed', language: 'pt_BR', parameters: ['Ana'] }),
+    ).resolves.toBe('not_listed');
+    // The same name in another language is not the same template.
+    await expect(
+      service.renderBody('sess-absent', { name: 'template_001', language: 'en_US', parameters: ['Ana'] }),
+    ).resolves.toBe('template_001');
+    // The listed one still renders, so the fallback above is the branch taken, not a broken render.
+    await expect(
+      service.renderBody('sess-absent', { name: 'template_001', language: 'pt_BR', parameters: ['Ana'] }),
+    ).resolves.toBe('Body 1 Ana');
+  });
 });
