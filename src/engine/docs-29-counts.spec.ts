@@ -258,6 +258,58 @@ describe('docs/29 counts match the capability matrix', () => {
     expect(wrong).toEqual([]);
   });
 
+  /**
+   * OpenMsg (docs/32): the Cloud API adapter's column. Every 29.4 row carries a cell for it, and that
+   * cell must agree with the matrix's `cloud` status method by method; the two places the document
+   * states the column's totals must agree with a recount of it.
+   */
+  it('C78 publishes the cloud column in 29.4 with the matrix status of every method and its totals', () => {
+    const matrix = engineCapabilityMatrix();
+    const doc = read('docs', '29-engine-capability-matrix.md');
+    const contract = doc.slice(doc.search(/^## 29\.4 /m), doc.search(/^## 29\.5 /m));
+
+    const cells = new Map<string, string>();
+    let cloudIndex = -1;
+    for (const line of contract.split('\n')) {
+      if (!line.startsWith('|')) continue;
+      const row = line
+        .split('|')
+        .slice(1, -1)
+        .map(cell => cell.trim());
+      if (row[0] === 'Method') {
+        cloudIndex = row.indexOf('Cloud API adapter');
+        continue;
+      }
+      const method = /^`([a-zA-Z]+)`$/.exec(row[0])?.[1];
+      if (!method) continue;
+      expect({ method, cloudIndex: cloudIndex > 0 }).toEqual({ method, cloudIndex: true });
+      cells.set(method, row[cloudIndex]);
+    }
+
+    const methods = Object.keys(matrix).sort();
+    expect([...cells.keys()].sort()).toEqual(methods);
+    const wrong = methods.filter(method => {
+      const cell = cells.get(method) ?? '';
+      const { status, rootCause } = matrix[method].cloud;
+      if (status === 'supported') return !cell.startsWith('✅');
+      return cell !== (rootCause === 'adapter-gap' ? '❌ gap' : '❌ lib');
+    });
+    expect(wrong).toEqual([]);
+
+    const column = Object.values(matrix).map(entry => entry.cloud);
+    const supported = column.filter(c => c.status === 'supported').length;
+    const gaps = column.filter(c => c.status === 'not-available' && c.rootCause === 'adapter-gap').length;
+    const lib = column.filter(c => c.status === 'not-available' && c.rootCause === 'library-limitation').length;
+    expect(supported + gaps + lib).toBe(column.length);
+    const totals = [
+      ...doc.matchAll(/(\d+) supported and (\d+) not-available \((\d+) adapter-gaps, (\d+)\s+library-limitations\)/g),
+    ].map(m => m.slice(1, 5).map(Number));
+    expect(totals).toEqual([
+      [supported, gaps + lib, gaps, lib],
+      [supported, gaps + lib, gaps, lib],
+    ]);
+  });
+
   it('states the same figures everywhere it states them', () => {
     const expected = recount();
     const doc = read('docs', '29-engine-capability-matrix.md');

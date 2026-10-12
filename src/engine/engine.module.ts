@@ -13,11 +13,16 @@ import { MetaCloudAccountStore } from './adapters/meta-cloud-account-store.servi
 import { MetaCloudContact } from './adapters/meta-cloud-contact.entity';
 import { MetaCloudChatStore } from './adapters/meta-cloud-chat-store.service';
 import { MetaCloudNumberRegistry } from './adapters/meta-cloud-number-registry';
+import { Message } from '../modules/message/entities/message.entity';
 
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([BaileysStoredMessage, LidMapping, ChatState, MetaCloudAccount, MetaCloudContact], 'data'),
+    TypeOrmModule.forFeature(
+      // OpenMsg: Message is read by MetaCloudChatStore, a Cloud session's chat list and history (docs/32 D6)
+      [BaileysStoredMessage, LidMapping, ChatState, MetaCloudAccount, MetaCloudContact, Message],
+      'data',
+    ),
   ],
   // EngineRegistry is exported from this @Global module so the feature services that only need a
   // live engine can inject it directly, instead of importing SessionModule to reach the lifecycle
@@ -30,7 +35,7 @@ import { MetaCloudNumberRegistry } from './adapters/meta-cloud-number-registry';
     EngineRegistry,
     MetaCloudAccountStore, // OpenMsg: Cloud API account rows for the meta-cloud engine (docs/32)
     MetaCloudNumberRegistry, // OpenMsg: live Cloud numbers, read by the /api/meta-webhook router
-    MetaCloudChatStore, // OpenMsg: meta_cloud_contacts, written by each inbound Cloud message
+    MetaCloudChatStore, // OpenMsg: meta_cloud_contacts and the chat reads of a Cloud session
   ],
   exports: [EngineFactory, LidMappingStoreService, ChatStateStoreService, EngineRegistry, MetaCloudNumberRegistry],
 })

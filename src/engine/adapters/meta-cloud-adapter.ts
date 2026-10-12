@@ -6,9 +6,13 @@ import { EngineTransportError } from '../../common/errors/engine-transport.error
 import { createLogger } from '../../common/services/logger.service';
 import {
   EngineStatus,
+  type ChatState,
+  type ChatSummary,
+  type Contact,
   type ContactCard,
   type CustomLinkPreview,
   type EngineEventCallbacks,
+  type IncomingMessage,
   type IWhatsAppEngine,
   type LocationInput,
   type MediaInput,
@@ -32,7 +36,7 @@ export interface MetaCloudAdapterOptions {
   proxyUrl?: string;
   /** Where the webhook router finds this session by its number; absent, no inbound reaches it. */
   numbers?: Pick<MetaCloudNumberRegistry, 'register' | 'unregister'>;
-  /** Where each inbound sender is recorded (`meta_cloud_contacts`). */
+  /** Where each inbound sender is recorded (`meta_cloud_contacts`), and the chat list and history are read. */
   contacts?: MetaCloudContactPort;
 }
 
@@ -41,6 +45,9 @@ export const META_TOKEN_INVALID = 'META_TOKEN_INVALID';
 export const META_TOKEN_MISSING = 'META_TOKEN_MISSING';
 
 const PROFILE_FIELDS = 'display_phone_number,verified_name,quality_rating,messaging_limit_tier';
+
+/** How many messages getChatHistory returns when the caller names no limit. */
+const DEFAULT_HISTORY_LIMIT = 50;
 
 /** The kinds sent as an uploaded media id, with the type a URL that names none is sent as. */
 const MEDIA_FALLBACK_TYPE = {
@@ -80,6 +87,19 @@ export function cloudRecipient(chatId: string): string {
     );
   }
   return match[1];
+}
+
+/** The digits of a phone-number contact id, or null for an id the Cloud API has no number for. */
+function cloudPhone(contactId: string): string | null {
+  return /^(\d+)(?:@c\.us|@s\.whatsapp\.net)?$/.exec(contactId)?.[1] ?? null;
+}
+
+/**
+ * The refusal of a custom link preview, kept out of sendTextMessage's body: the method is supported
+ * and refuses only that option (the conditional throw site the parity gate registers).
+ */
+function customPreviewRefused(): EngineNotSupportedError {
+  return new EngineNotSupportedError('sendTextMessage(customPreview)');
 }
 
 interface PhoneNumberProfile {
@@ -236,7 +256,7 @@ export class MetaCloudAdapter implements MetaCloudInboundTarget {
     _mentions?: string[],
     options: { linkPreview?: boolean; customPreview?: CustomLinkPreview } & Quotable = {},
   ): Promise<MessageResult> {
-    if (options.customPreview) throw new EngineNotSupportedError('sendTextMessage(customPreview)');
+    if (options.customPreview) throw customPreviewRefused();
     return this.sendMessage(
       chatId,
       'text',
@@ -305,6 +325,56 @@ export class MetaCloudAdapter implements MetaCloudInboundTarget {
   /** A reaction is not a message of its own: no `message.sent` follows it, as on Baileys. */
   async reactToMessage(chatId: string, messageId: string, emoji: string): Promise<void> {
     await this.postMessage(chatId, 'reaction', { message_id: messageId, emoji });
+  }
+
+  /** The chats found in the session's stored messages: the Cloud API keeps no chat list (docs/32 D6). */
+  getChats(): Promise<ChatSummary[]> {
+    return this.chatStore().getChats(this.dbSessionId);
+  }
+
+  /** The chat's most recent `limit` stored messages, oldest first; media is not re-downloaded. */
+  getChatHistory(chatId: string, limit = DEFAULT_HISTORY_LIMIT): Promise<IncomingMessage[]> {
+    return this.chatStore().getChatHistory(this.dbSessionId, chatId, limit);
+  }
+
+  /** A contact this session learned from an inbound message; null for a number it never heard from. */
+  getContactById(contactId: string): Promise<Contact | null> {
+    return this.chatStore().getContactById(this.dbSessionId, contactId);
+  }
+
+  /** A Cloud contact id is the number itself (docs/32 door 10). */
+  resolveContactPhone(contactId: string): Promise<string | null> {
+    return Promise.resolve(cloudPhone(contactId));
+  }
+
+  /**
+   * Marks the chat's last inbound message read (`status: "read"`), which Meta extends to every earlier
+   * one, and records the chat as seen. Resolves false, with no Graph call, for a chat that never wrote.
+   */
+  async sendSeen(chatId: string): Promise<boolean> {
+    const waId = cloudRecipient(chatId);
+    const store = this.chatStore();
+    const wamid = await store.lastInboundWamid(this.dbSessionId, waId);
+    if (!wamid) return false;
+    await this.postStatus({ status: 'read', message_id: wamid });
+    await store.markSeen(this.dbSessionId, waId, new Date());
+    return true;
+  }
+
+  /**
+   * The Cloud API's only presence is a typing indicator, sent against the chat's last inbound message
+   * (which it also marks read) and cleared by the reply or after 25 s. Without an inbound message to
+   * answer, and for `recording` or `paused`, there is nothing to send: it resolves without a call.
+   */
+  async sendChatState(chatId: string, state: ChatState): Promise<void> {
+    const waId = cloudPhone(chatId);
+    if (state !== 'typing' || !waId) return;
+    const wamid = await this.chatStore().lastInboundWamid(this.dbSessionId, waId);
+    if (!wamid) {
+      this.logger.debug('No inbound message to show typing against', { sessionId: this.sessionId, chatId });
+      return;
+    }
+    await this.postStatus({ status: 'read', message_id: wamid, typing_indicator: { type: 'text' } });
   }
 
   getStatus(): EngineStatus {
@@ -421,6 +491,22 @@ export class MetaCloudAdapter implements MetaCloudInboundTarget {
       },
     );
     return answer.messages?.[0]?.id ?? '';
+  }
+
+  /** `POST /<PHONE_NUMBER_ID>/messages` with a status update (a read receipt, the typing indicator). */
+  private async postStatus(body: Record<string, unknown>): Promise<void> {
+    const account = await this.sendingAccount();
+    await this.graph.send(
+      account.phoneNumberId,
+      `/${encodeURIComponent(account.phoneNumberId)}/messages`,
+      account.token,
+      { messaging_product: 'whatsapp', ...body },
+    );
+  }
+
+  private chatStore(): MetaCloudContactPort {
+    if (!this.contacts) throw new Error('The Cloud API adapter was built without its chat store.');
+    return this.contacts;
   }
 
   /** The number and token a send goes out with; a session that is not `ready` sends nothing. */

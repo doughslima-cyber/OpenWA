@@ -395,4 +395,12 @@ describe('Meta Cloud API sessions (e2e)', () => {
     expect(await accounts.countBy({ sessionId: id })).toBe(0);
     expect(await contacts.countBy({ sessionId: id })).toBe(0);
   });
+
+  it('C76 GET /api/sessions/:id/groups on a started Cloud session answers 501', async () => {
+    const id = await startedCloudSession();
+
+    const res = await get(`/api/sessions/${id}/groups`);
+
+    expect(res.status).toBe(501);
+  });
 });

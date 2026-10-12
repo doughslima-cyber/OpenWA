@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BaileysAdapter } from './adapters/baileys.adapter';
 import { WhatsAppWebJsAdapter } from './adapters/whatsapp-web-js.adapter';
+import { MetaCloudAdapter } from './adapters/meta-cloud-adapter';
 import { CURATED_CAPABILITY_EXCEPTIONS, engineCapabilityMatrix } from './engine-capability-matrix';
 
 /**
@@ -50,10 +51,13 @@ describe('the interface reader sees every member', () => {
 });
 
 type AdapterCtor = { prototype: Record<string, unknown> };
-type AdapterKey = 'wwjs' | 'baileys';
+type AdapterKey = 'wwjs' | 'baileys' | 'cloud';
 const ADAPTERS: ReadonlyArray<[AdapterKey, AdapterCtor]> = [
   ['wwjs', WhatsAppWebJsAdapter as unknown as AdapterCtor],
   ['baileys', BaileysAdapter as unknown as AdapterCtor],
+  // OpenMsg (docs/32): the Cloud API adapter. A method it does not define reaches its proxy's
+  // unsupported() and answers 501, which liveThrows reads as a missing method.
+  ['cloud', MetaCloudAdapter as unknown as AdapterCtor],
 ];
 
 /**
@@ -82,11 +86,11 @@ const ANY_THROW_SITE_RE = /(?:new EngineNotSupportedError|this\.unsupported)\(/;
  */
 const CONDITIONAL_THROW_SITES: Readonly<Record<string, string>> = {
   'sendTextMessage(customPreview)':
-    'wwjs sendTextMessage is supported; it refuses only when customPreview is passed, because whatsapp-web.js takes a boolean linkPreview and cannot represent a custom card',
+    'wwjs sendTextMessage is supported; it refuses only when customPreview is passed, because whatsapp-web.js takes a boolean linkPreview and cannot represent a custom card (the Cloud API adapter, whose preview_url is a boolean too, refuses the same option)',
 };
 
 function readDelegateThrows(): Record<string, Set<string>> {
-  const registry: Record<string, Set<string>> = { wwjs: new Set(), baileys: new Set() };
+  const registry: Record<string, Set<string>> = { wwjs: new Set(), baileys: new Set(), cloud: new Set() };
   for (const file of adapterFiles()) {
     for (const method of throwsIn(file)) {
       if (method in CONDITIONAL_THROW_SITES) continue;
@@ -105,6 +109,7 @@ function adapterFiles(): string[] {
 function prefixEngine(file: string): AdapterKey | undefined {
   if (file.startsWith('baileys')) return 'baileys';
   if (file.startsWith('wwebjs-') || file.startsWith('whatsapp-web-js')) return 'wwjs';
+  if (file.startsWith('meta-cloud-')) return 'cloud';
   return undefined;
 }
 
@@ -129,18 +134,6 @@ const UNPREFIXED_FILE_ENGINES: Record<string, readonly AdapterKey[] | typeof SHA
   'engine-patch-status.ts': SHARED,
   'inbound-media-cap.ts': SHARED,
   'message-mapper.ts': SHARED,
-  // OpenMsg (docs/32): the WhatsApp Cloud API adapter. Neither QR engine imports it, so its refusals
-  // are credited to neither; the matrix gains its own `cloud` column when the adapter is filled in.
-  'meta-cloud-adapter.ts': [],
-  'meta-cloud-account-store.service.ts': [],
-  'meta-cloud-account.entity.ts': [],
-  'meta-cloud-contact.entity.ts': [],
-  'meta-cloud-crypto.ts': [],
-  'meta-cloud-graph.client.ts': [],
-  'meta-cloud-inbound.mapper.ts': [],
-  'meta-cloud-media.ts': [],
-  'meta-cloud-number-registry.ts': [],
-  'meta-cloud-chat-store.service.ts': [],
   'safe-link-preview.ts': ['baileys'],
   'vcard.ts': SHARED,
 };

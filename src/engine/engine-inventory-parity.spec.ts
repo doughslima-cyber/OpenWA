@@ -48,7 +48,9 @@ function docText(): string {
  * attribution in engine-parity.spec.ts: an engine prefix, or one of the two engine-specific
  * unprefixed files.
  */
-function adapterFileEngine(file: string): Engine | undefined {
+function adapterFileEngine(file: string): Engine | 'cloud' | undefined {
+  // OpenMsg (docs/32): the Cloud API adapter calls neither library, so its code backs no mark here.
+  if (file.startsWith('meta-cloud-')) return 'cloud';
   if (file.startsWith('baileys') || file === 'safe-link-preview.ts') return 'baileys';
   if (file.startsWith('wwebjs') || file.startsWith('whatsapp-web-js') || file === 'chromium-profile-hygiene.ts') {
     return 'wwjs';

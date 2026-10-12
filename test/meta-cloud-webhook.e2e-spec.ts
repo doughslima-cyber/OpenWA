@@ -361,4 +361,27 @@ describe('Meta Cloud API webhook (e2e)', () => {
     expect(warn.mock.calls.some(([message]) => String(message).includes('999000999000'))).toBe(true);
     warn.mockRestore();
   });
+
+  it('C70 after the C57 inbound message, GET .../chats returns one chat for the sender with unreadCount 1', async () => {
+    const id = await readyCloudSession();
+    // A clean slate for this session, so the count does not depend on which checks ran before.
+    await messages.delete({ sessionId: id });
+    await contacts.delete({ sessionId: id });
+    const wamid = INBOUND_MESSAGES.text.id as string;
+
+    await postWebhook(messagesBody(messagesValue({ messages: [INBOUND_MESSAGES.text] }))).expect(200);
+    await routerIdle();
+    await eventually(async () => (await messages.countBy({ sessionId: id, waMessageId: wamid })) === 1);
+
+    const res = await http().get(`/api/sessions/${id}/chats`).set('X-API-Key', operatorKey).expect(200);
+
+    const chats = res.body as Array<{ id: string; unreadCount: number; name: string; lastMessage: string }>;
+    expect(chats).toHaveLength(1);
+    expect(chats[0]).toMatchObject({
+      id: '5511988887777@c.us',
+      unreadCount: 1,
+      name: FIXTURE_PROFILE_NAME,
+      lastMessage: 'Hello, is the order ready?',
+    });
+  });
 });

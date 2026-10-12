@@ -7,6 +7,10 @@ the installed library. Coverage is total: all 113 `IWhatsAppEngine` methods (29.
 Baileys + 81 whatsapp-web.js library methods** (29.5), all 34 + 31 library events (29.5.4), and all
 13 install-time patches (29.3). If it exists upstream or in OpenWA, it has a row here.
 
+OpenMsg adds a third adapter, the **WhatsApp Cloud API** (`src/engine/adapters/meta-cloud-*`, docs/32), used by
+a session whose `engine` is `meta-cloud`. 29.4 carries its column beside the two library adapters; it calls no
+WhatsApp library, so 29.3 and 29.5 do not cover it.
+
 ## 29.1 How to read this matrix
 
 Statuses used in the tables:
@@ -223,21 +227,29 @@ Legend recap: **✅** supported · **✅🔧ⁿ** supported via OpenWA patch `�
 **❌ gap** adapter-gap · **❌ lib** library-limitation. Column headers carry the engine-wide
 patch dependencies (🔧¹ message-id backport on wwjs; 🔧⁵ app-state bound on
 Baileys). The **OpenWA REST** column reads from the caller's side: ✅ works whatever engine the
-session runs; ⚠️ depends on the session engine; ❌ 501 on both.
+session runs; ⚠️ depends on the session engine; ❌ 501 on both. It covers the two QR engines only.
+
+The **Cloud API adapter** column (OpenMsg, docs/32 D6) is what a session whose `engine` is `meta-cloud`
+answers, whatever the REST column says: a ❌ cell answers 501 there. ✅ (store) is served from the gateway's own
+`messages` and `meta_cloud_contacts` tables, because the Cloud API has no chat list, history or contact list;
+`sendTextMessage` refuses only a custom link preview; `sendChatState` sends the typing indicator only, against the
+chat's last inbound message, and does nothing without one. ❌ gap marks an operation the Cloud API offers that
+this adapter does not wire yet (profile and block list are docs/32 F5, the catalog sends F4). Source of truth:
+`src/engine/meta-cloud-capability-column.ts`.
 
 ### 29.4.1 Session & connection
 
-| Method               | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST |
-| -------------------- | ------------------- | ---------------- | ----------- |
-| `initialize`         | ✅                  | ✅🔧⁴            | ✅          |
-| `disconnect`         | ✅                  | ✅               | ✅          |
-| `logout`             | ✅                  | ✅               | ✅          |
-| `destroy`            | ✅                  | ✅               | ✅          |
-| `forceDestroy`       | ✅                  | ✅               | ✅          |
-| `getQRCode`          | ✅                  | ✅               | ✅          |
-| `requestPairingCode` | ✅                  | ✅               | ✅          |
-| `getStatus`          | ✅                  | ✅               | ✅          |
-| `probeLiveness`      | ✅ local            | ✅ round trip    | ⚙️ internal |
+| Method               | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST |
+| -------------------- | ------------------- | ---------------- | ----------------- | ----------- |
+| `initialize`         | ✅                  | ✅🔧⁴            | ✅                | ✅          |
+| `disconnect`         | ✅                  | ✅               | ✅                | ✅          |
+| `logout`             | ✅                  | ✅               | ✅                | ✅          |
+| `destroy`            | ✅                  | ✅               | ✅                | ✅          |
+| `forceDestroy`       | ✅                  | ✅               | ✅                | ✅          |
+| `getQRCode`          | ✅                  | ✅               | ✅ always null    | ✅          |
+| `requestPairingCode` | ✅                  | ✅               | ❌ lib            | ✅          |
+| `getStatus`          | ✅                  | ✅               | ✅                | ✅          |
+| `probeLiveness`      | ✅ local            | ✅ round trip    | ✅                | ⚙️ internal |
 
 `probeLiveness` is the one optional member of `IWhatsAppEngine`, and the two adapters answer it to
 different depths — which is what the optional marker exists to allow. wwjs races a real
@@ -248,123 +260,123 @@ socket is caught by the transport instead. No REST route: the session watchdog p
 
 ### 29.4.2 Sending messages
 
-| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST     |
-| --------------------- | ------------------- | ---------------- | --------------- |
-| `sendTextMessage`     | ✅                  | ✅🔧³            | ✅              |
-| `sendImageMessage`    | ✅                  | ✅               | ✅              |
-| `sendVideoMessage`    | ✅                  | ✅               | ✅              |
-| `sendAudioMessage`    | ✅                  | ✅               | ✅              |
-| `sendDocumentMessage` | ✅                  | ✅               | ✅              |
-| `sendStickerMessage`  | ✅                  | ✅               | ✅              |
-| `sendContactMessage`  | ✅                  | ✅               | ✅              |
-| `sendLocationMessage` | ✅                  | ✅               | ✅              |
-| `sendPollMessage`     | ✅                  | ✅               | ✅              |
-| `sendProduct`         | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `sendCatalog`         | ❌ lib              | ❌ lib           | ❌ not exposed  |
-| `replyToMessage`      | ✅                  | ✅               | ✅              |
-| `forwardMessage`      | ✅                  | ✅               | ✅              |
-| `sendChatState`       | ✅                  | ✅               | ✅              |
-| `sendSeen`            | ✅                  | ✅               | ✅              |
+| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST     |
+| --------------------- | ------------------- | ---------------- | ----------------- | --------------- |
+| `sendTextMessage`     | ✅                  | ✅🔧³            | ✅                | ✅              |
+| `sendImageMessage`    | ✅                  | ✅               | ✅                | ✅              |
+| `sendVideoMessage`    | ✅                  | ✅               | ✅                | ✅              |
+| `sendAudioMessage`    | ✅                  | ✅               | ✅                | ✅              |
+| `sendDocumentMessage` | ✅                  | ✅               | ✅                | ✅              |
+| `sendStickerMessage`  | ✅                  | ✅               | ✅                | ✅              |
+| `sendContactMessage`  | ✅                  | ✅               | ✅                | ✅              |
+| `sendLocationMessage` | ✅                  | ✅               | ✅                | ✅              |
+| `sendPollMessage`     | ✅                  | ✅               | ❌ lib            | ✅              |
+| `sendProduct`         | ✅                  | ❌ lib           | ❌ gap            | ⚠️ baileys only |
+| `sendCatalog`         | ❌ lib              | ❌ lib           | ❌ gap            | ❌ not exposed  |
+| `replyToMessage`      | ✅                  | ✅               | ✅                | ✅              |
+| `forwardMessage`      | ✅                  | ✅               | ❌ lib            | ✅              |
+| `sendChatState`       | ✅                  | ✅               | ✅ typing only    | ✅              |
+| `sendSeen`            | ✅                  | ✅               | ✅                | ✅              |
 
 ### 29.4.3 Message management
 
-| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST     |
-| --------------------- | ------------------- | ---------------- | --------------- |
-| `editMessage`         | ✅                  | ✅               | ✅              |
-| `deleteMessage`       | ✅                  | ✅               | ✅              |
-| `reactToMessage`      | ✅                  | ✅               | ✅              |
-| `starMessage`         | ✅                  | ✅               | ✅              |
-| `pinMessage`          | ✅                  | ✅               | ✅              |
-| `unpinMessage`        | ✅                  | ✅               | ✅              |
-| `getMessageReactions` | ❌ lib              | ✅               | ⚠️ wwjs only    |
-| `votePoll`            | ❌ lib              | ✅               | ⚠️ wwjs only    |
-| `clickButton`         | ✅                  | ❌ lib           | ⚠️ Baileys only |
+| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST     |
+| --------------------- | ------------------- | ---------------- | ----------------- | --------------- |
+| `editMessage`         | ✅                  | ✅               | ❌ lib            | ✅              |
+| `deleteMessage`       | ✅                  | ✅               | ❌ lib            | ✅              |
+| `reactToMessage`      | ✅                  | ✅               | ✅                | ✅              |
+| `starMessage`         | ✅                  | ✅               | ❌ lib            | ✅              |
+| `pinMessage`          | ✅                  | ✅               | ❌ lib            | ✅              |
+| `unpinMessage`        | ✅                  | ✅               | ❌ lib            | ✅              |
+| `getMessageReactions` | ❌ lib              | ✅               | ❌ lib            | ⚠️ wwjs only    |
+| `votePoll`            | ❌ lib              | ✅               | ❌ lib            | ⚠️ wwjs only    |
+| `clickButton`         | ✅                  | ❌ lib           | ❌ lib            | ⚠️ Baileys only |
 
 ### 29.4.4 Chats
 
-| Method              | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST  |
-| ------------------- | ------------------- | ---------------- | ------------ |
-| `getChats`          | ✅                  | ✅               | ✅           |
-| `getChatHistory`    | ❌ lib              | ✅               | ⚠️ wwjs only |
-| `archiveChat`       | ✅                  | ✅               | ✅           |
-| `clearChatMessages` | ✅                  | ✅               | ✅           |
-| `deleteChat`        | ✅                  | ✅               | ✅           |
-| `markUnread`        | ✅                  | ✅               | ✅           |
-| `muteChat`          | ✅                  | ✅               | ✅           |
-| `pinChat`           | ✅                  | ✅               | ✅           |
+| Method              | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST  |
+| ------------------- | ------------------- | ---------------- | ----------------- | ------------ |
+| `getChats`          | ✅                  | ✅               | ✅ (store)        | ✅           |
+| `getChatHistory`    | ❌ lib              | ✅               | ✅ (store)        | ⚠️ wwjs only |
+| `archiveChat`       | ✅                  | ✅               | ❌ lib            | ✅           |
+| `clearChatMessages` | ✅                  | ✅               | ❌ lib            | ✅           |
+| `deleteChat`        | ✅                  | ✅               | ❌ lib            | ✅           |
+| `markUnread`        | ✅                  | ✅               | ❌ lib            | ✅           |
+| `muteChat`          | ✅                  | ✅               | ❌ lib            | ✅           |
+| `pinChat`           | ✅                  | ✅               | ❌ lib            | ✅           |
 
 ### 29.4.5 Contacts
 
-| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST |
-| --------------------- | ------------------- | ---------------- | ----------- |
-| `getContacts`         | ✅                  | ✅               | ✅          |
-| `getContactById`      | ✅                  | ✅               | ✅          |
-| `upsertContact`       | ✅                  | ✅               | ✅          |
-| `deleteContact`       | ✅                  | ✅               | ✅          |
-| `blockContact`        | ✅                  | ✅               | ✅          |
-| `unblockContact`      | ✅                  | ✅               | ✅          |
-| `getBlockedContacts`  | ✅                  | ✅               | ✅          |
-| `checkNumberExists`   | ✅                  | ✅               | ✅          |
-| `getNumberId`         | ✅                  | ✅               | ✅          |
-| `getPhoneNumber`      | ✅                  | ✅               | ⚙️ internal |
-| `getPushName`         | ✅                  | ✅               | ⚙️ internal |
-| `resolveContactPhone` | ✅                  | ✅               | ✅          |
-| `getProfilePicture`   | ✅                  | ✅               | ✅          |
+| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST |
+| --------------------- | ------------------- | ---------------- | ----------------- | ----------- |
+| `getContacts`         | ✅                  | ✅               | ❌ lib            | ✅          |
+| `getContactById`      | ✅                  | ✅               | ✅ (store)        | ✅          |
+| `upsertContact`       | ✅                  | ✅               | ❌ lib            | ✅          |
+| `deleteContact`       | ✅                  | ✅               | ❌ lib            | ✅          |
+| `blockContact`        | ✅                  | ✅               | ❌ gap            | ✅          |
+| `unblockContact`      | ✅                  | ✅               | ❌ gap            | ✅          |
+| `getBlockedContacts`  | ✅                  | ✅               | ❌ gap            | ✅          |
+| `checkNumberExists`   | ✅                  | ✅               | ❌ lib            | ✅          |
+| `getNumberId`         | ✅                  | ✅               | ❌ lib            | ✅          |
+| `getPhoneNumber`      | ✅                  | ✅               | ✅                | ⚙️ internal |
+| `getPushName`         | ✅                  | ✅               | ✅                | ⚙️ internal |
+| `resolveContactPhone` | ✅                  | ✅               | ✅                | ✅          |
+| `getProfilePicture`   | ✅                  | ✅               | ❌ lib            | ✅          |
 
 ### 29.4.6 Groups
 
-| Method                           | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST     |
-| -------------------------------- | ------------------- | ---------------- | --------------- |
-| `createGroup`                    | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `getGroups`                      | ✅                  | ✅               | ✅              |
-| `getGroupInfo`                   | ✅                  | ✅               | ✅              |
-| `addParticipants`                | ✅                  | ✅               | ✅              |
-| `removeParticipants`             | ✅                  | ✅🔧⁷            | ✅              |
-| `promoteParticipants`            | ✅                  | ✅🔧⁷            | ✅              |
-| `demoteParticipants`             | ✅                  | ✅🔧⁷            | ✅              |
-| `approveGroupMembershipRequests` | ✅                  | ✅               | ✅              |
-| `rejectGroupMembershipRequests`  | ✅                  | ✅               | ✅              |
-| `getGroupMembershipRequests`     | ✅                  | ✅               | ✅              |
-| `leaveGroup`                     | ✅                  | ✅               | ✅              |
-| `getGroupInviteCode`             | ✅                  | ✅               | ✅              |
-| `joinGroupViaInviteCode`         | ✅                  | ✅               | ✅              |
-| `revokeGroupInviteCode`          | ✅                  | ✅               | ✅              |
-| `getGroupJoinInfo`               | ✅                  | ✅               | ✅              |
-| `setGroupSubject`                | ✅                  | ✅               | ✅              |
-| `setGroupDescription`            | ✅                  | ✅🔧⁹            | ✅              |
-| `setGroupPicture`                | ✅                  | ✅               | ✅              |
-| `deleteGroupPicture`             | ✅                  | ✅               | ✅              |
-| `setGroupMessagesAdminsOnly`     | ✅                  | ✅               | ✅              |
-| `setGroupInfoAdminsOnly`         | ✅                  | ✅               | ✅              |
-| `setGroupMemberAddMode`          | ✅                  | ✅               | ✅              |
-| `setGroupEphemeral`              | ✅                  | ❌ lib           | ⚠️ baileys only |
+| Method                           | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST     |
+| -------------------------------- | ------------------- | ---------------- | ----------------- | --------------- |
+| `createGroup`                    | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
+| `getGroups`                      | ✅                  | ✅               | ❌ lib            | ✅              |
+| `getGroupInfo`                   | ✅                  | ✅               | ❌ lib            | ✅              |
+| `addParticipants`                | ✅                  | ✅               | ❌ lib            | ✅              |
+| `removeParticipants`             | ✅                  | ✅🔧⁷            | ❌ lib            | ✅              |
+| `promoteParticipants`            | ✅                  | ✅🔧⁷            | ❌ lib            | ✅              |
+| `demoteParticipants`             | ✅                  | ✅🔧⁷            | ❌ lib            | ✅              |
+| `approveGroupMembershipRequests` | ✅                  | ✅               | ❌ lib            | ✅              |
+| `rejectGroupMembershipRequests`  | ✅                  | ✅               | ❌ lib            | ✅              |
+| `getGroupMembershipRequests`     | ✅                  | ✅               | ❌ lib            | ✅              |
+| `leaveGroup`                     | ✅                  | ✅               | ❌ lib            | ✅              |
+| `getGroupInviteCode`             | ✅                  | ✅               | ❌ lib            | ✅              |
+| `joinGroupViaInviteCode`         | ✅                  | ✅               | ❌ lib            | ✅              |
+| `revokeGroupInviteCode`          | ✅                  | ✅               | ❌ lib            | ✅              |
+| `getGroupJoinInfo`               | ✅                  | ✅               | ❌ lib            | ✅              |
+| `setGroupSubject`                | ✅                  | ✅               | ❌ lib            | ✅              |
+| `setGroupDescription`            | ✅                  | ✅🔧⁹            | ❌ lib            | ✅              |
+| `setGroupPicture`                | ✅                  | ✅               | ❌ lib            | ✅              |
+| `deleteGroupPicture`             | ✅                  | ✅               | ❌ lib            | ✅              |
+| `setGroupMessagesAdminsOnly`     | ✅                  | ✅               | ❌ lib            | ✅              |
+| `setGroupInfoAdminsOnly`         | ✅                  | ✅               | ❌ lib            | ✅              |
+| `setGroupMemberAddMode`          | ✅                  | ✅               | ❌ lib            | ✅              |
+| `setGroupEphemeral`              | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
 
 ### 29.4.7 Channels
 
-| Method                     | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST     |
-| -------------------------- | ------------------- | ---------------- | --------------- |
-| `createChannel`            | ✅🔧⁶               | ✅               | ✅              |
-| `deleteChannel`            | ✅                  | ✅               | ✅              |
-| `muteChannel`              | ✅                  | ✅               | ✅              |
-| `demoteChannelAdmin`       | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `transferChannelOwnership` | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `getChannelById`           | ✅                  | ✅               | ✅              |
-| `getChannelMessages`       | ❌ gap              | ✅               | ⚠️ wwjs only    |
-| `getSubscribedChannels`    | ❌ lib              | ✅               | ⚠️ wwjs only    |
-| `subscribeToChannel`       | ✅                  | ❌ gap           | ⚠️ baileys only |
-| `unsubscribeFromChannel`   | ✅                  | ✅               | ✅              |
+| Method                     | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST     |
+| -------------------------- | ------------------- | ---------------- | ----------------- | --------------- |
+| `createChannel`            | ✅🔧⁶               | ✅               | ❌ lib            | ✅              |
+| `deleteChannel`            | ✅                  | ✅               | ❌ lib            | ✅              |
+| `muteChannel`              | ✅                  | ✅               | ❌ lib            | ✅              |
+| `demoteChannelAdmin`       | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
+| `transferChannelOwnership` | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
+| `getChannelById`           | ✅                  | ✅               | ❌ lib            | ✅              |
+| `getChannelMessages`       | ❌ gap              | ✅               | ❌ lib            | ⚠️ wwjs only    |
+| `getSubscribedChannels`    | ❌ lib              | ✅               | ❌ lib            | ⚠️ wwjs only    |
+| `subscribeToChannel`       | ✅                  | ❌ gap           | ❌ lib            | ⚠️ baileys only |
+| `unsubscribeFromChannel`   | ✅                  | ✅               | ❌ lib            | ✅              |
 
 ### 29.4.8 Status / stories
 
-| Method               | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST  |
-| -------------------- | ------------------- | ---------------- | ------------ |
-| `postTextStatus`     | ✅                  | ✅🔧²            | ✅           |
-| `postImageStatus`    | ✅                  | ✅🔧²            | ✅           |
-| `postVideoStatus`    | ✅                  | ✅🔧²            | ✅           |
-| `postVoiceStatus`    | ✅                  | ✅🔧²            | ✅           |
-| `deleteStatus`       | ✅                  | ✅               | ✅           |
-| `getContactStatus`   | ❌ lib              | ✅               | ✅ (store) ‡ |
-| `getContactStatuses` | ❌ lib              | ✅               | ✅ (store) ‡ |
+| Method               | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST  |
+| -------------------- | ------------------- | ---------------- | ----------------- | ------------ |
+| `postTextStatus`     | ✅                  | ✅🔧²            | ❌ lib            | ✅           |
+| `postImageStatus`    | ✅                  | ✅🔧²            | ❌ lib            | ✅           |
+| `postVideoStatus`    | ✅                  | ✅🔧²            | ❌ lib            | ✅           |
+| `postVoiceStatus`    | ✅                  | ✅🔧²            | ❌ lib            | ✅           |
+| `deleteStatus`       | ✅                  | ✅               | ❌ lib            | ✅           |
+| `getContactStatus`   | ❌ lib              | ✅               | ❌ lib            | ✅ (store) ‡ |
+| `getContactStatuses` | ❌ lib              | ✅               | ❌ lib            | ✅ (store) ‡ |
 
 ‡ Status **reads** are served from `StatusStoreService` (fed by inbound status ingestion on both
 engines), not by calling the engine — so the REST API is engine-neutral here even though the
@@ -373,42 +385,42 @@ answers 501.
 
 ### 29.4.9 Labels (WA Business)
 
-| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST     |
-| --------------------- | ------------------- | ---------------- | --------------- |
-| `getLabels`           | ❌ lib              | ✅               | ⚠️ wwjs only    |
-| `getLabelById`        | ❌ lib              | ✅               | ⚠️ wwjs only    |
-| `getChatLabels`       | ❌ lib              | ✅               | ⚠️ wwjs only    |
-| `getChatsByLabel`     | ❌ lib              | ✅               | ⚠️ wwjs only    |
-| `addLabelToChat`      | ✅                  | ✅               | ✅              |
-| `removeLabelFromChat` | ✅                  | ✅               | ✅              |
-| `upsertLabel`         | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `deleteLabel`         | ✅                  | ❌ lib           | ⚠️ baileys only |
+| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST     |
+| --------------------- | ------------------- | ---------------- | ----------------- | --------------- |
+| `getLabels`           | ❌ lib              | ✅               | ❌ lib            | ⚠️ wwjs only    |
+| `getLabelById`        | ❌ lib              | ✅               | ❌ lib            | ⚠️ wwjs only    |
+| `getChatLabels`       | ❌ lib              | ✅               | ❌ lib            | ⚠️ wwjs only    |
+| `getChatsByLabel`     | ❌ lib              | ✅               | ❌ lib            | ⚠️ wwjs only    |
+| `addLabelToChat`      | ✅                  | ✅               | ❌ lib            | ✅              |
+| `removeLabelFromChat` | ✅                  | ✅               | ❌ lib            | ✅              |
+| `upsertLabel`         | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
+| `deleteLabel`         | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
 
 ### 29.4.10 Catalog & products (WA Business)
 
-| Method        | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST     |
-| ------------- | ------------------- | ---------------- | --------------- |
-| `getCatalog`  | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `getProducts` | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `getProduct`  | ✅                  | ❌ lib           | ⚠️ baileys only |
+| Method        | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST     |
+| ------------- | ------------------- | ---------------- | ----------------- | --------------- |
+| `getCatalog`  | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
+| `getProducts` | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
+| `getProduct`  | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
 
 ### 29.4.11 Own profile & presence
 
-| Method                 | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST |
-| ---------------------- | ------------------- | ---------------- | ----------- |
-| `setProfileName`       | ✅                  | ✅               | ✅          |
-| `setProfilePicture`    | ✅                  | ✅               | ✅          |
-| `deleteProfilePicture` | ✅                  | ✅               | ✅          |
-| `setProfileStatus`     | ✅                  | ✅               | ✅          |
-| `setOnlinePresence`    | ✅                  | ✅               | ✅          |
+| Method                 | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST |
+| ---------------------- | ------------------- | ---------------- | ----------------- | ----------- |
+| `setProfileName`       | ✅                  | ✅               | ❌ lib            | ✅          |
+| `setProfilePicture`    | ✅                  | ✅               | ❌ gap            | ✅          |
+| `deleteProfilePicture` | ✅                  | ✅               | ❌ gap            | ✅          |
+| `setProfileStatus`     | ✅                  | ✅               | ❌ gap            | ✅          |
+| `setOnlinePresence`    | ✅                  | ✅               | ❌ lib            | ✅          |
 
 ### 29.4.12 Presence & calls
 
-| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | OpenWA REST     |
-| --------------------- | ------------------- | ---------------- | --------------- |
-| `subscribeToPresence` | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `rejectCall`          | ✅                  | ❌ lib           | ⚠️ baileys only |
-| `createCallLink`      | ✅                  | ✅               | ✅              |
+| Method                | Baileys adapter 🔧⁵ | wwjs adapter 🔧¹ | Cloud API adapter | OpenWA REST     |
+| --------------------- | ------------------- | ---------------- | ----------------- | --------------- |
+| `subscribeToPresence` | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
+| `rejectCall`          | ✅                  | ❌ lib           | ❌ lib            | ⚠️ baileys only |
+| `createCallLink`      | ✅                  | ✅               | ❌ lib            | ✅              |
 
 **Totals:** 113 methods → 226 adapter cells: **199 ✅, 27 ❌** (2 adapter-gaps, 25
 library-limitations, 0 uncertain) across 26 methods. From the REST caller's side: **89** methods
@@ -416,6 +428,9 @@ work on any engine (87 fully supported + 2 store-backed status reads), **14** ar
 **9** are wwjs-only (the 2 store-backed rows excluded); `sendCatalog`, unavailable on both engines,
 is not exposed. Three of the 89 (`probeLiveness`, `getPhoneNumber`, `getPushName`) are ⚙️ internal and
 have no route.
+
+**Cloud API column (OpenMsg):** 113 methods → 26 supported and 87 not-available (8 adapter-gaps, 79
+library-limitations).
 
 ## 29.5 Full engine method inventory — every library method, mapped to OpenWA
 
@@ -1036,6 +1051,8 @@ adapter sources — re-derive the same way when anything changes:
   only a live call distinguishes the two.
 - **13** install-time patches (10 whatsapp-web.js + 3 Baileys), all exact and self-disabling.
 - **0 phantom-support rows** — every `not-available` cell throws at the adapter boundary.
+- OpenMsg's Cloud API column: 26 supported and 87 not-available (8 adapter-gaps, 79 library-limitations); every
+  not-available cell answers 501 through the adapter's unsupported() helper.
 - Remaining adapter-gaps (fixable in this repo, ranked): **#1** `getChannelMessages` (Baileys —
   fetch is one line, `BinaryNode`→`ChannelMessage` parser is the work); **#2** `subscribeToChannel`
   (wwjs — two-step `getChannelByInviteCode` → `subscribeToChannel`, needs live verification).

@@ -241,35 +241,35 @@ Proof: `npx jest src/engine/adapters/meta-cloud-chat-store.service.spec.ts -t "C
 
 ### S5 - Read side and refusals · 12 files · ~260 KB · ~65k
 
-**C69** - With stored messages in 3 chats, `getChats()` returns 3 summaries, each with `kind: "direct"`, the last message text, the chat name and `unreadCount` equal to the inbound messages newer than that chat's last `sendSeen` (a chat never seen counts all its inbound; a chat seen after its last inbound counts 0) (MCR-01, AC 55)
+**C69** - With stored messages in 3 chats, `getChats()` returns 3 summaries, each with `kind: "direct"`, the last message text, the chat name and `unreadCount` equal to the inbound messages newer than that chat's last `sendSeen` (a chat never seen counts all its inbound; a chat seen after its last inbound counts 0) (MCR-01, AC 55) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-chat-store.service.spec.ts -t "C69 "`
 
-**C70** - `GET /api/sessions/:id/chats` on a Cloud session, after the C57 inbound message, returns one chat for `5511988887777@c.us` with `unreadCount: 1` (MCR-01, AC 55)
+**C70** - `GET /api/sessions/:id/chats` on a Cloud session, after the C57 inbound message, returns one chat for `5511988887777@c.us` with `unreadCount: 1` (MCR-01, AC 55) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C70 "`
 
-**C71** - With 5 stored messages in a chat, `getChatHistory(chatId, { limit: 3 })` returns the 3 newest, ordered oldest first (MCR-01, AC 56)
+**C71** - With 5 stored messages in a chat, `getChatHistory(chatId, { limit: 3 })` returns the 3 newest, ordered oldest first (MCR-01, AC 56) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-chat-store.service.spec.ts -t "C71 "`
 
-**C72** - `getContactById` returns the stored profile name for a known `@c.us` id and `null` for an unknown one (MCR-01, AC 57)
+**C72** - `getContactById` returns the stored profile name for a known `@c.us` id and `null` for an unknown one (MCR-01, AC 57) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-chat-store.service.spec.ts -t "C72 "`
 
-**C73** - `sendSeen(chatId)` posts `{ messaging_product: "whatsapp", status: "read", message_id: <lastInboundWamid> }` and records the chat as seen (MCR-01, AC 58)
+**C73** - `sendSeen(chatId)` posts `{ messaging_product: "whatsapp", status: "read", message_id: <lastInboundWamid> }` and records the chat as seen (MCR-01, AC 58) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C73 "`
 
-**C74** - `sendChatState(chatId, 'typing')` with a recorded `lastInboundWamid` posts `status: "read"`, that `message_id` and `typing_indicator: { type: "text" }`; with none recorded it resolves and the fake Graph records zero requests (MCR-01, AC 59)
+**C74** - `sendChatState(chatId, 'typing')` with a recorded `lastInboundWamid` posts `status: "read"`, that `message_id` and `typing_indicator: { type: "text" }`; with none recorded it resolves and the fake Graph records zero requests (MCR-01, AC 59) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C74 "`
 
-**C75** - For every method the matrix's `cloud` column marks `not-available` (table-driven over the column, size asserted equal to the column's count), the adapter rejects with `EngineNotSupportedError`; `engine-parity.spec.ts` holds for the `cloud` key with prefix `meta-cloud-` (MCR-01, AC 60 · door 2)
+**C75** - For every method the matrix's `cloud` column marks `not-available` (table-driven over the column, size asserted equal to the column's count), the adapter rejects with `EngineNotSupportedError`; `engine-parity.spec.ts` holds for the `cloud` key with prefix `meta-cloud-` (MCR-01, AC 60 · door 2) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C75 "`
 Proof: `npx jest src/engine/engine-parity.spec.ts -t "throws ⇔ not-available|every adapter file is attributed to an engine|matrix keys exactly match" --testPathIgnorePatterns=/node_modules/`
 
-**C76** - `GET /api/sessions/:id/groups` on a Cloud session answers 501 (MCR-01, AC 60)
+**C76** - `GET /api/sessions/:id/groups` on a Cloud session answers 501 (MCR-01, AC 60) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C76 "`
 
 **C77** - `POST /api/sessions/:id/campaigns` on a `meta-cloud` session answers 400 with `code: "CAMPAIGN_ENGINE_UNSUPPORTED"` and the `campaigns` table count is unchanged (MCR-01, AC 61)
 Proof: `npx jest src/modules/campaign/campaigns.controller.http.spec.ts -t "C77 "`
 
-**C78** - `docs/29` publishes the `cloud` column with counts equal to the matrix, and its inventory marks hold (MCR-01, AC 62)
+**C78** - `docs/29` publishes the `cloud` column with counts equal to the matrix, and its inventory marks hold (MCR-01, AC 62) ✅
 Proof: `npx jest src/engine/docs-29-counts.spec.ts -t "docs/29 counts match the capability matrix" --testPathIgnorePatterns=/node_modules/`
 Proof: `npx jest src/engine/engine-inventory-parity.spec.ts -t "exposure mark" --testPathIgnorePatterns=/node_modules/`
 

@@ -12,6 +12,8 @@ import {
 import { MetaCloudAdapter } from './meta-cloud-adapter';
 import type { MetaCloudAccountPort, MetaCloudCredentials, MetaCloudProfile } from './meta-cloud-account-store.service';
 import { MetaGraphClient } from './meta-cloud-graph.client';
+import type { MetaCloudContactPort } from './meta-cloud-chat-store.service';
+import { engineCapabilityMatrix } from '../engine-capability-matrix';
 import {
   FakeGraph,
   GraphScript,
@@ -445,6 +447,121 @@ describe('MetaCloudAdapter', () => {
       ]);
       // A reaction is not a message of its own, so no message.sent follows it.
       expect(onMessageCreate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('read side and refusals', () => {
+    const CHAT = '5511988887777@c.us';
+    const LAST_INBOUND = 'wamid.HBgNNTUxMTk4ODg4Nzc3NxUCABIYFkxBU1RJTkJPVU5E';
+
+    /** The contact rows in memory: the last inbound wamid by wa_id, and every markSeen call. */
+    class InMemoryContacts implements Pick<MetaCloudContactPort, 'lastInboundWamid' | 'markSeen'> {
+      wamids = new Map<string, string>();
+      seen: Array<[string, string, Date]> = [];
+      lastInboundWamid(_sessionId: string, waId: string): Promise<string | null> {
+        return Promise.resolve(this.wamids.get(waId) ?? null);
+      }
+      markSeen(sessionId: string, waId: string, at: Date): Promise<void> {
+        this.seen.push([sessionId, waId, at]);
+        return Promise.resolve();
+      }
+    }
+
+    let contacts: InMemoryContacts;
+
+    /** A READY adapter on the contact rows above, its start requests cleared from the recording. */
+    const readyAdapter = async (): Promise<MetaCloudAdapter> => {
+      graph.script = request =>
+        request.method === 'POST' && request.path.split('?')[0].endsWith('/messages')
+          ? { status: 200, body: { success: true } }
+          : happyGraph(request);
+      const adapter = new MetaCloudAdapter({
+        sessionId: 'sess-cloud',
+        dbSessionId: 'sess-cloud',
+        accounts,
+        contacts: contacts as unknown as MetaCloudContactPort,
+        graph: new MetaGraphClient(() => ({ baseUrl: graph.url, version: 'v26.0', timeoutMs: 2000 })),
+      });
+      await adapter.initialize(recordingCallbacks().callbacks);
+      graph.requests.length = 0;
+      return adapter;
+    };
+
+    beforeEach(() => {
+      contacts = new InMemoryContacts();
+    });
+
+    it('C73 sendSeen posts status read for the last inbound wamid and records the chat as seen', async () => {
+      contacts.wamids.set('5511988887777', LAST_INBOUND);
+      const adapter = await readyAdapter();
+      const before = Date.now();
+
+      await expect(adapter.sendSeen(CHAT)).resolves.toBe(true);
+
+      expect(graph.requests.map(r => `${r.method} ${r.path}`)).toEqual([`POST /v26.0/${PHONE_NUMBER_ID}/messages`]);
+      expect(graph.requests[0].headers.authorization).toBe(`Bearer ${TOKEN}`);
+      expect(JSON.parse(graph.requests[0].body)).toEqual({
+        messaging_product: 'whatsapp',
+        status: 'read',
+        message_id: LAST_INBOUND,
+      });
+      expect(contacts.seen).toHaveLength(1);
+      expect(contacts.seen[0][0]).toBe('sess-cloud');
+      expect(contacts.seen[0][1]).toBe('5511988887777');
+      expect(contacts.seen[0][2].getTime()).toBeGreaterThanOrEqual(before);
+    });
+
+    it('C73 sendSeen on a chat with no inbound message resolves false and calls no Graph', async () => {
+      const adapter = await readyAdapter();
+
+      await expect(adapter.sendSeen(CHAT)).resolves.toBe(false);
+
+      expect(graph.requests).toEqual([]);
+      expect(contacts.seen).toEqual([]);
+    });
+
+    it('C74 sendChatState typing posts status read, the last inbound wamid and typing_indicator text', async () => {
+      contacts.wamids.set('5511988887777', LAST_INBOUND);
+      const adapter = await readyAdapter();
+
+      await adapter.sendChatState(CHAT, 'typing');
+
+      expect(graph.requests.map(r => `${r.method} ${r.path}`)).toEqual([`POST /v26.0/${PHONE_NUMBER_ID}/messages`]);
+      expect(JSON.parse(graph.requests[0].body)).toEqual({
+        messaging_product: 'whatsapp',
+        status: 'read',
+        message_id: LAST_INBOUND,
+        typing_indicator: { type: 'text' },
+      });
+    });
+
+    it('C74 sendChatState typing with no inbound wamid recorded resolves and the fake Graph records zero requests', async () => {
+      const adapter = await readyAdapter();
+
+      await expect(adapter.sendChatState(CHAT, 'typing')).resolves.toBeUndefined();
+
+      expect(graph.requests).toHaveLength(0);
+    });
+
+    // Every not-available cell of the cloud column, read from the matrix itself, so a cell marked
+    // not-available that quietly starts answering fails here as well as in engine-parity.spec.ts.
+    const matrix = engineCapabilityMatrix();
+    const notAvailable = Object.keys(matrix).filter(method => matrix[method].cloud.status === 'not-available');
+
+    it('C75 the table covers the whole not-available cloud column of the matrix', () => {
+      const columnCount = Object.values(matrix).filter(entry => entry.cloud.status === 'not-available').length;
+      expect(notAvailable).toHaveLength(columnCount);
+      // docs/32 D6 for F2: 26 supported methods out of the interface's, every other one a 501.
+      expect(Object.keys(matrix).length - notAvailable.length).toBe(26);
+      expect(notAvailable.length).toBe(Object.keys(matrix).length - 26);
+    });
+
+    it.each(notAvailable)('C75 %s rejects with EngineNotSupportedError and calls no Graph', async method => {
+      const adapter = await readyAdapter();
+      const engine = adapter.asEngine() as unknown as Record<string, (...args: unknown[]) => Promise<unknown>>;
+
+      await expect(engine[method](CHAT, 'x')).rejects.toBeInstanceOf(EngineNotSupportedError);
+      expect(graph.requests).toEqual([]);
     });
   });
 });
