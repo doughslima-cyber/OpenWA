@@ -18,7 +18,7 @@ Sources:
 - User decisions 2026-10-12: F3 includes templates (list + send); the session detail shows the webhook URL only,
   never the verify token.
 
-No binding design: there are no mockups, so the screens below are specified by criteria and reviewed in the diff.
+No design source: there are no mockups, so the screens below are specified by criteria and reviewed in the diff.
 
 ## Problem
 
@@ -61,7 +61,7 @@ template to reopen the conversation.
 | Unlink on a Cloud session                                                | hidden; token rotation replaces it, delete removes the session                                                          | logout on a Cloud session only clears the token, which "Change token" does better                                                                                                           | n          |
 | Template list freshness                                                  | cached 5 minutes per session; a **Refresh** action bypasses the cache                                                   | Meta approves templates in minutes to days; F5 adds webhook invalidation                                                                                                                    | n          |
 | Template body rendering stored as the message text                       | the body text with parameters substituted, so Chats and `message.sent` show what the customer received                  | the existing local `send-template` stores rendered text the same way                                                                                                                        | n          |
-| Profile                                                                  | `standard`                                                                                                              | no binding design exists, so `ui`'s source comparison has nothing to compare                                                                                                                | n          |
+| Profile                                                                  | `standard`                                                                                                              | no design source exists, so the `ui` comparison has nothing to compare                                                                                                                      | n          |
 
 **Open questions:**
 

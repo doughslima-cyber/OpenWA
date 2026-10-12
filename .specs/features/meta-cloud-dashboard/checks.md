@@ -174,7 +174,7 @@ Proof: `npx jest src/common/openapi/docs-06-contract.spec.ts -t "documents every
 Proof: `npm run openapi:export && git diff --exit-code openapi.json`
 
 **C47** - The window and send routes carry `@ChatScoped('fenced')` and the chat-scope coverage gate holds; the global route fence holds (MCT-02, AC 28)
-Proof: `npx jest src/modules/auth/chat-scope-coverage.spec.ts`
+Proof: `npx jest src/modules/auth/chat-scope-coverage.spec.ts -t "pairs every decorator with a parsed handler|keeps the pinned handlers unmarked"`
 Proof: `npx jest src/modules/auth/global-route-fence-coverage.spec.ts -t "no real controller exposes an unfenced deployment-global route" --testPathIgnorePatterns=/node_modules/`
 
 **C48** - SDK route and coverage checks pass with the new routes inside the excluded `meta` resource (door 1)
@@ -182,7 +182,7 @@ Proof: `npm run check:sdk-routes`
 Proof: `npm run check:sdk-coverage`
 
 **C49** - The dashboard's hand types match the contract for every shape this feature reads (`Session.engine`, the account, template and window responses) on an LF checkout (Surface)
-Proof: `npm run check:contract-shapes`
+Proof: `npm run check:contract-shapes` (run on an LF checkout - `git -c core.autocrlf=false worktree add` - per lesson L-001; on a CRLF Windows checkout the Python SDK pairs fail regardless)
 
 **C50** - The dashboard type-checks, lints and keeps its formatting (MCD-07)
 Proof: `cd dashboard && npm run typecheck`
@@ -210,7 +210,7 @@ Proof: `npx jest src/common/docs-governance.spec.ts -t "governance docs match th
 | template parameter shapes (3)                                         | none C28, C39 · positional C28, C29, C30, C39 · named C28, C30, C39                                                                       | -        |
 | window answers (3)                                                    | open C27 · closed C27 · no contact C27                                                                                                    | -        |
 | template list behaviours (4)                                          | paging C22 · 500 cap C22 · cache hit C24 · `refresh=true` C24                                                                             | -        |
-| picker template kinds (5)                                             | body-only positional C36 · body-only named C36 · no placeholders C39 · header media C37 · header text variable C37 · button parameter C37 | -        |
+| picker template kinds (6)                                             | body-only positional C36 · body-only named C36 · no placeholders C39 · header media C37 · header text variable C37 · button parameter C37 | -        |
 | session card states for Cloud (4)                                     | initializing C7 · ready C7 · action_required token invalid C9 · action_required token missing C9                                          | -        |
 | Chats engine gates (5)                                                | Status tab C15, C21 · Channels tab C15, C21 · Delete C16, C21 · interactive buttons C16 · window request C17, C21                         | -        |
 | composer window states (3)                                            | closed C18 · open C19 · request failed C19                                                                                                | -        |
