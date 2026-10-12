@@ -568,4 +568,20 @@ describe('Meta Cloud API templates and service window (e2e)', () => {
     });
     expect(requests).toEqual([]);
   });
+
+  it('C57 the templates route answers 409 META_TOKEN_MISSING on a Cloud session whose stored token is NULL', async () => {
+    const created = await post('/api/sessions', {
+      name: 'cloud-no-token-code',
+      engine: 'meta-cloud',
+      metaCloud: { phoneNumberId: '106540352242935', wabaId: WABA_ID, accessToken: TOKEN },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await app.get(MetaCloudAccountStore, { strict: false }).clearToken(id);
+
+    const requests = await requestsDuring(async () => {
+      const res = await get(`/api/sessions/${id}/meta/templates?refresh=true`).expect(409);
+      expect(res.body).toMatchObject({ statusCode: 409, code: 'META_TOKEN_MISSING' });
+    });
+    expect(requests).toEqual([]);
+  });
 });

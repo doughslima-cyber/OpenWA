@@ -256,3 +256,11 @@ test('C41 shows the WhatsApp Manager empty state, and on a failed list the error
   assert.ok(await rtl.screen.findByText('Graph API error: upstream down'));
   assert.ok(rtl.screen.getByRole('button', { name: en.metaCloud.templates.refresh }));
 });
+
+test('C57 a list refused with META_TOKEN_MISSING shows the catalog text, not the server message', async () => {
+  const serverMessage = 'The Cloud API session has no usable access token. Set one and restart it.';
+  listReply = () => jsonResponse({ statusCode: 409, message: serverMessage, code: 'META_TOKEN_MISSING' }, 409);
+  renderPicker();
+  assert.ok(await rtl.screen.findByText(en.metaCloud.errors.META_TOKEN_MISSING));
+  assert.equal(rtl.screen.queryByText(serverMessage) === null, true);
+});

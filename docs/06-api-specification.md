@@ -7420,7 +7420,7 @@ Every message template of the session's WhatsApp Business Account, read from Gra
 
 `parameterFormat` is Meta's `parameter_format`: `POSITIONAL` (`{{1}}`, `{{2}}`) or `NAMED` (`{{first_name}}`), `POSITIONAL` when Meta omits it.
 
-**Errors:** `400` the session id is not a UUID · `401` missing/invalid key · `403` the key is restricted to specific sessions · `404` no session with this id · `409` `META_TOKEN_INVALID` (Meta refused the token), or the session has no usable token stored · `501` the session is not a `meta-cloud` session · `502` `META_UPSTREAM_ERROR`: Graph answered with an error the gateway does not map; `metaCode` names it · `503` Graph did not answer (refused, reset or timed out)
+**Errors:** `400` the session id is not a UUID · `401` missing/invalid key · `403` the key is restricted to specific sessions · `404` no session with this id · `409` `META_TOKEN_INVALID` (Meta refused the token), or `META_TOKEN_MISSING` (the session has no usable token stored) · `501` the session is not a `meta-cloud` session · `502` `META_UPSTREAM_ERROR`: Graph answered with an error the gateway does not map; `metaCode` names it · `503` Graph did not answer (refused, reset or timed out)
 
 #### GET /api/sessions/:sessionId/meta/chats/:chatId/window
 

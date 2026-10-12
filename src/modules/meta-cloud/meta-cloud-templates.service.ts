@@ -1,7 +1,6 @@
-import { Injectable, NotFoundException, NotImplementedException, Optional } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, NotImplementedException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EngineNotReadyError } from '../../common/errors/engine-not-ready.error';
 import { createLogger } from '../../common/services/logger.service';
 import { MetaCloudAccountStore } from '../../engine/adapters/meta-cloud-account-store.service';
 import { MetaGraphClient, MetaGraphError, toSendError } from '../../engine/adapters/meta-cloud-graph.client';
@@ -99,7 +98,12 @@ export class MetaCloudTemplatesService {
   private async fetch(sessionId: string): Promise<MetaTemplateDto[]> {
     const credentials = await this.accounts.loadCredentials(sessionId);
     if (!credentials?.accessToken) {
-      throw new EngineNotReadyError('The Cloud API session has no usable access token. Set one and restart it.');
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'The Cloud API session has no usable access token. Set one and restart it.',
+        code: 'META_TOKEN_MISSING',
+      });
     }
     const templates: MetaTemplateDto[] = [];
     let after: string | undefined;
