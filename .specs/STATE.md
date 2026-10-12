@@ -12,9 +12,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-api
-**Where**: S1-S4 built - C1-C68 closed and committed (S4: `082154ec`, `7384a2fd`)
+**Where**: S1-S5 and governance built - C1-C83 closed and committed (S5 and governance: `d3ff0df3`, `e6d5ba6b`, `f2b8b0e4`, `63526302`, `e31be1eb`)
 **In progress**: none
-**Next step**: next builder starts S5 (C69-C78) and the governance checks (C79-C83): the read side of `meta-cloud-chat-store.service.ts` (getChats, getChatHistory, getContactById), sendSeen and typing from `meta_cloud_contacts.lastInboundWamid`, the matrix `cloud` column, the campaigns refusal and docs/29
-**Blockers**: none for building; go-live waits on plan open questions 1 and 2
+**Next step**: orchestrator dispatches the Verifier over all 83 checks of `.specs/features/meta-cloud-api/checks.md`
+**Blockers**: none for verifying; go-live waits on plan open questions 1 and 2. C69 says `kind: "direct"`, which `ChatKind` does not have; the build returns `individual` (see checks.md Handoff) and the wording needs the user's decision
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
