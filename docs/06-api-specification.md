@@ -7216,7 +7216,7 @@ Create a campaign and start sending.
 
 `total` is the number of distinct accepted numbers.
 
-**Errors:** `400` validation, `CAMPAIGN_NO_RECIPIENTS` (no entry is a phone number) or `CAMPAIGN_TOO_MANY_RECIPIENTS` (more than 5000 accepted) · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted with `allowedChats` · `404` no session with this id · `409` `CAMPAIGN_ALREADY_RUNNING`: the session already has a running campaign
+**Errors:** `400` validation, `CAMPAIGN_NO_RECIPIENTS` (no entry is a phone number) or `CAMPAIGN_TOO_MANY_RECIPIENTS` (more than 5000 accepted), or `CAMPAIGN_ENGINE_UNSUPPORTED` (the session's `engine` is `meta-cloud`; campaigns on the Cloud API need Meta templates, docs/32 F4) · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted with `allowedChats` · `404` no session with this id · `409` `CAMPAIGN_ALREADY_RUNNING`: the session already has a running campaign
 
 #### GET /api/sessions/:sessionId/campaigns
 

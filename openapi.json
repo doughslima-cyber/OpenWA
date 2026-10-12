@@ -16040,7 +16040,7 @@
             }
           },
           "400": {
-            "description": "Invalid name or text, or the list holds no phone number (`CAMPAIGN_NO_RECIPIENTS`) or more than 5000 (`CAMPAIGN_TOO_MANY_RECIPIENTS`)",
+            "description": "Invalid name or text, or the list holds no phone number (`CAMPAIGN_NO_RECIPIENTS`) or more than 5000 (`CAMPAIGN_TOO_MANY_RECIPIENTS`), or the session runs on the WhatsApp Cloud API (`CAMPAIGN_ENGINE_UNSUPPORTED`)",
             "content": {
               "application/json": {
                 "schema": {

@@ -136,6 +136,18 @@ describe('CampaignsController over HTTP', () => {
     },
   );
 
+  it('C77 refuses a campaign on a meta-cloud session with 400 CAMPAIGN_ENGINE_UNSUPPORTED and adds no campaign', async () => {
+    await ds.getRepository(Session).update({ id: sessionId }, { engine: 'meta-cloud' });
+    const before = await campaignCount();
+
+    const res = await post('', valid());
+
+    expect(res.status).toBe(400);
+    expect(body(res).code).toBe('CAMPAIGN_ENGINE_UNSUPPORTED');
+    expect(await campaignCount()).toBe(before);
+    expect(await ds.getRepository(CampaignRecipient).count()).toBe(0);
+  });
+
   it('C9 refuses 5001 accepted numbers with CAMPAIGN_TOO_MANY_RECIPIENTS and accepts 5000', async () => {
     const over = await post('', valid({ recipients: numbers(5001) }));
     expect(over.status).toBe(400);

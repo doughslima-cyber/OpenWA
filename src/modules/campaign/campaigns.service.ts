@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { createLogger } from '../../common/services/logger.service';
 import { isUniqueViolation } from '../../common/utils/db-errors';
 import { Session } from '../session/entities/session.entity';
+import { META_CLOUD_ENGINE } from '../../engine/session-engine';
 import { Message, MessageStatus } from '../message/entities/message.entity';
 import { Campaign } from './entities/campaign.entity';
 import { CampaignRecipient, RECIPIENT_STATUSES, type RecipientStatus } from './entities/campaign-recipient.entity';
@@ -89,6 +90,14 @@ export class CampaignsService {
 
   async create(sessionId: string, dto: CreateCampaignDto): Promise<CampaignCreatedDto> {
     await this.requireSession(sessionId);
+    // A Cloud API session sends free text only inside Meta's 24 h window; campaigns there need
+    // Meta templates, which docs/32 F4 adds. Until then they are refused before anything is written.
+    if (await this.sessions.exists({ where: { id: sessionId, engine: META_CLOUD_ENGINE } })) {
+      throw badRequest(
+        'CAMPAIGN_ENGINE_UNSUPPORTED',
+        'Campaigns are not available on a WhatsApp Cloud API session yet',
+      );
+    }
     const chatIds = parseCampaignRecipients(dto.recipients);
     if (chatIds.length === 0) {
       throw badRequest('CAMPAIGN_NO_RECIPIENTS', 'None of the recipients is a phone number with at least 6 digits');

@@ -266,7 +266,7 @@ Proof: `npx jest src/engine/engine-parity.spec.ts -t "throws ⇔ not-available|e
 **C76** - `GET /api/sessions/:id/groups` on a Cloud session answers 501 (MCR-01, AC 60) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C76 "`
 
-**C77** - `POST /api/sessions/:id/campaigns` on a `meta-cloud` session answers 400 with `code: "CAMPAIGN_ENGINE_UNSUPPORTED"` and the `campaigns` table count is unchanged (MCR-01, AC 61)
+**C77** - `POST /api/sessions/:id/campaigns` on a `meta-cloud` session answers 400 with `code: "CAMPAIGN_ENGINE_UNSUPPORTED"` and the `campaigns` table count is unchanged (MCR-01, AC 61) ✅
 Proof: `npx jest src/modules/campaign/campaigns.controller.http.spec.ts -t "C77 "`
 
 **C78** - `docs/29` publishes the `cloud` column with counts equal to the matrix, and its inventory marks hold (MCR-01, AC 62) ✅
