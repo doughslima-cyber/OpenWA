@@ -195,6 +195,7 @@ Proof: `npx jest src/modules/meta-cloud src/modules/message/message-send.service
 
 **C52** - `OPENMSG.md` gains a short Portuguese section on operating a Cloud session from the dashboard (create, change token, the 24-hour window and templates), with no secret values, and `docs/32` marks F3 implemented (Observable - document) ✅
 Proof: `npx jest src/common/docs-governance.spec.ts -t "governance docs match the repository" --testPathIgnorePatterns=/node_modules/`
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-docs.spec.ts -t "C52 "`
 
 ### Verification round 1 additions
 
