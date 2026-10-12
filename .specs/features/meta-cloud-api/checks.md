@@ -241,7 +241,7 @@ Proof: `npx jest src/engine/adapters/meta-cloud-chat-store.service.spec.ts -t "C
 
 ### S5 - Read side and refusals · 12 files · ~260 KB · ~65k
 
-**C69** - With stored messages in 3 chats, `getChats()` returns 3 summaries, each with `kind: "direct"`, the last message text, the chat name and `unreadCount` equal to the inbound messages newer than that chat's last `sendSeen` (a chat never seen counts all its inbound; a chat seen after its last inbound counts 0) (MCR-01, AC 55) ✅
+**C69** - With stored messages in 3 chats, `getChats()` returns 3 summaries, each with `kind: "individual"` (amended from `"direct"`, which `ChatKind` does not have, by the user on 2026-10-11), the last message text, the chat name and `unreadCount` equal to the inbound messages newer than that chat's last `sendSeen` (a chat never seen counts all its inbound; a chat seen after its last inbound counts 0) (MCR-01, AC 55) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-chat-store.service.spec.ts -t "C69 "`
 
 **C70** - `GET /api/sessions/:id/chats` on a Cloud session, after the C57 inbound message, returns one chat for `5511988887777@c.us` with `unreadCount: 1` (MCR-01, AC 55) ✅
