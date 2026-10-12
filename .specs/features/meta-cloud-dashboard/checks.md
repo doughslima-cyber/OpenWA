@@ -184,16 +184,16 @@ Proof: `npm run check:sdk-coverage`
 **C49** - The dashboard's hand types match the contract for every shape this feature reads (`Session.engine`, the account, template and window responses) on an LF checkout (Surface) ✅
 Proof: `npm run check:contract-shapes` (run on an LF checkout - `git -c core.autocrlf=false worktree add` - per lesson L-001; on a CRLF Windows checkout the Python SDK pairs fail regardless)
 
-**C50** - The dashboard type-checks, lints and keeps its formatting (MCD-07)
+**C50** - The dashboard type-checks, lints and keeps its formatting (MCD-07) ✅
 Proof: `cd dashboard && npm run typecheck`
 Proof: `cd dashboard && npm run lint`
 Proof: `cd dashboard && npm run format:check`
 
-**C51** - The backend type-checks and the meta-cloud and message specs this feature touches keep passing (MCT-02)
+**C51** - The backend type-checks and the meta-cloud and message specs this feature touches keep passing (MCT-02) ✅
 Proof: `npx tsc --noEmit -p tsconfig.json`
 Proof: `npx jest src/modules/meta-cloud src/modules/message/message-send.service.spec.ts`
 
-**C52** - `OPENMSG.md` gains a short Portuguese section on operating a Cloud session from the dashboard (create, change token, the 24-hour window and templates), with no secret values, and `docs/32` marks F3 implemented (Observable - document)
+**C52** - `OPENMSG.md` gains a short Portuguese section on operating a Cloud session from the dashboard (create, change token, the 24-hour window and templates), with no secret values, and `docs/32` marks F3 implemented (Observable - document) ✅
 Proof: `npx jest src/common/docs-governance.spec.ts -t "governance docs match the repository" --testPathIgnorePatterns=/node_modules/`
 
 ## Coverage

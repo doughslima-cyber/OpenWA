@@ -175,9 +175,10 @@ não exige rebuild dos containers nem publicação do workflow.
 
 ## Sessões da API oficial da Meta (Cloud API)
 
-As fases F1 e F2 do [docs/32](docs/32-meta-cloud-api.md) estão implementadas no ramo
-`claude/tlc-spec-lean-meta-cloud-api-5902e1` e ainda não estão na VM. Uma sessão Cloud usa um número registrado na
-Meta, sem QR code, ao lado das sessões de QR do mesmo gateway: envia e recebe pelas mesmas rotas e webhooks.
+As fases F1 e F2 do [docs/32](docs/32-meta-cloud-api.md) estão no `main` (PR #6) e na VM desde 12/10/2026; a F3
+(o painel) está implementada no ramo `claude/tlc-spec-lean-meta-cloud-dashboard` e ainda não está na VM. Uma sessão
+Cloud usa um número registrado na Meta, sem QR code, ao lado das sessões de QR do mesmo gateway: envia e recebe
+pelas mesmas rotas e webhooks.
 
 Para ligar, acrescente ao `.env` da VM e rode `docker compose up -d`:
 
@@ -189,7 +190,7 @@ Para ligar, acrescente ao `.env` da VM e rode `docker compose up -d`:
 | `META_WEBHOOK_VERIFY_TOKEN` | Texto escolhido por você, colado também no painel da Meta ao verificar o webhook          |
 | `META_GRAPH_API_VERSION`    | Opcional; padrão `v26.0`. `META_CLOUD_MAX_RPS` e `META_CLOUD_TIMEOUT_MS` também opcionais |
 
-Até a F3 trazer o painel, a sessão é criada pela API, com uma API key sem restrição de conversas:
+Sem o painel da F3, a sessão é criada pela API, com uma API key sem restrição de conversas:
 
 ```bash
 curl -X POST https://openmsg.devsrun.com/api/sessions -H "X-API-Key: $KEY" -H 'Content-Type: application/json'   -d '{"name":"meta-1","engine":"meta-cloud","metaCloud":{"phoneNumberId":"<id>","wabaId":"<waba>","accessToken":"<token>"}}'
@@ -211,6 +212,33 @@ No painel da Meta, o webhook do app aponta para `https://openmsg.devsrun.com/api
   a Meta reenvia mais tarde e a mensagem chega quando a sessão estiver pronta. Uma sessão parada de propósito faz a
   Meta reenviar até desistir; a Meta não documenta por quanto tempo tenta, então mensagens que chegarem com a sessão
   parada por muito tempo podem se perder.
+
+### Operar uma sessão Cloud pelo painel
+
+Com a F3, o operador faz tudo pelo painel, sem chamar a API:
+
+- **Criar:** em **Sessões → Nova sessão**, escolha "API oficial da Meta" no lugar de "Dispositivo vinculado (QR)" e
+  preencha Phone Number ID, WABA ID e token de acesso, copiados do app no Meta for Developers. O botão Criar só
+  libera com os três preenchidos, e o token nunca mais é exibido. Se o gateway não tiver `META_CLOUD_ENABLED=true`
+  ou a `META_CLOUD_ENCRYPTION_KEY`, ou se o número já for de outra sessão, o aviso diz o que corrigir. Depois é só
+  **Iniciar**: não há QR, e o cartão mostra o selo "API oficial".
+- **Trocar o token:** o detalhe da sessão mostra o número, o nome verificado, a qualidade, a faixa de limite, o
+  token como `••••` e os 4 últimos caracteres, e a URL do webhook com um botão **Copiar**. O verify token não
+  aparece no painel: ele fica só em `META_WEBHOOK_VERIFY_TOKEN`, no `.env`. Cole o token novo em "Novo token de
+  acesso" e clique em **Trocar token**. Quando a Meta recusa o token, o cartão fica em "ação necessária" com essa
+  dica; depois da troca, pare e inicie a sessão.
+- **Janela de 24 horas:** ao abrir uma conversa, o painel consulta quando o cliente escreveu por último. Passadas
+  24 horas, o compositor mostra o aviso de janela fechada com o botão **Enviar modelo**. O texto livre continua
+  liberado, porque quem decide é a Meta: se ela recusar, o erro aparece traduzido.
+- **Enviar modelo:** o botão também fica na área de ações do compositor com a janela aberta. A lista traz só os
+  modelos aprovados no WhatsApp Manager da Meta (nome, idioma e categoria), guardada por 5 minutos; **Atualizar**
+  busca de novo. Escolhido o modelo, preencha um campo por variável do corpo (`{{1}}`, `{{2}}` ou
+  `{{nome}}`) e confira a pré-visualização; a mensagem enviada aparece na conversa com o texto preenchido. Modelos
+  com variável ou mídia no cabeçalho, ou botões com parâmetros, aparecem como não enviáveis pelo painel (ficam para a
+  F4).
+- **O que some numa sessão Cloud:** **Mostrar QR** e **Desvincular** no cartão, a opção de rejeitar chamadas no
+  detalhe, as abas Status e Canais em **Conversas**, **Apagar** nas mensagens (os botões de mensagens recebidas
+  aparecem como texto, sem clique) e **Nova campanha** em **Campanhas**, que mostra uma nota sobre a F4.
 
 ## Implantação
 
@@ -313,9 +341,9 @@ registra cada migration pelo nome. Uma tabela que já foi para produção só mu
 
 ## Pendências conhecidas
 
-- A API oficial da Meta (WhatsApp Cloud API) tem as fases F1 e F2 do [docs/32](docs/32-meta-cloud-api.md)
-  implementadas num ramo ainda não publicado (ver [Sessões da API oficial da Meta](#sessões-da-api-oficial-da-meta-cloud-api));
-  painel (F3), modelos da Meta e campanhas (F4) e perfil, bloqueio e métricas (F5) continuam pendentes.
+- A API oficial da Meta (WhatsApp Cloud API) tem as fases F1 e F2 do [docs/32](docs/32-meta-cloud-api.md) na VM e o
+  painel (F3) implementado num ramo ainda não publicado (ver [Sessões da API oficial da Meta](#sessões-da-api-oficial-da-meta-cloud-api));
+  campanhas por modelo e mensagens interativas (F4) e perfil, bloqueio e métricas (F5) continuam pendentes.
 - Campanhas não entram no backup de `/infra` (`GET /infra/export-data`): restaurar um backup deixa as sessões
   sem campanhas.
 
