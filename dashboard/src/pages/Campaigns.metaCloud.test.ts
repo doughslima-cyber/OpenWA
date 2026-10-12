@@ -19,7 +19,7 @@ function jsonResponse(data: unknown, status = 200): Response {
 
 const base = { status: 'ready', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' };
 const CLOUD = { ...base, id: 'sess-cloud', name: 'oficial', engine: 'meta-cloud' };
-const QR = { ...base, id: 'sess-qr', name: 'vendas' };
+const QR = { ...base, id: 'sess-qr', name: 'vendas', engine: 'baileys' };
 
 let sessions: unknown[] = [];
 const createReply = (): Response =>

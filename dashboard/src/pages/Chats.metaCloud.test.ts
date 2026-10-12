@@ -29,7 +29,14 @@ const CLOUD: Session = {
   status: 'ready',
   phone: '5511999990000',
 };
-const QR: Session = { ...base, id: 'qr-1', name: 'Phone', status: 'ready', phone: '15551234567' };
+const QR: Session = {
+  ...base,
+  id: 'qr-1',
+  name: 'Phone',
+  engine: 'whatsapp-web.js',
+  status: 'ready',
+  phone: '15551234567',
+};
 
 const CHAT: Chat = {
   id: '5511988887777@c.us',
@@ -316,6 +323,7 @@ test('C21 a NULL-engine session keeps its tabs, Delete and composer, and asks no
   assert.equal(sendTemplateButtons().length, 0);
 
   rtl.cleanup();
+  session = { ...QR, engine: 'baileys' };
   window.sessionStorage.setItem('openwa_engine_type', 'baileys');
   await renderChats();
   rtl.fireEvent.click(tab(en.chats.tab.channels)!);

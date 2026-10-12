@@ -16,6 +16,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
   return {
     id: 's1',
     name: 'session-1',
+    engine: 'baileys',
     status: 'ready',
     phone: '+155512345',
     pushName: 'Alice',
@@ -227,7 +228,7 @@ test('C1 awaitsPairing is false for a meta-cloud session, and unchanged for a NU
   assert.equal(awaitsPairing(makeSession({ status: 'initializing', phone: null })), true);
   assert.equal(awaitsPairing(makeSession({ status: 'qr_ready', phone: null })), true);
   assert.equal(awaitsPairing(makeSession({ status: 'initializing', phone: '15550002222' })), false);
-  assert.equal(awaitsPairing(makeSession({ engine: null, status: 'qr_ready', phone: null })), true);
+  assert.equal(awaitsPairing(makeSession({ engine: 'whatsapp-web.js', status: 'qr_ready', phone: null })), true);
 });
 
 test('C1 canUnlinkSession is false for any meta-cloud session, started or not', () => {
@@ -241,4 +242,8 @@ test('C1 canUnlinkSession is false for any meta-cloud session, started or not', 
     }
   }
   assert.equal(canUnlinkSession(makeSession({ status: 'ready', engineLoaded: true }), true), true);
+  assert.equal(
+    canUnlinkSession(makeSession({ engine: 'whatsapp-web.js', status: 'ready', engineLoaded: true }), true),
+    true,
+  );
 });

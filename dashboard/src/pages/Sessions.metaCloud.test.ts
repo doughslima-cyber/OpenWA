@@ -81,6 +81,7 @@ const QR_SESSION: Session = {
   ...base,
   id: 'qr-device-id',
   name: 'qr-device',
+  engine: 'baileys',
   status: 'qr_ready',
   engineLoaded: true,
   phone: null,
