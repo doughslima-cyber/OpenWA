@@ -12,10 +12,10 @@
 
 ## Handoff
 
-**Feature**: meta-cloud-api
-**Where**: C1-C99 verified - round 4 PASS (`c8f2363f`), cleanups in `79b92cae`; PR #6 open, all review threads resolved
+**Feature**: meta-cloud-dashboard
+**Where**: C1-C43 closed at `15310ffd` (builder A: S1-S4); C44-C52 open
 **In progress**: none
-**Next step**: get CI to run on PR #6, then merge; go-live needs a Meta app, WABA and number (plan open questions 1 and 2), then doc 32 F0 to replace documented webhook fixtures with captured ones
-**Blockers**: CI has never run on the fork (no workflow runs); go-live waits on plan open questions 1 and 2
+**Next step**: builder B: C44-C52 (translate the `metaCloud.*` and `campaigns.errors.CAMPAIGN_ENGINE_UNSUPPORTED` keys in the 14 non-English catalogs, the color-literal test, docs/06 sections, openapi, chat-scope gate, SDK and contract checks, OPENMSG.md and doc 32)
+**Blockers**: none for the build; go-live waits on plan open question 1
 **Uncommitted**: none
-**Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
+**Branch**: claude/tlc-spec-lean-meta-cloud-dashboard

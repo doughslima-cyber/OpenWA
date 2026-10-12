@@ -285,3 +285,7 @@ Intended split, with the arithmetic, written before any code. Budget 150k tokens
 - S3 backend part (~30k) + S3 picker (~23k) = 53k; + S1 (~38k) = 91k; + S2 (~43k) = 134k; + S4 (~10k) = 144k;
   S5 + governance (~35k) would reach 179k -> builder A: S3, S1, S2, S4 (backend first so the dashboard builds
   against real routes); builder B: S5 and governance C44-C52, the catalogs and every repo gate
+
+- Boundary: C1-C43 closed at `15310ffd` (builder A); C44-C52 open for builder B.
+- Settled mid-build: none by the user. The 14 non-English catalogs carry the new keys in English so parity and the dashboard tests stay green; builder B translates them.
+- Abandoned: none.
