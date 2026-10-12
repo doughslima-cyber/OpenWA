@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Chat, ChatMessage, Session } from '../services/api';
-import { resetSocketDouble } from '../test-helpers/socket-io-double.ts';
+import { lastSocket, resetSocketDouble } from '../test-helpers/socket-io-double.ts';
 
 const en = JSON.parse(readFileSync(new URL('../i18n/locales/en.json', import.meta.url), 'utf8')) as {
   chats: { tab: Record<string, string>; actions: Record<string, string>; channels: Record<string, string> };
@@ -347,4 +347,67 @@ test('C40 after a picker send the thread refetches and shows the sent message', 
   await rtl.waitFor(() => assert.equal(document.querySelector('.template-picker') === null, true));
   const thread = document.querySelector('.room-messages') as HTMLElement;
   assert.ok(await rtl.within(thread).findByText('Olá Ana, seu pedido 42 saiu'));
+});
+
+test('C58 a customer message arriving in the open Cloud chat reads its window again and clears the closed banner', async () => {
+  windowReply = () =>
+    jsonResponse({ lastInboundAt: '2026-10-10T10:00:00.000Z', open: false, closesAt: '2026-10-11T10:00:00.000Z' });
+  await renderChats();
+  await openChat();
+  assert.ok(await rtl.screen.findByText(en.metaCloud.window.closed));
+  assert.equal(windowCalls().length, 1);
+
+  const inboundAt = new Date();
+  windowReply = () =>
+    jsonResponse({
+      lastInboundAt: inboundAt.toISOString(),
+      open: true,
+      closesAt: new Date(inboundAt.getTime() + 24 * 3600 * 1000).toISOString(),
+    });
+  const socket = lastSocket();
+  assert.ok(socket, 'expected the page to have opened a socket');
+  socket.receive('message', {
+    type: 'event',
+    timestamp: inboundAt.toISOString(),
+    payload: {
+      event: 'message.received',
+      sessionId: CLOUD.id,
+      data: {
+        id: 'wamid.live.reply',
+        chatId: CHAT.id,
+        from: CHAT.id,
+        to: 'me',
+        body: 'Oi, ainda estou esperando',
+        type: 'text',
+        fromMe: false,
+        timestamp: Math.floor(inboundAt.getTime() / 1000),
+      },
+    },
+  });
+
+  await rtl.waitFor(() => assert.equal(windowCalls().length, 2));
+  await rtl.waitFor(() => assert.equal(banner() === null, true));
+});
+
+test('C59 an open window is read again once its closesAt passes, and the closed banner then shows', async () => {
+  const closesAt = new Date(Date.now() + 1500);
+  windowReply = () =>
+    jsonResponse({
+      lastInboundAt: new Date(closesAt.getTime() - 24 * 3600 * 1000).toISOString(),
+      open: true,
+      closesAt: closesAt.toISOString(),
+    });
+  await renderChats();
+  await openChat();
+  await rtl.waitFor(() => assert.equal(windowCalls().length, 1));
+  assert.equal(banner() === null, true);
+
+  windowReply = () =>
+    jsonResponse({
+      lastInboundAt: new Date(closesAt.getTime() - 24 * 3600 * 1000).toISOString(),
+      open: false,
+      closesAt: closesAt.toISOString(),
+    });
+  await rtl.waitFor(() => assert.equal(windowCalls().length, 2), { timeout: 6000 });
+  assert.ok(await rtl.screen.findByText(en.metaCloud.window.closed));
 });
