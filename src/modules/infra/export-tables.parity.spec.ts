@@ -168,7 +168,11 @@ describe('export-tables registry: every data-DB entity table has a backup decisi
 
   it('flags exactly the tables with an FK to sessions, so the export drops their orphaned rows', () => {
     const flagged = EXPORT_TABLES.filter(entry => entry.sessionFk).map(entry => entry.table);
-    const withFk = entityFiles.filter(f => f.connection === 'data').flatMap(f => f.sessionFkTables);
+    // An excluded table is never exported, so it has no orphaned rows for the export to drop.
+    const withFk = entityFiles
+      .filter(f => f.connection === 'data')
+      .flatMap(f => f.sessionFkTables)
+      .filter(table => !(table in EXPORT_TABLE_EXCLUSIONS));
     expect(flagged.sort()).toEqual(withFk.sort());
     expect(flagged.length).toBeGreaterThan(0);
   });

@@ -346,4 +346,7 @@ export const EXPORT_TABLES: AnyExportTable[] = [
 export const EXPORT_TABLE_EXCLUSIONS: Readonly<Record<string, string>> = {
   // Claims expire within 24 hours; a restored key would only block or replay a send it never saw.
   send_idempotency_keys: 'short-lived Idempotency-Key claims (24 h TTL), meaningless after a restore',
+  // OpenMsg (docs/32 D2). Both cascade from sessions, so a restore's sessions DELETE clears them too.
+  meta_cloud_accounts: 'Cloud API access tokens must not travel in a backup; each Cloud session needs its token again',
+  meta_cloud_contacts: 'Cloud API contacts learned from inbound messages; the next inbound message rebuilds them',
 };

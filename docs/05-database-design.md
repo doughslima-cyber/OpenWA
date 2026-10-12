@@ -924,7 +924,8 @@ src/database/migrations/           # data connection (pluggable)
 ├── 1790812800000-AddMessageWindowIndexes.ts   # compound timestamp indexes for message-time pagination
 ├── 1791100000000-AddCampaigns.ts   # campaigns + campaign_recipients (OpenMsg); FKs ON DELETE CASCADE
 ├── 1791200000000-AddCampaignRecipientWaMessageId.ts   # campaign_recipients.waMessageId for delivery/read metrics; best-effort backfill
-└── 1791300000000-AddSessionEngine.ts   # sessions.engine (OpenMsg): NULL = ENGINE_TYPE, or meta-cloud; no backfill
+├── 1791300000000-AddSessionEngine.ts   # sessions.engine (OpenMsg): NULL = ENGINE_TYPE, or meta-cloud; no backfill
+└── 1791400000000-AddMetaCloudTables.ts   # meta_cloud_accounts (encrypted token, unique phoneNumberId) + meta_cloud_contacts (OpenMsg); FKs ON DELETE CASCADE
 ```
 
 > [!NOTE]

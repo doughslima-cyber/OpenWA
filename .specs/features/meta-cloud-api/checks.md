@@ -64,7 +64,7 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.
 **C12** - When the account insert throws inside the create, no `sessions` row is left behind (MCA-01, AC 9)
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-account.service.spec.ts -t "C12 "`
 
-**C13** - The cipher writes `v1.<iv>.<tag>.<ciphertext>` (four dot-separated parts, base64url, 12-byte IV, 16-byte tag), never equal to and never containing the plaintext; it decrypts back to the plaintext; changing one byte of the tag, IV or ciphertext throws; decrypting with another 32-byte key throws (MCA-01, AC 10 · door 4)
+**C13** - The cipher writes `v1.<iv>.<tag>.<ciphertext>` (four dot-separated parts, base64url, 12-byte IV, 16-byte tag), never equal to and never containing the plaintext; it decrypts back to the plaintext; changing one byte of the tag, IV or ciphertext throws; decrypting with another 32-byte key throws (MCA-01, AC 10 · door 4) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-crypto.spec.ts -t "C13 "`
 
 **C14** - The stored `accessTokenEnc` of the C11 row differs from the submitted token and decrypts to it with the suite's key (MCA-01, AC 10)
@@ -135,7 +135,7 @@ Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C34 "`
 **C35** - `DELETE /api/sessions/:id` on a `meta-cloud` session with one contact row leaves zero `meta_cloud_accounts` and zero `meta_cloud_contacts` rows for that id (MCA-03, AC 27 · doors 3, 5)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C35 "`
 
-**C36** - `AddMetaCloudTables` creates `meta_cloud_accounts` (PK `sessionId`, FK to `sessions(id)` `ON DELETE CASCADE`, unique index `UQ_meta_cloud_accounts_phoneNumberId`) and `meta_cloud_contacts` (FK `ON DELETE CASCADE`, unique index `UQ_meta_cloud_contacts_sessionId_waId`); `down` drops both (doors 3, 5)
+**C36** - `AddMetaCloudTables` creates `meta_cloud_accounts` (PK `sessionId`, FK to `sessions(id)` `ON DELETE CASCADE`, unique index `UQ_meta_cloud_accounts_phoneNumberId`) and `meta_cloud_contacts` (FK `ON DELETE CASCADE`, unique index `UQ_meta_cloud_contacts_sessionId_waId`); `down` drops both (doors 3, 5) ✅
 Proof: `npx jest src/database/migrations/__tests__/1791400000000-AddMetaCloudTables.spec.ts -t "C36 "`
 
 ### S3 - Send through the Cloud API · 10 files · ~180 KB · ~45k
