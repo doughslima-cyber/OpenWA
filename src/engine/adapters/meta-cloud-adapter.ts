@@ -186,7 +186,7 @@ export class MetaCloudAdapter {
     _mentions?: string[],
     options: { linkPreview?: boolean; customPreview?: CustomLinkPreview } & Quotable = {},
   ): Promise<MessageResult> {
-    if (options.customPreview) throw new EngineNotSupportedError('sendTextMessage with customLinkPreview');
+    if (options.customPreview) throw new EngineNotSupportedError('sendTextMessage(customPreview)');
     return this.sendMessage(
       chatId,
       'text',

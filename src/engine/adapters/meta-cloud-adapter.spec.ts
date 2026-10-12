@@ -288,6 +288,17 @@ describe('MetaCloudAdapter', () => {
       expect(messageBodies()[0]).toMatchObject({ text: { body: 'see https://example.com', preview_url: true } });
     });
 
+    it('answers 501 to a custom link preview and calls no Graph', async () => {
+      const { adapter } = await readyAdapter();
+
+      await expect(
+        adapter.sendTextMessage(CHAT, 'hi', undefined, {
+          customPreview: { title: 'Acme', description: 'd', canonicalUrl: 'https://example.com' },
+        } as never),
+      ).rejects.toBeInstanceOf(EngineNotSupportedError);
+      expect(graph.requests).toEqual([]);
+    });
+
     it('reports a sent message once through onMessageCreate, as the account own outgoing message', async () => {
       const { adapter, onMessageCreate } = await readyAdapter();
 
