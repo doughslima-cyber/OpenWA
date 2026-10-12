@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 6,
+  "next_id": 10,
   "lessons": [
     {
       "id": "L-001",
@@ -29,17 +29,19 @@
       "text": "Prove every check that names an HTTP status with a test that crosses the HTTP boundary",
       "signal": "ac_gap",
       "scope": "routes",
-      "status": "candidate",
+      "status": "confirmed",
       "features": [
-        "meta-cloud-api"
+        "meta-cloud-api",
+        "meta-cloud-dashboard"
       ],
-      "recurrence": 1,
+      "recurrence": 2,
       "harmful": 0,
       "evidence": [
-        "verification.md C16, C17 - create-session.dto.spec.ts:159 (routes)"
+        "verification.md C16, C17 - create-session.dto.spec.ts:159 (routes)",
+        "verification.md gap 5 - send-template 404/429/502/503 (routes)"
       ],
       "created": "2026-10-12T02:57:01Z",
-      "last_seen": "2026-10-12T02:57:01Z"
+      "last_seen": "2026-10-12T17:56:11Z"
     },
     {
       "id": "L-003",
@@ -94,6 +96,78 @@
       ],
       "created": "2026-10-12T04:31:23Z",
       "last_seen": "2026-10-12T04:31:23Z"
+    },
+    {
+      "id": "L-006",
+      "key": "surviving_mutant::build test fixtures from values the api can actually send never from the database s null",
+      "text": "Build test fixtures from values the API can actually send, never from the database's null",
+      "signal": "surviving_mutant",
+      "scope": "dashboard",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-dashboard"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md fault 1 - dashboard/src/utils/sessionActions.test.ts:230 (dashboard)"
+      ],
+      "created": "2026-10-12T17:56:03Z",
+      "last_seen": "2026-10-12T17:56:03Z"
+    },
+    {
+      "id": "L-007",
+      "key": "surviving_mutant::prove a chat fence with an in scope and an out of scope restricted key on the route itself",
+      "text": "Prove a chat fence with an in-scope and an out-of-scope restricted key on the route itself",
+      "signal": "surviving_mutant",
+      "scope": "routes",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-dashboard"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md fault 2 - meta-cloud-templates.controller.ts:60 (routes)"
+      ],
+      "created": "2026-10-12T17:56:04Z",
+      "last_seen": "2026-10-12T17:56:04Z"
+    },
+    {
+      "id": "L-008",
+      "key": "surviving_mutant::give every fallback branch a check of its own before building it",
+      "text": "Give every fallback branch a check of its own before building it",
+      "signal": "surviving_mutant",
+      "scope": "coverage",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-dashboard"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md fault 3 - meta-cloud-templates.service.ts:79 (coverage)"
+      ],
+      "created": "2026-10-12T17:56:04Z",
+      "last_seen": "2026-10-12T17:56:04Z"
+    },
+    {
+      "id": "L-009",
+      "key": "ac_gap::prove every http status at the boundary",
+      "text": "Prove every HTTP status at the boundary",
+      "signal": "ac_gap",
+      "scope": "routes",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-dashboard"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md gap 5 - send-template 404/429/502/503 (routes)"
+      ],
+      "created": "2026-10-12T17:56:04Z",
+      "last_seen": "2026-10-12T17:56:04Z"
     }
   ]
 }
