@@ -41,6 +41,7 @@ import {
 } from '../utils/recipientTable';
 import { readXlsx } from '../utils/xlsx';
 import { BULK_RECIPIENTS_FILE_MAX_BYTES } from '../utils/bulkRecipients';
+import { isMetaCloudSession } from '../utils/sessionActions';
 import { PageHeader } from '../components/PageHeader';
 import { Modal } from '../components/Modal';
 import './Campaigns.css';
@@ -160,6 +161,8 @@ export function Campaigns() {
     form.text.trim().length > 0 &&
     form.text.length <= TEXT_MAX;
   const sessionName = sessions.find(session => session.id === sessionId)?.name ?? sessionId;
+  // OpenMsg (docs/32 F3): Cloud API campaigns need templates, which arrive in doc 32 F4.
+  const cloudSession = isMetaCloudSession(sessions.find(session => session.id === sessionId));
 
   const errorText = (err: unknown, fallbackKey: string): string => {
     const code = (err as { code?: string }).code;
@@ -295,7 +298,7 @@ export function Campaigns() {
                 </option>
               ))}
             </select>
-            {canWrite && sessionId && (
+            {canWrite && sessionId && !cloudSession && (
               <button className="btn-primary" onClick={openCreate}>
                 <Plus size={18} />
                 {t('campaigns.newBtn')}
@@ -304,6 +307,12 @@ export function Campaigns() {
           </div>
         }
       />
+
+      {cloudSession && (
+        <p className="meta-cloud-campaigns-note" role="note">
+          {t('metaCloud.campaignsNote')}
+        </p>
+      )}
 
       {openId && sessionId ? (
         <CampaignScreen

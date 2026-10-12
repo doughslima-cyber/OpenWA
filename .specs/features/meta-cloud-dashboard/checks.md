@@ -151,10 +151,10 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 
 ### S4 - Campaigns page on a Cloud session · 3 files · ~40 KB · ~10k
 
-**C42** - With a `meta-cloud` session selected, the Campaigns page shows no **New campaign** button and shows the catalog's Cloud note; with a NULL-engine session selected the button is back (MCD-06, AC 37)
+**C42** - With a `meta-cloud` session selected, the Campaigns page shows no **New campaign** button and shows the catalog's Cloud note; with a NULL-engine session selected the button is back (MCD-06, AC 37) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C42 " src/pages/Campaigns.metaCloud.test.ts`
 
-**C43** - A campaign request answered with 400 `CAMPAIGN_ENGINE_UNSUPPORTED` shows the English catalog text for it (MCD-06, AC 38)
+**C43** - A campaign request answered with 400 `CAMPAIGN_ENGINE_UNSUPPORTED` shows the English catalog text for it (MCD-06, AC 38) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C43 " src/pages/Campaigns.metaCloud.test.ts`
 
 ### S5 - Copy and conventions · 18 files · ~60 KB · ~15k
