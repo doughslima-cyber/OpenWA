@@ -263,9 +263,11 @@ flowchart LR
 ```
 
 Send: controller → `MessageSendService` gate (pacing skipped when the row's engine is `meta-cloud`) → `PENDING`
-row → adapter → Graph `POST /messages` → `wamid` → `SENT` row → adapter calls `onMessageCreate` (the Cloud API
-does not echo sends) → projector dispatches `message.sent`. Later `statuses[]` advance the row through
-`onMessageAck`.
+row → adapter (media: loaded through `loadRemoteMediaBuffer`, then Graph `POST /media`) → Graph `POST /messages`,
+paced per number and retried on `130429` by the Graph client → `wamid` → adapter calls `onMessageCreate` (the
+Cloud API does not echo sends; a reaction calls nothing) → `SENT` row, deduplicated against the projector's insert
+on `waMessageId` → projector dispatches `message.sent`. A Graph error leaves the client already mapped to its
+HTTP status and `code`. Later `statuses[]` advance the row through `onMessageAck`.
 
 Create: `POST /api/sessions` → `SessionService.create` → `MetaCloudAccountService.createSession` writes the session row and
 its `meta_cloud_accounts` row in one transaction; the adapter reads the token back through `MetaCloudAccountStore`

@@ -40,6 +40,7 @@ export class MetaCloudPlugin implements IEnginePlugin {
       sessionId: config.sessionId as string,
       dbSessionId: config.dbSessionId as string,
       accounts: this.accounts,
+      proxyUrl: config.proxyUrl as string | undefined,
     }).asEngine();
   }
 

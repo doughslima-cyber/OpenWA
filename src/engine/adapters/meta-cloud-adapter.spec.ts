@@ -1,10 +1,26 @@
+import { BadRequestException } from '@nestjs/common';
+import { EngineNotReadyError } from '../../common/errors/engine-not-ready.error';
 import { EngineTransportError } from '../../common/errors/engine-transport.error';
+import { SsrfBlockedError } from '../../common/security/ssrf-guard';
 import { EngineNotSupportedError } from '../../common/errors/engine-not-supported.error';
-import { EngineStatus, type EngineEventCallbacks } from '../interfaces/whatsapp-engine.interface';
+import {
+  EngineStatus,
+  type EngineEventCallbacks,
+  type IncomingMessage,
+  type MediaInput,
+} from '../interfaces/whatsapp-engine.interface';
 import { MetaCloudAdapter } from './meta-cloud-adapter';
 import type { MetaCloudAccountPort, MetaCloudCredentials, MetaCloudProfile } from './meta-cloud-account-store.service';
 import { MetaGraphClient } from './meta-cloud-graph.client';
-import { FakeGraph, graphError, refusedGraphUrl, startFakeGraph } from './__fixtures__/fake-graph-server';
+import {
+  FakeGraph,
+  GraphScript,
+  RecordedGraphRequest,
+  graphError,
+  happyGraph,
+  refusedGraphUrl,
+  startFakeGraph,
+} from './__fixtures__/fake-graph-server';
 
 const PHONE_NUMBER_ID = '106540352242922';
 const WABA_ID = '102290129340398';
@@ -215,5 +231,209 @@ describe('MetaCloudAdapter', () => {
   it('answers 501 for a method the Cloud API does not offer, such as a pairing code', async () => {
     const engine = adapterAt(graph.url).asEngine();
     await expect(engine.requestPairingCode('5511999990000')).rejects.toBeInstanceOf(EngineNotSupportedError);
+  });
+  describe('sends', () => {
+    const CHAT = '5511988887777@c.us';
+    const WAMID = 'wamid.HBgNNTUxMTk4ODg4Nzc3NxUCABEYEjBBQzM3';
+    const MEDIA_ID = '1037543291543636';
+    const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex').toString('base64');
+
+    /** Starts answered like happyGraph; every message answers WAMID and every upload MEDIA_ID. */
+    const sendScript: GraphScript = request => {
+      const path = request.path.split('?')[0];
+      if (request.method === 'POST' && path.endsWith('/messages')) {
+        return { status: 200, body: { messaging_product: 'whatsapp', messages: [{ id: WAMID }] } };
+      }
+      if (request.method === 'POST' && path.endsWith('/media')) return { status: 200, body: { id: MEDIA_ID } };
+      return happyGraph(request);
+    };
+
+    /** A READY adapter whose start requests are already cleared from the recording. */
+    const readyAdapter = async () => {
+      graph.script = sendScript;
+      const adapter = adapterAt(graph.url);
+      const onMessageCreate = jest.fn<void, [IncomingMessage]>();
+      await adapter.initialize({ ...recordingCallbacks().callbacks, onMessageCreate });
+      graph.requests.length = 0;
+      return { adapter, onMessageCreate };
+    };
+
+    const jsonOf = (request: RecordedGraphRequest): Record<string, unknown> =>
+      JSON.parse(request.body) as Record<string, unknown>;
+    const messageBodies = () =>
+      graph.requests.filter(r => r.path.split('?')[0].endsWith('/messages')).map(r => jsonOf(r));
+
+    it('C37 sendTextMessage posts the text body to /v26.0/<PHONE_NUMBER_ID>/messages and returns the wamid', async () => {
+      const { adapter } = await readyAdapter();
+
+      const result = await adapter.sendTextMessage(CHAT, 'hi');
+
+      expect(graph.requests.map(r => `${r.method} ${r.path}`)).toEqual([`POST /v26.0/${PHONE_NUMBER_ID}/messages`]);
+      expect(graph.requests[0].headers.authorization).toBe(`Bearer ${TOKEN}`);
+      expect(jsonOf(graph.requests[0])).toEqual({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: '5511988887777',
+        type: 'text',
+        text: { body: 'hi', preview_url: false },
+      });
+      expect(result).toMatchObject({ id: WAMID });
+    });
+
+    it('sends preview_url true when the caller asks for a link preview', async () => {
+      const { adapter } = await readyAdapter();
+
+      await adapter.sendTextMessage(CHAT, 'see https://example.com', undefined, { linkPreview: true });
+
+      expect(messageBodies()[0]).toMatchObject({ text: { body: 'see https://example.com', preview_url: true } });
+    });
+
+    it('reports a sent message once through onMessageCreate, as the account own outgoing message', async () => {
+      const { adapter, onMessageCreate } = await readyAdapter();
+
+      await adapter.sendTextMessage(CHAT, 'hi');
+
+      expect(onMessageCreate).toHaveBeenCalledTimes(1);
+      expect(onMessageCreate.mock.calls[0][0]).toMatchObject({
+        id: WAMID,
+        chatId: CHAT,
+        to: CHAT,
+        from: '5511999990000@c.us',
+        body: 'hi',
+        type: 'text',
+        fromMe: true,
+        isGroup: false,
+      });
+    });
+
+    it('refuses a chat that is not a phone number with 400 and calls no Graph', async () => {
+      const { adapter } = await readyAdapter();
+
+      await expect(adapter.sendTextMessage('120363025246125486@g.us', 'hi')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(graph.requests).toEqual([]);
+    });
+
+    it('refuses to send before the session is ready, with the engine-not-ready 409', async () => {
+      graph.script = sendScript;
+      const adapter = adapterAt(graph.url);
+
+      await expect(adapter.sendTextMessage(CHAT, 'hi')).rejects.toBeInstanceOf(EngineNotReadyError);
+      expect(graph.requests).toEqual([]);
+    });
+
+    const mediaSends: Array<[string, string, (a: MetaCloudAdapter, media: MediaInput) => Promise<unknown>]> = [
+      ['image', 'image', (a, m) => a.sendImageMessage(CHAT, m)],
+      ['video', 'video', (a, m) => a.sendVideoMessage(CHAT, m)],
+      ['audio', 'audio', (a, m) => a.sendAudioMessage(CHAT, m)],
+      ['document', 'document', (a, m) => a.sendDocumentMessage(CHAT, m)],
+      ['sticker', 'sticker', (a, m) => a.sendStickerMessage(CHAT, m)],
+      ['voice note (PTT)', 'audio', (a, m) => a.sendAudioMessage(CHAT, { ...m, ptt: true })],
+    ];
+
+    it.each(mediaSends)(
+      'C39 %s uploads multipart to /<PHONE_NUMBER_ID>/media, then sends type %s by the returned id with no link',
+      async (_label, type, send) => {
+        const { adapter } = await readyAdapter();
+
+        await send(adapter, { mimetype: 'image/png', data: PNG, filename: 'f.bin', caption: 'cap' });
+
+        expect(graph.requests.map(r => `${r.method} ${r.path}`)).toEqual([
+          `POST /v26.0/${PHONE_NUMBER_ID}/media`,
+          `POST /v26.0/${PHONE_NUMBER_ID}/messages`,
+        ]);
+        const [upload, message] = graph.requests;
+        expect(String(upload.headers['content-type'])).toMatch(/^multipart\/form-data; boundary=/);
+        expect(upload.body).toContain('name="messaging_product"');
+        expect(upload.body).toContain('name="file"');
+        const sent = jsonOf(message);
+        expect(sent).toMatchObject({ messaging_product: 'whatsapp', to: '5511988887777', type });
+        expect((sent[type] as { id: string }).id).toBe(MEDIA_ID);
+        for (const request of graph.requests) {
+          expect(request.body).not.toMatch(/"link"|name="link"/);
+        }
+      },
+    );
+
+    it('loads a media URL through the SSRF guard: an internal address is refused and nothing is uploaded', async () => {
+      const { adapter } = await readyAdapter();
+
+      await expect(
+        adapter.sendImageMessage(CHAT, { mimetype: 'image/png', data: 'http://169.254.169.254/latest/meta-data' }),
+      ).rejects.toBeInstanceOf(SsrfBlockedError);
+      expect(graph.requests).toEqual([]);
+    });
+
+    it('C41 sendLocationMessage sends type location with latitude, longitude, name and address', async () => {
+      const { adapter } = await readyAdapter();
+
+      await adapter.sendLocationMessage(CHAT, {
+        latitude: -23.5505,
+        longitude: -46.6333,
+        description: 'Praca da Se',
+        address: 'Se, Sao Paulo - SP',
+      });
+
+      expect(messageBodies()).toEqual([
+        {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: '5511988887777',
+          type: 'location',
+          location: { latitude: -23.5505, longitude: -46.6333, name: 'Praca da Se', address: 'Se, Sao Paulo - SP' },
+        },
+      ]);
+    });
+
+    it('C41 sendContactMessage sends type contacts', async () => {
+      const { adapter } = await readyAdapter();
+
+      await adapter.sendContactMessage(CHAT, { name: 'Maria Souza', number: '5511977776666' });
+
+      const [sent] = messageBodies();
+      expect(sent).toMatchObject({ to: '5511988887777', type: 'contacts' });
+      expect(sent.contacts).toEqual([
+        {
+          name: { formatted_name: 'Maria Souza', first_name: 'Maria Souza' },
+          phones: [{ phone: '+5511977776666', wa_id: '5511977776666', type: 'CELL' }],
+        },
+      ]);
+    });
+
+    it('C41 replyToMessage sends the text with context.message_id set to the quoted wamid', async () => {
+      const { adapter } = await readyAdapter();
+      const quoted = 'wamid.HBgNNTUxMTk4ODg4Nzc3NxUCABIYFjNFQjBDMEE';
+
+      await adapter.replyToMessage(CHAT, quoted, 'yes');
+
+      expect(messageBodies()).toEqual([
+        expect.objectContaining({
+          to: '5511988887777',
+          type: 'text',
+          text: { body: 'yes', preview_url: false },
+          context: { message_id: quoted },
+        }),
+      ]);
+    });
+
+    it('C41 reactToMessage sends type reaction with message_id and emoji', async () => {
+      const { adapter, onMessageCreate } = await readyAdapter();
+      const target = 'wamid.HBgNNTUxMTk4ODg4Nzc3NxUCABIYFjNFQjBDMEE';
+
+      await adapter.reactToMessage(CHAT, target, '👍');
+
+      expect(messageBodies()).toEqual([
+        {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: '5511988887777',
+          type: 'reaction',
+          reaction: { message_id: target, emoji: '👍' },
+        },
+      ]);
+      // A reaction is not a message of its own, so no message.sent follows it.
+      expect(onMessageCreate).not.toHaveBeenCalled();
+    });
   });
 });

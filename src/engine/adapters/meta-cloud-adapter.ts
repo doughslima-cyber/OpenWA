@@ -1,8 +1,21 @@
-import { BadGatewayException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException } from '@nestjs/common';
+import { loadRemoteMediaBuffer } from '../../common/media/load-remote-media';
+import { EngineNotReadyError } from '../../common/errors/engine-not-ready.error';
 import { EngineNotSupportedError } from '../../common/errors/engine-not-supported.error';
 import { EngineTransportError } from '../../common/errors/engine-transport.error';
 import { createLogger } from '../../common/services/logger.service';
-import { EngineStatus, type EngineEventCallbacks, type IWhatsAppEngine } from '../interfaces/whatsapp-engine.interface';
+import {
+  EngineStatus,
+  type ContactCard,
+  type CustomLinkPreview,
+  type EngineEventCallbacks,
+  type IWhatsAppEngine,
+  type LocationInput,
+  type MediaInput,
+  type MessageResult,
+  type MessageType,
+  type Quotable,
+} from '../interfaces/whatsapp-engine.interface';
 import type { MetaCloudAccountPort, MetaCloudCredentials } from './meta-cloud-account-store.service';
 import { MetaGraphClient, MetaGraphError, isMetaTokenInvalid } from './meta-cloud-graph.client';
 
@@ -11,6 +24,8 @@ export interface MetaCloudAdapterOptions {
   dbSessionId: string;
   accounts: MetaCloudAccountPort;
   graph?: MetaGraphClient;
+  /** The session's egress proxy, which a media URL fetch leaves through (Graph calls go direct). */
+  proxyUrl?: string;
 }
 
 /** The reasons a Cloud session reports through `onActionRequired`. */
@@ -18,6 +33,46 @@ export const META_TOKEN_INVALID = 'META_TOKEN_INVALID';
 export const META_TOKEN_MISSING = 'META_TOKEN_MISSING';
 
 const PROFILE_FIELDS = 'display_phone_number,verified_name,quality_rating,messaging_limit_tier';
+
+/** The kinds sent as an uploaded media id, with the type a URL that names none is sent as. */
+const MEDIA_FALLBACK_TYPE = {
+  image: 'image/jpeg',
+  video: 'video/mp4',
+  audio: 'audio/mpeg',
+  document: 'application/octet-stream',
+  sticker: 'image/webp',
+} as const;
+type MediaKind = keyof typeof MEDIA_FALLBACK_TYPE;
+
+/** The Graph message types this adapter sends, and the neutral type of the own-send echo. */
+const ECHO_TYPE: Record<string, MessageType> = {
+  text: 'text',
+  image: 'image',
+  video: 'video',
+  audio: 'audio',
+  document: 'document',
+  sticker: 'sticker',
+  location: 'location',
+  contacts: 'contact',
+};
+
+interface GraphSendAnswer {
+  messages?: Array<{ id?: string }>;
+}
+
+/**
+ * The Cloud API's `to`: the digits of a phone-number chat (docs/32 door 10). Groups, channels and
+ * privacy ids have no Cloud API recipient.
+ */
+export function cloudRecipient(chatId: string): string {
+  const match = /^(\d+)(?:@c\.us|@s\.whatsapp\.net)?$/.exec(chatId);
+  if (!match) {
+    throw new BadRequestException(
+      `A Cloud API session sends only to a phone number chat (<digits>@c.us), not ${chatId}`,
+    );
+  }
+  return match[1];
+}
 
 interface PhoneNumberProfile {
   display_phone_number?: string;
@@ -38,6 +93,7 @@ export class MetaCloudAdapter {
   readonly dbSessionId: string;
   private readonly accounts: MetaCloudAccountPort;
   private readonly graph: MetaGraphClient;
+  private readonly proxyUrl: string | undefined;
   private readonly logger = createLogger('MetaCloudAdapter');
   private callbacks: EngineEventCallbacks = {};
   private status: EngineStatus = EngineStatus.DISCONNECTED;
@@ -49,6 +105,7 @@ export class MetaCloudAdapter {
     this.dbSessionId = options.dbSessionId;
     this.accounts = options.accounts;
     this.graph = options.graph ?? new MetaGraphClient();
+    this.proxyUrl = options.proxyUrl;
   }
 
   /** The adapter as an engine: any method it does not define rejects with a 501. */
@@ -123,6 +180,83 @@ export class MetaCloudAdapter {
     }
   }
 
+  async sendTextMessage(
+    chatId: string,
+    text: string,
+    _mentions?: string[],
+    options: { linkPreview?: boolean; customPreview?: CustomLinkPreview } & Quotable = {},
+  ): Promise<MessageResult> {
+    if (options.customPreview) throw new EngineNotSupportedError('sendTextMessage with customLinkPreview');
+    return this.sendMessage(
+      chatId,
+      'text',
+      { body: text, preview_url: options.linkPreview ?? false },
+      text,
+      options.quotedMessageId,
+    );
+  }
+
+  sendImageMessage(chatId: string, media: MediaInput): Promise<MessageResult> {
+    return this.sendMedia(chatId, 'image', media);
+  }
+
+  sendVideoMessage(chatId: string, media: MediaInput): Promise<MessageResult> {
+    return this.sendMedia(chatId, 'video', media);
+  }
+
+  /** A voice note (PTT) goes as `audio` too: the Cloud API has one audio type. */
+  sendAudioMessage(chatId: string, media: MediaInput): Promise<MessageResult> {
+    return this.sendMedia(chatId, 'audio', media);
+  }
+
+  sendDocumentMessage(chatId: string, media: MediaInput): Promise<MessageResult> {
+    return this.sendMedia(chatId, 'document', media);
+  }
+
+  sendStickerMessage(chatId: string, media: MediaInput): Promise<MessageResult> {
+    return this.sendMedia(chatId, 'sticker', media);
+  }
+
+  sendLocationMessage(chatId: string, location: LocationInput): Promise<MessageResult> {
+    return this.sendMessage(
+      chatId,
+      'location',
+      {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        ...(location.description ? { name: location.description } : {}),
+        ...(location.address ? { address: location.address } : {}),
+      },
+      location.description ?? '',
+      location.quotedMessageId,
+    );
+  }
+
+  sendContactMessage(chatId: string, contact: ContactCard): Promise<MessageResult> {
+    const digits = contact.number.replace(/\D/g, '');
+    return this.sendMessage(
+      chatId,
+      'contacts',
+      [
+        {
+          name: { formatted_name: contact.name, first_name: contact.name },
+          phones: [{ phone: `+${digits}`, wa_id: digits, type: 'CELL' }],
+        },
+      ],
+      contact.name,
+      contact.quotedMessageId,
+    );
+  }
+
+  replyToMessage(chatId: string, quotedMsgId: string, text: string): Promise<MessageResult> {
+    return this.sendMessage(chatId, 'text', { body: text, preview_url: false }, text, quotedMsgId);
+  }
+
+  /** A reaction is not a message of its own: no `message.sent` follows it, as on Baileys. */
+  async reactToMessage(chatId: string, messageId: string, emoji: string): Promise<void> {
+    await this.postMessage(chatId, 'reaction', { message_id: messageId, emoji });
+  }
+
   getStatus(): EngineStatus {
     return this.status;
   }
@@ -158,6 +292,92 @@ export class MetaCloudAdapter {
 
   forceDestroy(): Promise<void> {
     return this.destroy();
+  }
+
+  /** Loads the media through the SSRF-guarded loader, uploads it, and sends it by the returned id. */
+  private async sendMedia(chatId: string, kind: MediaKind, media: MediaInput): Promise<MessageResult> {
+    const account = await this.sendingAccount();
+    cloudRecipient(chatId);
+    const { data, mimetype } = await mediaBytes(media, this.proxyUrl, MEDIA_FALLBACK_TYPE[kind]);
+    const form = new FormData();
+    form.append('messaging_product', 'whatsapp');
+    form.append('type', mimetype.split(';')[0].trim());
+    form.append('file', new Blob([new Uint8Array(data)], { type: mimetype }), media.filename || 'file');
+    const uploaded = await this.graph.send<{ id?: string }>(
+      account.phoneNumberId,
+      `/${encodeURIComponent(account.phoneNumberId)}/media`,
+      account.token,
+      form,
+    );
+    const caption = kind === 'image' || kind === 'video' || kind === 'document' ? media.caption : undefined;
+    return this.sendMessage(
+      chatId,
+      kind,
+      {
+        id: uploaded.id,
+        ...(caption ? { caption } : {}),
+        ...(kind === 'document' ? { filename: media.filename || 'file' } : {}),
+      },
+      media.caption ?? '',
+      media.quotedMessageId,
+    );
+  }
+
+  /** Posts one message and reports it through `onMessageCreate`: the Cloud API echoes no own send. */
+  private async sendMessage(
+    chatId: string,
+    type: string,
+    content: unknown,
+    body: string,
+    quotedMessageId?: string,
+  ): Promise<MessageResult> {
+    const id = await this.postMessage(chatId, type, content, quotedMessageId);
+    const timestamp = Math.floor(Date.now() / 1000);
+    const to = `${cloudRecipient(chatId)}@c.us`;
+    if (id) {
+      this.callbacks.onMessageCreate?.({
+        id,
+        from: `${this.phoneNumber ?? ''}@c.us`,
+        to,
+        chatId: to,
+        body,
+        type: ECHO_TYPE[type] ?? 'unknown',
+        timestamp,
+        fromMe: true,
+        isGroup: false,
+        kind: 'individual',
+      });
+    }
+    return { id, timestamp };
+  }
+
+  /** `POST /<PHONE_NUMBER_ID>/messages`; answers the `wamid`, or '' when Graph returned none. */
+  private async postMessage(chatId: string, type: string, content: unknown, quotedMessageId?: string): Promise<string> {
+    const account = await this.sendingAccount();
+    const answer = await this.graph.send<GraphSendAnswer>(
+      account.phoneNumberId,
+      `/${encodeURIComponent(account.phoneNumberId)}/messages`,
+      account.token,
+      {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cloudRecipient(chatId),
+        type,
+        [type]: content,
+        ...(quotedMessageId ? { context: { message_id: quotedMessageId } } : {}),
+      },
+    );
+    return answer.messages?.[0]?.id ?? '';
+  }
+
+  /** The number and token a send goes out with; a session that is not `ready` sends nothing. */
+  private async sendingAccount(): Promise<{ phoneNumberId: string; token: string }> {
+    if (this.status !== EngineStatus.READY) throw new EngineNotReadyError();
+    const credentials = await this.accounts.loadCredentials(this.dbSessionId);
+    if (!credentials?.accessToken) {
+      throw new EngineNotReadyError('The Cloud API session has no usable access token. Set one and restart it.');
+    }
+    return { phoneNumberId: credentials.phoneNumberId, token: credentials.accessToken };
   }
 
   private setStatus(status: EngineStatus): void {
@@ -213,4 +433,24 @@ export class MetaCloudAdapter {
   private unsupported(method: string): Promise<never> {
     return Promise.reject(new EngineNotSupportedError(method));
   }
+}
+
+/**
+ * The bytes and type of a MediaInput: a Buffer as is, an http(s) URL through the SSRF-guarded loader
+ * (capped at MEDIA_DOWNLOAD_MAX_BYTES), anything else as base64. The caller's type wins over a fetched
+ * one, unless it is the generic placeholder.
+ */
+async function mediaBytes(
+  media: MediaInput,
+  proxyUrl: string | undefined,
+  fallbackType: string,
+): Promise<{ data: Buffer; mimetype: string }> {
+  const callerType = media.mimetype && media.mimetype !== 'application/octet-stream' ? media.mimetype : null;
+  if (Buffer.isBuffer(media.data)) return { data: media.data, mimetype: callerType ?? fallbackType };
+  if (/^https?:\/\//i.test(media.data)) {
+    const fetched = await loadRemoteMediaBuffer(media.data, proxyUrl);
+    const fetchedType = fetched.mimetype && fetched.mimetype !== 'application/octet-stream' ? fetched.mimetype : null;
+    return { data: fetched.data, mimetype: callerType ?? fetchedType ?? fallbackType };
+  }
+  return { data: Buffer.from(media.data, 'base64'), mimetype: callerType ?? fallbackType };
 }

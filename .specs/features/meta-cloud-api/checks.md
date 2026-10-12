@@ -140,19 +140,19 @@ Proof: `npx jest src/database/migrations/__tests__/1791400000000-AddMetaCloudTab
 
 ### S3 - Send through the Cloud API · 10 files · ~180 KB · ~45k
 
-**C37** - `sendTextMessage("5511988887777@c.us", "hi")` posts to `/v26.0/<PHONE_NUMBER_ID>/messages` the body `{ messaging_product: "whatsapp", recipient_type: "individual", to: "5511988887777", type: "text", text: { body: "hi", preview_url: false } }` and returns `{ id: <wamid> }` (MCS-01, AC 28 · door 10)
+**C37** - `sendTextMessage("5511988887777@c.us", "hi")` posts to `/v26.0/<PHONE_NUMBER_ID>/messages` the body `{ messaging_product: "whatsapp", recipient_type: "individual", to: "5511988887777", type: "text", text: { body: "hi", preview_url: false } }` and returns `{ id: <wamid> }` (MCS-01, AC 28 · door 10) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C37 "`
 
 **C38** - `POST .../messages/send-text` on a `READY` Cloud session answers with `messageId` equal to the fake Graph's `wamid`, the stored message has that `waMessageId` and status `sent`, and `WebhookService.dispatch` is called with `message.sent` exactly once for it (MCS-01, AC 28, 29)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C38 "`
 
-**C39** - For each of image, video, audio, document and sticker (5 cases), the adapter first posts multipart to `/<PHONE_NUMBER_ID>/media`, then sends `type: <kind>` with `<kind>.id` equal to the returned media id, and no request body contains a `link` key; a voice note (PTT) is sent as `type: "audio"` (MCS-01, AC 30)
+**C39** - For each of image, video, audio, document and sticker (5 cases), the adapter first posts multipart to `/<PHONE_NUMBER_ID>/media`, then sends `type: <kind>` with `<kind>.id` equal to the returned media id, and no request body contains a `link` key; a voice note (PTT) is sent as `type: "audio"` (MCS-01, AC 30) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C39 "`
 
 **C40** - `send-image` on a Cloud session reaches the fake Graph as one `/media` upload followed by one `/messages` call (MCS-01, AC 30)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C40 "`
 
-**C41** - `sendLocationMessage` sends `type: "location"` with `latitude`, `longitude`, `name` and `address`; `sendContactMessage` sends `type: "contacts"`; `replyToMessage` sends the reply's type with `context.message_id` set to the quoted `wamid`; `reactToMessage` sends `type: "reaction"` with `message_id` and `emoji` (4 cases) (MCS-01, AC 31)
+**C41** - `sendLocationMessage` sends `type: "location"` with `latitude`, `longitude`, `name` and `address`; `sendContactMessage` sends `type: "contacts"`; `replyToMessage` sends the reply's type with `context.message_id` set to the quoted `wamid`; `reactToMessage` sends `type: "reaction"` with `message_id` and `emoji` (4 cases) (MCS-01, AC 31) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C41 "`
 
 **C42** - With `SEND_PACING_ENABLED=true` and a daily cap of 1, `assertSendAllowed` admits a `meta-cloud` session a second time and records nothing against it, while a NULL-engine session is refused with `SEND_PACING_LIMITED` (MCS-01, AC 32) ✅
