@@ -1296,16 +1296,38 @@ The single-recipient send routes (`send-text`, `send-template`, `send-image`, `s
 
 The key is 1-255 visible ASCII characters (a UUID works), unique per session, and is held for **24 hours** from the first request. Within that window:
 
-| Retry with the same key                                                                         | Answer                                                                                                     |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| first request succeeded, same route and body                                                    | the first response again, with `Idempotent-Replayed: true`; nothing is sent                                |
-| first request still running                                                                     | `409` `IDEMPOTENCY_KEY_IN_PROGRESS`; retry after it finishes                                               |
-| first request failed with an uncertain delivery outcome                                         | `409` `IDEMPOTENCY_OUTCOME_UNKNOWN`: the message may have gone out; check the chat, then use a **new** key |
-| first request was refused with `4xx` or `501` before calling the engine                         | the key was freed, so the retry runs as a new request                                                      |
-| transport explicitly reported that nothing was sent, such as a Baileys recipient lookup timeout | the key was freed, so the retry runs as a new request                                                      |
-| different route or body (key order in the JSON does not matter)                                 | `422` `IDEMPOTENCY_KEY_REUSED`                                                                             |
+| Retry with the same key                                                                            | Answer                                                                                                     |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| first request succeeded, same route and body                                                       | the first response again, with `Idempotent-Replayed: true`; nothing is sent                                |
+| first request still running                                                                        | `409` `IDEMPOTENCY_KEY_IN_PROGRESS`; retry after it finishes                                               |
+| first request failed with an uncertain delivery outcome                                            | `409` `IDEMPOTENCY_OUTCOME_UNKNOWN`: the message may have gone out; check the chat, then use a **new** key |
+| first request was refused with `4xx` or `501` before calling the engine                            | the key was freed, so the retry runs as a new request                                                      |
+| transport explicitly reported that nothing was sent, such as a Baileys recipient lookup timeout    | the key was freed, so the retry runs as a new request                                                      |
+| a WhatsApp Cloud API session's send was refused by Meta with a `400`, `409` or `429` `META_*` code | the key was freed, so the retry runs as a new request                                                      |
+| different route or body (key order in the JSON does not matter)                                    | `422` `IDEMPOTENCY_KEY_REUSED`                                                                             |
 
 A malformed key, or the header sent twice, gets `400` `IDEMPOTENCY_KEY_INVALID`. A request still pending ten minutes after it was claimed (its node most likely stopped) also reads as `IDEMPOTENCY_OUTCOME_UNKNOWN`. HTTP status alone does not prove that nothing was sent: an engine can report `409` after attempting delivery, so engine-stage failures retain the key unless transport explicitly proves that nothing was sent. Keys are stored in the data database (`send_idempotency_keys`); concurrent processes using that database share the claim, and the session-owner proxy forwards the header. This does not change the deployment support limits in [Horizontal scaling](./13-horizontal-scaling.md). `send-bulk` does not take the header: retrying its request can create another batch. A call that outlives the 24-hour key window is outside the retry guarantee.
+
+#### Sends on a WhatsApp Cloud API session (OpenMsg)
+
+A `meta-cloud` session (docs/32) takes the same send routes, bodies and `{ messageId, timestamp }` answer; `messageId` is Meta's `wamid`, and a successful send dispatches one `message.sent`. The chat must be a phone number (`<digits>@c.us`): the Cloud API sends to `to` = those digits, so a group, channel or `@lid` chat answers `400`. Media is loaded the way the QR engines load it (base64, or a URL through the SSRF guard under `MEDIA_DOWNLOAD_MAX_BYTES`), uploaded to Meta, and sent by the returned media id; Meta never fetches a URL. A voice note goes as `audio`. `linkPreview` defaults to `false`, and `customLinkPreview` answers `501`.
+
+`SEND_PACING_*` does not apply to these sessions: Meta paces a Cloud number by its own tiers. Instead each number starts at most `META_CLOUD_MAX_RPS` Graph calls a second (default `40`); a send past that waits for the next second rather than being refused. A Meta throttle (`130429`) is retried twice with backoff before it is answered.
+
+When Graph refuses a send, the answer carries the fork `code` below, with Meta's number in `metaCode` and its trace id in `fbtraceId`:
+
+| Meta error code                    | HTTP  | `code`                        |
+| ---------------------------------- | ----- | ----------------------------- |
+| `190`, `10`, `200`, `131005`       | `409` | `META_TOKEN_INVALID`          |
+| `131047` (outside the 24 h window) | `409` | `META_OUTSIDE_SERVICE_WINDOW` |
+| `131048`, `131049`, `131056`       | `429` | `META_LIMIT_REACHED`          |
+| `130429` (after 3 attempts)        | `429` | `META_RATE_LIMITED`           |
+| `131026`, `131021`                 | `400` | `META_RECIPIENT_UNAVAILABLE`  |
+| `131008`, `131009`                 | `400` | `META_INVALID_PARAMETER`      |
+| `133010`, `131031`                 | `409` | `META_ACCOUNT_RESTRICTED`     |
+| any other code, or a Graph `5xx`   | `502` | `META_UPSTREAM_ERROR`         |
+
+A Graph call that outlives `META_CLOUD_TIMEOUT_MS` or fails to connect answers `503`. The `400`/`409`/`429` rows mean Meta took nothing; a `502` or `503` leaves the outcome unknown, and an `Idempotency-Key` stays held for it. Operations the Cloud API does not offer answer `501`.
 
 #### GET /api/sessions/:sessionId/messages
 

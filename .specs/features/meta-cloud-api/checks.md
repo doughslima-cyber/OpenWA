@@ -143,13 +143,13 @@ Proof: `npx jest src/database/migrations/__tests__/1791400000000-AddMetaCloudTab
 **C37** - `sendTextMessage("5511988887777@c.us", "hi")` posts to `/v26.0/<PHONE_NUMBER_ID>/messages` the body `{ messaging_product: "whatsapp", recipient_type: "individual", to: "5511988887777", type: "text", text: { body: "hi", preview_url: false } }` and returns `{ id: <wamid> }` (MCS-01, AC 28 · door 10) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C37 "`
 
-**C38** - `POST .../messages/send-text` on a `READY` Cloud session answers with `messageId` equal to the fake Graph's `wamid`, the stored message has that `waMessageId` and status `sent`, and `WebhookService.dispatch` is called with `message.sent` exactly once for it (MCS-01, AC 28, 29)
+**C38** - `POST .../messages/send-text` on a `READY` Cloud session answers with `messageId` equal to the fake Graph's `wamid`, the stored message has that `waMessageId` and status `sent`, and `WebhookService.dispatch` is called with `message.sent` exactly once for it (MCS-01, AC 28, 29) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C38 "`
 
 **C39** - For each of image, video, audio, document and sticker (5 cases), the adapter first posts multipart to `/<PHONE_NUMBER_ID>/media`, then sends `type: <kind>` with `<kind>.id` equal to the returned media id, and no request body contains a `link` key; a voice note (PTT) is sent as `type: "audio"` (MCS-01, AC 30) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C39 "`
 
-**C40** - `send-image` on a Cloud session reaches the fake Graph as one `/media` upload followed by one `/messages` call (MCS-01, AC 30)
+**C40** - `send-image` on a Cloud session reaches the fake Graph as one `/media` upload followed by one `/messages` call (MCS-01, AC 30) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C40 "`
 
 **C41** - `sendLocationMessage` sends `type: "location"` with `latitude`, `longitude`, `name` and `address`; `sendContactMessage` sends `type: "contacts"`; `replyToMessage` sends the reply's type with `context.message_id` set to the quoted `wamid`; `reactToMessage` sends `type: "reaction"` with `message_id` and `emoji` (4 cases) (MCS-01, AC 31) ✅
@@ -158,13 +158,13 @@ Proof: `npx jest src/engine/adapters/meta-cloud-adapter.spec.ts -t "C41 "`
 **C42** - With `SEND_PACING_ENABLED=true` and a daily cap of 1, `assertSendAllowed` admits a `meta-cloud` session a second time and records nothing against it, while a NULL-engine session is refused with `SEND_PACING_LIMITED` (MCS-01, AC 32) ✅
 Proof: `npx jest src/modules/message/send-pacing.service.spec.ts -t "C42 "`
 
-**C43** - With `SEND_PACING_ENABLED=true` and a daily cap of 1, two `send-text` calls on a Cloud session both answer 201 (MCS-01, AC 32)
+**C43** - With `SEND_PACING_ENABLED=true` and a daily cap of 1, two `send-text` calls on a Cloud session both answer 201 (MCS-01, AC 32) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C43 "`
 
 **C44** - The Graph client maps each of the 16 Meta error codes in the plan's table (`190`, `10`, `200`, `131005`, `131047`, `131048`, `131049`, `131056`, `130429` after retries, `131026`, `131021`, `131008`, `131009`, `133010`, `131031`, an unlisted `100`) plus a bare Graph 500 (17 cases) to the row's HTTP status and `code`, with `metaCode` and `fbtraceId` in the response body (MCS-02, AC 33 · door 9) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-graph.client.spec.ts -t "C44 "`
 
-**C45** - `send-text` against a fake Graph answering `131047` returns 409 with `code: "META_OUTSIDE_SERVICE_WINDOW"` and `metaCode: 131047` (MCS-02, AC 33)
+**C45** - `send-text` against a fake Graph answering `131047` returns 409 with `code: "META_OUTSIDE_SERVICE_WINDOW"` and `metaCode: 131047` (MCS-02, AC 33) ✅
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts -t "C45 "`
 
 **C46** - On `130429`, the client makes exactly 3 attempts in total and then raises 429 `META_RATE_LIMITED`; when the second attempt succeeds, it makes exactly 2 attempts and returns the `wamid` (MCS-02, AC 34) ✅
