@@ -163,7 +163,7 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 Proof: `cd dashboard && npm run i18n:check`
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C44 " src/pages/Sessions.metaCloud.test.ts`
 
-**C45** - Every rule in the pages' stylesheets stays scoped under its page root, and no declaration in a rule whose selector mentions `meta-cloud` or `template-picker` holds a hex, `rgb(` or `hsl(` color literal (MCD-07, AC 40)
+**C45** - Every rule in the pages' stylesheets stays scoped under its page root, and no declaration in a rule whose selector mentions `meta-cloud` or `template-picker` holds a hex, `rgb(` or `hsl(` color literal (MCD-07, AC 40) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="every rule is scoped under its page root" src/styles.scope.test.ts`
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C45 " src/meta-cloud.styles.test.ts`
 
