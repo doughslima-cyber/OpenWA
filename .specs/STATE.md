@@ -13,9 +13,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-dashboard
-**Where**: verification round 1 FAIL fixed: C1-C56 closed; round 1 fixes at `bf7f6241` (C53-C56 added, C52 gains a proof line; non-cloud fixtures carry real engine strings; `Session.engine` is `string`)
+**Where**: C1-C56 verified - round 2 PASS (`874f238c`), `validate_verification.py` exit 0
 **In progress**: none
-**Next step**: orchestrator dispatches the Verifier for round 2 over C1-C56
-**Blockers**: none for the build; go-live waits on plan open question 1
+**Next step**: human walk of the 5 flows in verification.md, then push and open the PR
+**Blockers**: none for merging; go-live waits on a Meta app, WABA, number and an approved template
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-dashboard
