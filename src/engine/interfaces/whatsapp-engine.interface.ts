@@ -183,6 +183,11 @@ export interface IncomingMessage {
   senderPhone?: string | null;
   /** Sender contact info, best-effort from the WhatsApp Web cache. Sync fields only (no network). */
   contact?: MessageContact;
+  /**
+   * Engine detail the neutral fields above do not carry. The WhatsApp Cloud API engine (OpenMsg) sets
+   * `{ reason, errors }` on an `unknown` message Meta could not deliver to the business.
+   */
+  metadata?: Record<string, unknown>;
   /** Styling of a text status/story: background as `#RRGGBB`. Only set by engines that expose it. */
   backgroundColor?: string;
   /** Styling of a text status/story: the WhatsApp font index. Only set by engines that expose it. */
@@ -811,8 +816,11 @@ export interface EngineEventCallbacks {
    * `chatId` is the conversation the acked message belongs to, canonicalized the same way the
    * inbound mappers canonicalize `IncomingMessage.chatId`; undefined when the engine's update
    * carries no chat, and the emitted payload then omits the field rather than guess.
+   *
+   * `errorCode` is the engine's reason for a `failed` status when it names one (the WhatsApp Cloud API
+   * engine passes Meta's `errors[0].code`); the ack and failure payloads then carry it.
    */
-  onMessageAck?: (messageId: string, status: DeliveryStatus, chatId?: string) => void;
+  onMessageAck?: (messageId: string, status: DeliveryStatus, chatId?: string, errorCode?: number) => void;
   onMessageRevoked?: (message: RevokedMessage) => void;
   onMessageReaction?: (event: ReactionEvent) => void;
   onMessageEdited?: (message: EditedMessage) => void;

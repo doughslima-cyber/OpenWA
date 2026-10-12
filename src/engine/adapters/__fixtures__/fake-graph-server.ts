@@ -14,8 +14,8 @@ export interface RecordedGraphRequest {
   body: string;
 }
 
-/** An answer, or `'hang'` to never answer (a timeout). */
-export type GraphReply = { status: number; body?: unknown } | 'hang';
+/** An answer (JSON `body`, or `raw` bytes such as a media file), or `'hang'` to never answer (a timeout). */
+export type GraphReply = { status: number; body?: unknown; raw?: Buffer; contentType?: string } | 'hang';
 export type GraphScript = (request: RecordedGraphRequest) => GraphReply;
 
 export const FAKE_PROFILE = {
@@ -89,6 +89,11 @@ export async function startFakeGraph(script: GraphScript = happyGraph): Promise<
       const reply = fake.script(recorded);
       if (reply === 'hang') {
         hanging.add(() => res.destroy());
+        return;
+      }
+      if (reply.raw) {
+        res.writeHead(reply.status, { 'Content-Type': reply.contentType ?? 'application/octet-stream' });
+        res.end(reply.raw);
         return;
       }
       res.writeHead(reply.status, { 'Content-Type': 'application/json' });

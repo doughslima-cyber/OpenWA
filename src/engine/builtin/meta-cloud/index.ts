@@ -9,13 +9,22 @@ import { PluginContext, PluginType, IEnginePlugin } from '../../../core/plugins'
 import { IWhatsAppEngine } from '../../interfaces/whatsapp-engine.interface';
 import { MetaCloudAdapter } from '../../adapters/meta-cloud-adapter';
 import type { MetaCloudAccountPort } from '../../adapters/meta-cloud-account-store.service';
+import type { MetaCloudContactPort } from '../../adapters/meta-cloud-chat-store.service';
+import type { MetaCloudNumberRegistry } from '../../adapters/meta-cloud-number-registry';
 import { META_GRAPH_API_VERSION_DEFAULT } from '../../session-engine';
 
 export class MetaCloudPlugin implements IEnginePlugin {
   type = PluginType.ENGINE as const;
 
-  /** The account rows; absent only where a test builds the plugin without the data connection. */
-  constructor(private readonly accounts?: MetaCloudAccountPort) {}
+  /**
+   * The account rows, the registry the webhook router finds live numbers in, and the contact rows;
+   * absent only where a test builds the plugin without the data connection.
+   */
+  constructor(
+    private readonly accounts?: MetaCloudAccountPort,
+    private readonly numbers?: MetaCloudNumberRegistry,
+    private readonly contacts?: MetaCloudContactPort,
+  ) {}
 
   onLoad(context: PluginContext): Promise<void> {
     context.logger.log('Meta Cloud API engine plugin loaded');
@@ -41,6 +50,8 @@ export class MetaCloudPlugin implements IEnginePlugin {
       dbSessionId: config.dbSessionId as string,
       accounts: this.accounts,
       proxyUrl: config.proxyUrl as string | undefined,
+      numbers: this.numbers,
+      contacts: this.contacts,
     }).asEngine();
   }
 

@@ -205,16 +205,16 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.
 **C57** - A signed inbound-text fixture for the live session's `phone_number_id` leads to one `message.received` dispatch whose payload has `id` the fixture's `wamid`, `chatId` and `from` `"5511988887777@c.us"`, `body` the text, and the sender name from `contacts[0].profile.name` (MCW-02, AC 43 · door 10)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C57 "`
 
-**C58** - The inbound mapper turns each of the 14 fixtures into the expected neutral message: `text` → text; `image`, `video`, `audio`, `document`, `sticker` → the same type with the media id kept for download; `location` → location; `contacts` → contact; `reaction` → a reaction event; `interactive.button_reply`, `interactive.list_reply` and `button` → `button: { id, text }`; `unsupported`, and a message carrying `errors`, → type `unknown` with the reason in `metadata`. Every `chatId` ends in `@c.us` (MCW-02, AC 43, 44, 45, 46, 47)
+**C58** - The inbound mapper turns each of the 14 fixtures into the expected neutral message: `text` → text; `image`, `video`, `audio`, `document`, `sticker` → the same type with the media id kept for download; `location` → location; `contacts` → contact; `reaction` → a reaction event; `interactive.button_reply`, `interactive.list_reply` and `button` → `button: { id, text }`; `unsupported`, and a message carrying `errors`, → type `unknown` with the reason in `metadata`. Every `chatId` ends in `@c.us` (MCW-02, AC 43, 44, 45, 46, 47) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-inbound.mapper.spec.ts -t "C58 "`
 
-**C59** - An inbound image is fetched with `GET /<MEDIA_ID>` and then from the returned URL, both with `Authorization: Bearer <token>`; an image whose `file_size` exceeds `MEDIA_DOWNLOAD_MAX_BYTES` is delivered without a download, through the existing `capInboundMedia` path (MCW-02, AC 44)
+**C59** - An inbound image is fetched with `GET /<MEDIA_ID>` and then from the returned URL, both with `Authorization: Bearer <token>`; an image whose `file_size` exceeds `MEDIA_DOWNLOAD_MAX_BYTES` is delivered without a download, through the existing `capInboundMedia` path (MCW-02, AC 44) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-media.spec.ts -t "C59 "`
 
 **C60** - A signed `reaction` fixture leads to one `message.reaction` dispatch for the reacted `wamid` with the emoji (MCW-02, AC 45)
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-webhook.e2e-spec.ts -t "C60 "`
 
-**C61** - The mapper turns `statuses[]` entries `sent`, `delivered`, `read` and `failed` (4 cases) into `onMessageAck(wamid, status, "<recipient_id>@c.us")`, the `failed` one carrying `errors[0].code` (MCW-02, AC 48, 49)
+**C61** - The mapper turns `statuses[]` entries `sent`, `delivered`, `read` and `failed` (4 cases) into `onMessageAck(wamid, status, "<recipient_id>@c.us")`, the `failed` one carrying `errors[0].code` (MCW-02, AC 48, 49) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-inbound.mapper.spec.ts -t "C61 "`
 
 **C62** - After the C38 send, a signed `delivered` status for its `wamid` leads to one `message.ack` dispatch with `delivered`, and the row's status becomes `delivered` (MCW-02, AC 48)
@@ -236,7 +236,7 @@ Proof: `npx jest src/modules/meta-cloud/meta-cloud-router.service.spec.ts -t "C6
 **C67** - A body with 2 `entry[]` of 2 `changes[]` each, all for live sessions, leads to 4 adapter deliveries in order; a change whose `field` is `account_update` is skipped without stopping the rest (MCW-02, AC 53)
 Proof: `npx jest src/modules/meta-cloud/meta-cloud-router.service.spec.ts -t "C67 "`
 
-**C68** - After one inbound message, `meta_cloud_contacts` holds one row for the session and `wa_id` with the profile name, `lastInboundAt` and `lastInboundWamid`; a second message from the same `wa_id` updates that row and adds none (MCW-02, AC 54 · door 5)
+**C68** - After one inbound message, `meta_cloud_contacts` holds one row for the session and `wa_id` with the profile name, `lastInboundAt` and `lastInboundWamid`; a second message from the same `wa_id` updates that row and adds none (MCW-02, AC 54 · door 5) ✅
 Proof: `npx jest src/engine/adapters/meta-cloud-chat-store.service.spec.ts -t "C68 "`
 
 ### S5 - Read side and refusals · 12 files · ~260 KB · ~65k

@@ -203,6 +203,49 @@ export class MetaGraphClient {
     if (wait > 0) await delay(wait);
   }
 
+  /**
+   * The bytes behind a media URL Graph handed out (`GET /<MEDIA_ID>` answers it), fetched with the
+   * token as Meta requires. Stops reading past `maxBytes` and answers `{ overCapAt }` instead, so a
+   * file larger than it declared never lands whole in memory.
+   */
+  async download(
+    url: string,
+    token: string,
+    maxBytes: number,
+    timeoutMs: number,
+  ): Promise<{ data: Buffer } | { overCapAt: number }> {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (error) {
+      throw new EngineTransportError(`Media download unreachable: ${transportReason(error, timeoutMs)}`);
+    }
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      throw new MetaGraphError({
+        httpStatus: response.status,
+        message: `Media download answered HTTP ${response.status}`,
+      });
+    }
+    const chunks: Buffer[] = [];
+    let total = 0;
+    const reader = response.body?.getReader();
+    while (reader) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        return { overCapAt: total };
+      }
+      chunks.push(Buffer.from(value));
+    }
+    return { data: Buffer.concat(chunks) };
+  }
+
   /** One Graph call. `body` goes as JSON, or as multipart when it is a FormData. */
   async request<T>(method: 'GET' | 'POST' | 'DELETE', path: string, token: string, body?: unknown): Promise<T> {
     const { baseUrl, version, timeoutMs } = this.configOf();

@@ -242,8 +242,8 @@ export class SessionEngineEventWiring {
           .catch(err => this.logger.error(`Failed to persist history messages for ${id}`, String(err)));
       },
       onMessageCreate: (message): void => host.messages.handleOwnSendEcho(id, engine, message),
-      onMessageAck: (messageId, status, chatId): void =>
-        host.messages.handleMessageAck(id, engine, messageId, status, chatId),
+      onMessageAck: (messageId, status, chatId, errorCode): void =>
+        host.messages.handleMessageAck(id, engine, messageId, status, chatId, errorCode),
       onMessageRevoked: (message): void => host.messages.handleMessageRevoked(id, engine, message),
       onMessageReaction: (event): void => {
         if (!host.isLiveEngine(id, engine)) return;

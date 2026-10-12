@@ -137,6 +137,10 @@ const UNPREFIXED_FILE_ENGINES: Record<string, readonly AdapterKey[] | typeof SHA
   'meta-cloud-contact.entity.ts': [],
   'meta-cloud-crypto.ts': [],
   'meta-cloud-graph.client.ts': [],
+  'meta-cloud-inbound.mapper.ts': [],
+  'meta-cloud-media.ts': [],
+  'meta-cloud-number-registry.ts': [],
+  'meta-cloud-chat-store.service.ts': [],
   'safe-link-preview.ts': ['baileys'],
   'vcard.ts': SHARED,
 };

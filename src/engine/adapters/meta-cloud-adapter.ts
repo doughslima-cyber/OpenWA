@@ -18,6 +18,10 @@ import {
 } from '../interfaces/whatsapp-engine.interface';
 import type { MetaCloudAccountPort, MetaCloudCredentials } from './meta-cloud-account-store.service';
 import { MetaGraphClient, MetaGraphError, isMetaTokenInvalid } from './meta-cloud-graph.client';
+import type { MetaCloudContactPort } from './meta-cloud-chat-store.service';
+import { mapCloudChange, type MetaWebhookChangeValue } from './meta-cloud-inbound.mapper';
+import { fetchCloudMedia } from './meta-cloud-media';
+import type { MetaCloudInboundTarget, MetaCloudNumberRegistry } from './meta-cloud-number-registry';
 
 export interface MetaCloudAdapterOptions {
   sessionId: string;
@@ -26,6 +30,10 @@ export interface MetaCloudAdapterOptions {
   graph?: MetaGraphClient;
   /** The session's egress proxy, which a media URL fetch leaves through (Graph calls go direct). */
   proxyUrl?: string;
+  /** Where the webhook router finds this session by its number; absent, no inbound reaches it. */
+  numbers?: Pick<MetaCloudNumberRegistry, 'register' | 'unregister'>;
+  /** Where each inbound sender is recorded (`meta_cloud_contacts`). */
+  contacts?: MetaCloudContactPort;
 }
 
 /** The reasons a Cloud session reports through `onActionRequired`. */
@@ -88,12 +96,16 @@ interface PhoneNumberProfile {
  *
  * Methods this adapter does not define answer 501 through EngineNotSupportedError (see asEngine).
  */
-export class MetaCloudAdapter {
+export class MetaCloudAdapter implements MetaCloudInboundTarget {
   readonly sessionId: string;
   readonly dbSessionId: string;
   private readonly accounts: MetaCloudAccountPort;
   private readonly graph: MetaGraphClient;
   private readonly proxyUrl: string | undefined;
+  private readonly numbers: MetaCloudAdapterOptions['numbers'];
+  private readonly contacts: MetaCloudContactPort | undefined;
+  /** The number this adapter is registered under for inbound webhooks, while it is. */
+  private registeredNumber: string | null = null;
   private readonly logger = createLogger('MetaCloudAdapter');
   private callbacks: EngineEventCallbacks = {};
   private status: EngineStatus = EngineStatus.DISCONNECTED;
@@ -106,6 +118,8 @@ export class MetaCloudAdapter {
     this.accounts = options.accounts;
     this.graph = options.graph ?? new MetaGraphClient();
     this.proxyUrl = options.proxyUrl;
+    this.numbers = options.numbers;
+    this.contacts = options.contacts;
   }
 
   /** The adapter as an engine: any method it does not define rejects with a 501. */
@@ -154,7 +168,43 @@ export class MetaCloudAdapter {
     this.phoneNumber = (profile.display_phone_number ?? '').replace(/\D/g, '');
     this.pushName = profile.verified_name ?? '';
     this.setStatus(EngineStatus.READY);
+    this.registerNumber(credentials.phoneNumberId);
     this.callbacks.onReady?.(this.phoneNumber, this.pushName);
+  }
+
+  /**
+   * One `messages` change the webhook router matched to this number: each message is recorded as its
+   * sender's last inbound, its media fetched, and every event handed to the session's callbacks in
+   * the order Meta listed them. Dedup and forward-only acks are the projector's, downstream.
+   */
+  async handleWebhookChange(value: MetaWebhookChangeValue): Promise<void> {
+    let token: string | null | undefined;
+    for (const event of mapCloudChange(value)) {
+      if (event.kind === 'ack') {
+        this.callbacks.onMessageAck?.(event.messageId, event.status, event.chatId, event.errorCode);
+        continue;
+      }
+      await this.recordContact(event.contact);
+      if (event.kind === 'reaction') {
+        this.callbacks.onMessageReaction?.(event.reaction);
+        continue;
+      }
+      let message = event.message;
+      if (event.media) {
+        token ??= (await this.accounts.loadCredentials(this.dbSessionId))?.accessToken ?? null;
+        const { media, error } = await fetchCloudMedia(this.graph, token, event.media);
+        if (error) {
+          this.logger.warn('Could not download the media of an inbound Cloud API message', {
+            sessionId: this.sessionId,
+            messageId: message.id,
+            error,
+            action: 'meta_media_download_failed',
+          });
+        }
+        message = { ...message, media };
+      }
+      this.callbacks.onMessage?.(message);
+    }
   }
 
   /**
@@ -274,17 +324,20 @@ export class MetaCloudAdapter {
   }
 
   disconnect(): Promise<void> {
+    this.unregisterNumber();
     this.setStatus(EngineStatus.DISCONNECTED);
     return Promise.resolve();
   }
 
   /** As disconnect, and the stored token is cleared: starting again needs a new token. */
   async logout(): Promise<void> {
+    this.unregisterNumber();
     await this.accounts.clearToken(this.dbSessionId);
     this.setStatus(EngineStatus.DISCONNECTED);
   }
 
   destroy(): Promise<void> {
+    this.unregisterNumber();
     this.setStatus(EngineStatus.DISCONNECTED);
     this.callbacks = {};
     return Promise.resolve();
@@ -378,6 +431,33 @@ export class MetaCloudAdapter {
       throw new EngineNotReadyError('The Cloud API session has no usable access token. Set one and restart it.');
     }
     return { phoneNumberId: credentials.phoneNumberId, token: credentials.accessToken };
+  }
+
+  private registerNumber(phoneNumberId: string): void {
+    if (!this.numbers) return;
+    this.unregisterNumber();
+    this.numbers.register(phoneNumberId, this);
+    this.registeredNumber = phoneNumberId;
+  }
+
+  private unregisterNumber(): void {
+    if (!this.numbers || this.registeredNumber === null) return;
+    this.numbers.unregister(this.registeredNumber, this);
+    this.registeredNumber = null;
+  }
+
+  /** Best effort: a failed write costs the read receipt of this chat, never the message. */
+  private async recordContact(seen: Parameters<MetaCloudContactPort['recordInbound']>[1]): Promise<void> {
+    try {
+      await this.contacts?.recordInbound(this.dbSessionId, seen);
+    } catch (error) {
+      this.logger.warn('Could not record the sender of an inbound Cloud API message', {
+        sessionId: this.sessionId,
+        messageId: seen.wamid,
+        error: error instanceof Error ? error.message : String(error),
+        action: 'meta_contact_record_failed',
+      });
+    }
   }
 
   private setStatus(status: EngineStatus): void {

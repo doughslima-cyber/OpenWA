@@ -13,6 +13,8 @@ import { BaileysMessageStoreService } from './adapters/baileys-message-store.ser
 import { LidMappingStoreService } from './identity/lid-mapping-store.service';
 import { ChatStateStoreService } from './adapters/baileys-chat-state-store.service';
 import { MetaCloudAccountStore } from './adapters/meta-cloud-account-store.service';
+import { MetaCloudNumberRegistry } from './adapters/meta-cloud-number-registry';
+import { MetaCloudChatStore } from './adapters/meta-cloud-chat-store.service';
 import { isSafeSessionName } from '../common/utils/path-safety';
 import { ensurePrivateDir } from '../common/utils/private-dir.util';
 import { baileysAuthDir, readAuthDirEntries, wwjsAuthDir } from './auth-dir-paths';
@@ -47,6 +49,8 @@ export class EngineFactory implements OnModuleInit {
     // OpenMsg: the Cloud API account rows (docs/32). Trailing @Optional so direct-construction specs
     // that never start a meta-cloud session need not build it.
     @Optional() private readonly metaCloudAccounts?: MetaCloudAccountStore,
+    @Optional() private readonly metaCloudNumbers?: MetaCloudNumberRegistry,
+    @Optional() private readonly metaCloudContacts?: MetaCloudChatStore,
   ) {
     this.engineType = this.configService.get<string>('engine.type') ?? 'whatsapp-web.js';
   }
@@ -107,7 +111,7 @@ export class EngineFactory implements OnModuleInit {
     };
     this.pluginLoader.registerBuiltInPlugin(
       metaCloudManifest,
-      new MetaCloudPlugin(this.metaCloudAccounts),
+      new MetaCloudPlugin(this.metaCloudAccounts, this.metaCloudNumbers, this.metaCloudContacts),
       engineConfig,
     );
 
