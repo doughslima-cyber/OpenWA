@@ -70,7 +70,7 @@ describe('Meta Cloud API accounts in the /infra backup (e2e)', () => {
         if (value instanceof Date) return [column, value.toISOString()];
         if (typeof value !== 'string') return [column, value];
         const text = value;
-        const zoned = /(Z|[+-]dd:?dd)$/.test(text) ? text : `${text.replace(' ', 'T')}Z`;
+        const zoned = /(Z|[+-]\d\d:?\d\d)$/.test(text) ? text : `${text.replace(' ', 'T')}Z`;
         return [column, new Date(zoned).toISOString()];
       }),
     );
