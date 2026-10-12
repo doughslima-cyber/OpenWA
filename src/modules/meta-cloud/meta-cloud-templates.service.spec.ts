@@ -94,6 +94,25 @@ describe('MetaCloudTemplatesService', () => {
     ]);
   });
 
+  it('C57 refuses with 409 META_TOKEN_MISSING and calls no Graph endpoint when the stored token is NULL', async () => {
+    const tokenless = new MetaCloudTemplatesService(
+      {
+        findOneBy: ({ id }: { id: string }) => Promise.resolve({ id, engine: 'meta-cloud' }),
+      } as unknown as Repository<Session>,
+      {
+        loadCredentials: () =>
+          Promise.resolve({ phoneNumberId: '106540352242922', wabaId: WABA_ID, accessToken: null }),
+      } as unknown as MetaCloudAccountStore,
+      new MetaGraphClient(() => ({ baseUrl: graph.url, version: 'v26.0', timeoutMs: 2000 })),
+    );
+
+    const refusal = await tokenless.list('sess-no-token', true).catch((error: unknown) => error);
+
+    expect(refusal).toMatchObject({ status: 409 });
+    expect((refusal as { getResponse(): unknown }).getResponse()).toMatchObject({ code: 'META_TOKEN_MISSING' });
+    expect(graph.requests).toEqual([]);
+  });
+
   it('C22 stops after 500 templates when the pages hold 600', async () => {
     graph.script = pagedScript(600, 100);
 

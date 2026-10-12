@@ -45,7 +45,8 @@ export class MetaCloudTemplatesController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   @ApiResponse({
     status: 409,
-    description: 'Meta refused the token (`META_TOKEN_INVALID`), or the session has no usable token',
+    description:
+      'Meta refused the token (`META_TOKEN_INVALID`), or the session has no usable token (`META_TOKEN_MISSING`)',
   })
   @ApiResponse({ status: 501, description: NOT_CLOUD_501 })
   @ApiResponse({ status: 502, description: GRAPH_502 })

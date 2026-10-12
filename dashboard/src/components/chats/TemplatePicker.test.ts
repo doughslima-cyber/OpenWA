@@ -10,7 +10,7 @@ import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const en = JSON.parse(readFileSync(new URL('../../i18n/locales/en.json', import.meta.url), 'utf8')) as {
-  metaCloud: { templates: Record<string, string> };
+  metaCloud: { templates: Record<string, string>; errors: Record<string, string> };
 };
 
 function jsonResponse(data: unknown, status = 200): Response {

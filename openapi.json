@@ -16498,7 +16498,7 @@
             }
           },
           "409": {
-            "description": "Meta refused the token (`META_TOKEN_INVALID`), or the session has no usable token",
+            "description": "Meta refused the token (`META_TOKEN_INVALID`), or the session has no usable token (`META_TOKEN_MISSING`)",
             "content": {
               "application/json": {
                 "schema": {

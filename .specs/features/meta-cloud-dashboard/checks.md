@@ -219,6 +219,7 @@ Proof: `npx jest src/modules/meta-cloud/meta-cloud-template-send.service.spec.ts
 Added on 2026-10-12 at the user's request after the round-2 PASS and the human walk, closing the precision gap the round-2 Verifier noted on C56 (the no-token 409 carried no `code`).
 
 **C57** - `GET /api/sessions/:id/meta/templates` on a Cloud session whose stored token is NULL answers 409 with `code: "META_TOKEN_MISSING"` and makes no Graph call, and the template picker shows that code's English catalog text, not the server message (MCT-01, AC 24 · Surface) ✅
+Proof: `npx jest src/modules/meta-cloud/meta-cloud-templates.service.spec.ts -t "C57 "`
 Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-templates.e2e-spec.ts -t "C57 "`
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C57 " src/components/chats/TemplatePicker.test.ts`
 
@@ -227,7 +228,7 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 | Set (size)                                                            | Member -> proof                                                                                                                           | Unproven |
 | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `GET /api/sessions/:sessionId/meta/templates` statuses (6)            | 200 C23 · 404 C25 · 409 C26, C56, C57 · 501 C25 · 502 C26 · 503 C26                                                                       | -        |
-| `GET /api/sessions/:sessionId/meta/templates` 409 causes (2)          | `META_TOKEN_INVALID` C26 · no usable stored token C56                                                                                     | -        |
+| `GET /api/sessions/:sessionId/meta/templates` 409 causes (2)          | `META_TOKEN_INVALID` C26 · no usable stored token C56, C57                                                                                | -        |
 | `GET /api/sessions/:sessionId/meta/chats/:chatId/window` statuses (4) | 200 C27, C54 · 403 C54 · 404 C25 · 501 C25                                                                                                | -        |
 | `POST /api/sessions/:sessionId/meta/send-template` statuses (9)       | 201 C29, C54 · 400 C33, C34 · 403 C31, C54 · 404 C56 · 409 C34 · 429 C56 · 501 C34 · 502 C56 · 503 C56                                    | -        |
 | `POST /api/sessions` statuses the dashboard handles (3)               | 201 C4 · 400 C6 · 409 C6                                                                                                                  | -        |
