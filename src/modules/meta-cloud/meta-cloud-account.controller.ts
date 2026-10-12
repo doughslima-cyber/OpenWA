@@ -63,7 +63,7 @@ export class MetaCloudAccountController {
   }
 }
 
-/** The callback URL as this request reached the gateway: the host the operator also reaches Meta through. */
+/** The callback URL the operator registers with Meta: under BASE_URL when set, else as this request reached the gateway. */
 export function webhookUrlOf(req: Request): string {
   // BASE_URL is the public address operators configure: behind a TLS proxy the request itself arrives
   // over plain HTTP (`trust proxy` is off), so it wins, and the request host is the fallback.
