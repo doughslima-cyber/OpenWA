@@ -334,6 +334,28 @@ export const EXPORT_TABLES: AnyExportTable[] = [
   // rule with it — exporting and re-inserting it is not optional, or a restore silently destroys
   // every autoreply rule.
   defineExportTable({ key: 'automationRules', table: 'automation_rules', optional: true, sessionFk: true }),
+
+  // OpenMsg (docs/32, AD-005): the Cloud API account behind a `meta-cloud` session, cascading from
+  // sessions. The token columns are never read, so no form of the token reaches a backup; the restored
+  // row holds a NULL token and the session takes a new one through PUT .../meta/account.
+  defineExportTable({
+    key: 'metaCloudAccounts',
+    table: 'meta_cloud_accounts',
+    optional: true,
+    sessionFk: true,
+    columns: [
+      'sessionId',
+      'phoneNumberId',
+      'wabaId',
+      'displayPhoneNumber',
+      'verifiedName',
+      'qualityRating',
+      'messagingLimitTier',
+      'lastCheckedAt',
+      'createdAt',
+      'updatedAt',
+    ],
+  }),
 ];
 
 /**
@@ -346,4 +368,10 @@ export const EXPORT_TABLES: AnyExportTable[] = [
 export const EXPORT_TABLE_EXCLUSIONS: Readonly<Record<string, string>> = {
   // Claims expire within 24 hours; a restored key would only block or replay a send it never saw.
   send_idempotency_keys: 'short-lived Idempotency-Key claims (24 h TTL), meaningless after a restore',
+  // OpenMsg (docs/32 D2). Cascades from sessions, so a restore's sessions DELETE clears it too.
+  meta_cloud_contacts: 'Cloud API contacts learned from inbound messages; the next inbound message rebuilds them',
+  // OpenMsg campaigns (migrations 1791100000000/1791200000000). Not exported yet: adding them changes the
+  // published tables/counts DTO keys. Both cascade from sessions, so a restore clears them.
+  campaigns: 'paced campaign runs (OpenMsg); not in the backup yet, a restore leaves the session with none',
+  campaign_recipients: "a campaign's recipient list and delivery state, excluded with its campaign",
 };

@@ -171,6 +171,9 @@ type SessionResponse struct {
 	// the field omits it, which decodes as false; against such a gateway false does not mean no
 	// engine is loaded, so fall back to Status.
 	EngineLoaded bool `json:"engineLoaded"`
+	// Engine is the engine this session runs: "meta-cloud" for a WhatsApp Cloud API session, otherwise
+	// the deployment engine ("whatsapp-web.js" or "baileys"). Empty from a gateway that predates it.
+	Engine string `json:"engine"`
 }
 
 // ProxyType is the scheme of a session proxy.
@@ -190,6 +193,27 @@ type CreateSessionRequest struct {
 	ProxyURL string         `json:"proxyUrl,omitempty"`
 	// Deprecated: ignored by the server; the ProxyURL scheme selects the proxy protocol.
 	ProxyType ProxyType `json:"proxyType,omitempty"`
+	// Engine is "meta-cloud" for a WhatsApp Cloud API session (needs META_CLOUD_ENABLED=true); leave
+	// empty for the deployment engine.
+	Engine SessionEngine `json:"engine,omitempty"`
+	// MetaCloud is the Cloud API number of a "meta-cloud" session.
+	MetaCloud *MetaCloudCredentials `json:"metaCloud,omitempty"`
+}
+
+// SessionEngine is the engine a session is created on, when not the deployment one.
+type SessionEngine string
+
+const (
+	// EngineMetaCloud is a WhatsApp Cloud API session.
+	EngineMetaCloud SessionEngine = "meta-cloud"
+)
+
+// MetaCloudCredentials is a WhatsApp Cloud API number: its Phone Number ID, WABA ID and a
+// system-user access token.
+type MetaCloudCredentials struct {
+	PhoneNumberID string `json:"phoneNumberId"`
+	WabaID        string `json:"wabaId"`
+	AccessToken   string `json:"accessToken"`
 }
 
 // SessionProxy is the masked per-session proxy configuration returned by GET/PATCH /proxy.

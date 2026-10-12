@@ -53,6 +53,9 @@ import { isTransientDbError, isUniqueViolation } from '../../common/utils/db-err
 import { resolveFeatureFlags } from '../../config/feature-flags';
 import { IWhatsAppEngine, ChatSummary, ChatState } from '../../engine/interfaces/whatsapp-engine.interface';
 import { createLogger } from '../../common/services/logger.service';
+import { META_CLOUD_ENGINE, isMetaCloudEnabled } from '../../engine/session-engine';
+import { MetaCloudAccountService } from '../meta-cloud/meta-cloud-account.service';
+import { EngineNotSupportedError } from '../../common/errors/engine-not-supported.error';
 import { HookManager } from '../../core/hooks';
 import { LidMappingStoreService } from '../../engine/identity/lid-mapping-store.service';
 import { resolveJidCandidates } from '../../engine/identity/jid-candidates';
@@ -165,6 +168,10 @@ export class SessionService implements OnModuleDestroy, OnModuleInit, OnApplicat
     // behaves as unowned there, which is what a single-process deployment is anyway.
     @Optional()
     private readonly ownership?: SessionOwnershipService,
+    // OpenMsg (docs/32): binds a meta-cloud session's account in the create transaction. Trailing
+    // @Optional like the two above, for the direct-construction specs that never create one.
+    @Optional()
+    private readonly metaCloudAccounts?: MetaCloudAccountService,
   ) {}
 
   /**
@@ -335,6 +342,16 @@ export class SessionService implements OnModuleDestroy, OnModuleInit, OnApplicat
   }
 
   async create(dto: CreateSessionDto): Promise<Session> {
+    // OpenMsg (docs/32): Cloud API sessions exist only while the deployment switched them on.
+    if (dto.engine === META_CLOUD_ENGINE && !isMetaCloudEnabled()) {
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'WhatsApp Cloud API sessions are disabled on this gateway (META_CLOUD_ENABLED is not true)',
+        code: 'META_CLOUD_DISABLED',
+      });
+    }
+
     // Check if session with same name exists
     const existing = await this.sessionRepository.findOne({
       where: { name: dto.name },
@@ -350,6 +367,7 @@ export class SessionService implements OnModuleDestroy, OnModuleInit, OnApplicat
       proxyUrl: dto.proxyUrl || null,
       proxyType: dto.proxyType || null,
       status: SessionStatus.CREATED,
+      engine: dto.engine ?? null,
     });
 
     // The findOne pre-check above is a fast path for the common case, but it's a check-then-insert
@@ -357,9 +375,13 @@ export class SessionService implements OnModuleDestroy, OnModuleInit, OnApplicat
     // Translate that violation to a 409 (matching the pre-check) instead of leaking a raw 500.
     let saved: Session;
     try {
-      saved = await this.dataSource.transaction(async manager => {
-        return await manager.save(session);
-      });
+      // OpenMsg: a meta-cloud session is saved with its Cloud API account, in one transaction.
+      saved =
+        dto.engine === META_CLOUD_ENGINE && dto.metaCloud && this.metaCloudAccounts
+          ? await this.metaCloudAccounts.createSession(session, dto.metaCloud)
+          : await this.dataSource.transaction(async manager => {
+              return await manager.save(session);
+            });
     } catch (err) {
       if (isUniqueViolation(err)) {
         throw new ConflictException(`Session with name '${dto.name}' already exists`);
@@ -898,6 +920,8 @@ export class SessionService implements OnModuleDestroy, OnModuleInit, OnApplicat
    */
   async requestPairingCode(id: string, phoneNumber: string): Promise<{ pairingCode: string; status: SessionStatus }> {
     const session = await this.findOne(id);
+    // OpenMsg (docs/32 D3): a Cloud API number is never linked as a device, whatever its status.
+    if (session.engine === META_CLOUD_ENGINE) throw new EngineNotSupportedError('requestPairingCode');
     const engine = this.engines.require(
       id,
       () => new BadRequestException('Session is not started. Call POST /sessions/:sessionId/start first.'),

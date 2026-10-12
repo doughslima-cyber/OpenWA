@@ -264,6 +264,10 @@ class SessionResponse(TypedDict):
     # present) and one stopped with no engine. Always sent by current gateways; a gateway that
     # predates the field omits it, so read it with .get("engineLoaded") against one.
     engineLoaded: bool
+    # The engine this session runs: 'meta-cloud' for a WhatsApp Cloud API session, otherwise the
+    # deployment engine ('whatsapp-web.js' or 'baileys'). Always sent by current gateways; a gateway
+    # that predates the field omits it, so read it with .get("engine") against one.
+    engine: str
 
 
 class SessionProxy(TypedDict):
@@ -304,12 +308,25 @@ class UpdateSessionConfigRequest(TypedDict, total=False):
     reconnectBaseDelay: int | None
 
 
+class MetaCloudCredentials(TypedDict):
+    """A WhatsApp Cloud API number: its Phone Number ID, its WABA ID and a system-user token."""
+
+    phoneNumberId: str
+    wabaId: str
+    accessToken: str
+
+
 class CreateSessionRequest(TypedDict):
     name: str
     config: NotRequired[dict[str, Any]]
     proxyUrl: NotRequired[str]
     # Deprecated and ignored by the server: the proxyUrl scheme selects the proxy protocol.
     proxyType: NotRequired[Literal['http', 'https', 'socks4', 'socks5']]
+    # 'meta-cloud' for a WhatsApp Cloud API session (needs META_CLOUD_ENABLED=true); omit for the
+    # deployment engine.
+    engine: NotRequired[Literal['meta-cloud']]
+    # The Cloud API number of a 'meta-cloud' session.
+    metaCloud: NotRequired[MetaCloudCredentials]
 
 
 class QrCodeResponse(TypedDict):

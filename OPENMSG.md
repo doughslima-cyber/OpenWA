@@ -173,6 +173,45 @@ O [guia de respostas de campanhas no n8n](docs/examples/openmsg-campaign-replies
 as credenciais, quais nós mudar e o que verificar antes de ativar. Uma atualização apenas desta documentação
 não exige rebuild dos containers nem publicação do workflow.
 
+## Sessões da API oficial da Meta (Cloud API)
+
+As fases F1 e F2 do [docs/32](docs/32-meta-cloud-api.md) estão implementadas no ramo
+`claude/tlc-spec-lean-meta-cloud-api-5902e1` e ainda não estão na VM. Uma sessão Cloud usa um número registrado na
+Meta, sem QR code, ao lado das sessões de QR do mesmo gateway: envia e recebe pelas mesmas rotas e webhooks.
+
+Para ligar, acrescente ao `.env` da VM e rode `docker compose up -d`:
+
+| Variável                    | Para quê                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| `META_CLOUD_ENABLED=true`   | Liga o motor `meta-cloud` e a rota `/api/meta-webhook`                                    |
+| `META_CLOUD_ENCRYPTION_KEY` | Base64 de 32 bytes (`openssl rand -base64 32`) que cifra os tokens no banco               |
+| `META_APP_SECRET`           | App Secret do app da Meta; confere a assinatura de cada webhook recebido                  |
+| `META_WEBHOOK_VERIFY_TOKEN` | Texto escolhido por você, colado também no painel da Meta ao verificar o webhook          |
+| `META_GRAPH_API_VERSION`    | Opcional; padrão `v26.0`. `META_CLOUD_MAX_RPS` e `META_CLOUD_TIMEOUT_MS` também opcionais |
+
+Até a F3 trazer o painel, a sessão é criada pela API, com uma API key sem restrição de conversas:
+
+```bash
+curl -X POST https://openmsg.devsrun.com/api/sessions -H "X-API-Key: $KEY" -H 'Content-Type: application/json'   -d '{"name":"meta-1","engine":"meta-cloud","metaCloud":{"phoneNumberId":"<id>","wabaId":"<waba>","accessToken":"<token>"}}'
+curl -X POST https://openmsg.devsrun.com/api/sessions/<sessionId>/start -H "X-API-Key: $KEY"
+```
+
+No painel da Meta, o webhook do app aponta para `https://openmsg.devsrun.com/api/meta-webhook`, com o campo
+`messages` assinado; `GET /api/sessions/<sessionId>/meta/account` mostra essa URL e os dados do número.
+
+- Campanhas são recusadas numa sessão Cloud (400 `CAMPAIGN_ENGINE_UNSUPPORTED`) até a F4 trazer os modelos da Meta.
+  Grupos, etiquetas, canais, status e o que mais a coluna Cloud API do [docs/29](docs/29-engine-capability-matrix.md)
+  marca com ❌ respondem 501.
+- O backup de `/infra` leva a conta Cloud de cada sessão (número, WABA, dados do perfil), mas nunca o token: depois
+  de restaurar, a conta volta sem token e a sessão não inicia. Informe o token de novo com
+  `PUT /api/sessions/<sessionId>/meta/account` e inicie a sessão; faça o mesmo depois de trocar a
+  `META_CLOUD_ENCRYPTION_KEY`. A mesma rota troca um token vencido.
+- Enquanto uma sessão Cloud com conta salva não está pronta neste processo (durante um reinício, ou antes de ser
+  iniciada), o `POST /api/meta-webhook` com mensagens para o número dela responde 503 e não processa nada do corpo;
+  a Meta reenvia mais tarde e a mensagem chega quando a sessão estiver pronta. Uma sessão parada de propósito faz a
+  Meta reenviar até desistir; a Meta não documenta por quanto tempo tenta, então mensagens que chegarem com a sessão
+  parada por muito tempo podem se perder.
+
 ## Implantação
 
 O OpenMsg roda com o `docker-compose.yml` do projeto numa VM Oracle Cloud Always Free (Ampere A1, ARM64), publicado
@@ -273,6 +312,12 @@ Nunca renomeie nem apague um arquivo de `src/database/migrations-main/` ou de `s
 registra cada migration pelo nome. Uma tabela que já foi para produção só muda por uma migration nova.
 
 ## Pendências conhecidas
+
+- A API oficial da Meta (WhatsApp Cloud API) tem as fases F1 e F2 do [docs/32](docs/32-meta-cloud-api.md)
+  implementadas num ramo ainda não publicado (ver [Sessões da API oficial da Meta](#sessões-da-api-oficial-da-meta-cloud-api));
+  painel (F3), modelos da Meta e campanhas (F4) e perfil, bloqueio e métricas (F5) continuam pendentes.
+- Campanhas não entram no backup de `/infra` (`GET /infra/export-data`): restaurar um backup deixa as sessões
+  sem campanhas.
 
 - Os 13 idiomas além de português e inglês mostram em inglês os textos novos do OpenMsg.
 - O anti-banimento está ligado na VM desde 08/10/2026 (`SEND_PACING_ENABLED=true`, cotas padrão). Ele vale para todo

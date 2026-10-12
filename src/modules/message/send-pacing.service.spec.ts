@@ -106,6 +106,34 @@ describe('SendPacingService', () => {
     });
   });
 
+  // OpenMsg (docs/32): a Cloud API number is paced by Meta, not by the anti-ban governor.
+  describe('Cloud API sessions', () => {
+    const CHAT = '5511988887777@c.us';
+    const withEngine = (engine: string | null): Session => ({ ...sessionAged(0), engine });
+
+    it('C42 with a daily cap of 1 admits a meta-cloud session a second time and records nothing, while a NULL-engine session is refused', async () => {
+      const cloud = build({ warmupSchedule: [1] }, 1, withEngine('meta-cloud'));
+
+      await expect(cloud.service.assertSendAllowed('s1', CHAT)).resolves.toBeUndefined();
+      await expect(cloud.service.assertSendAllowed('s1', CHAT)).resolves.toBeUndefined();
+      // Nothing counted: no daily tally read, no cold probe, no refusal audited, no admission held.
+      expect(cloud.count).not.toHaveBeenCalled();
+      expect(cloud.exists).not.toHaveBeenCalled();
+      expect(cloud.audit.logWarn).not.toHaveBeenCalled();
+
+      const qr = build({ warmupSchedule: [1] }, 1, withEngine(null));
+      const body = await expectPacingRefusal(qr.service.assertSendAllowed('s1', CHAT));
+      expect(body.code).toBe(SEND_PACING_LIMITED);
+    });
+
+    it('does not refuse a meta-cloud session through the failure breaker either', async () => {
+      const cloud = build({ breakerThreshold: 1 }, 0, withEngine('meta-cloud'));
+      for (let i = 0; i < 5; i++) cloud.service.recordSendFailure('s1');
+
+      await expect(cloud.service.assertSendAllowed('s1', CHAT)).resolves.toBeUndefined();
+    });
+  });
+
   describe('the warm-up daily cap', () => {
     it('allows a send while the session is under its allowance', async () => {
       const { service } = build({ warmupSchedule: [10] }, 9);

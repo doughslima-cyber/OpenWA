@@ -19,6 +19,7 @@ import { WebhookModule } from '../webhook/webhook.module';
 import { StatusStoreModule } from '../status-store/status-store.module';
 import { ChatMediaModule } from '../chat-media/chat-media.module';
 import { AutomationModule } from '../automation/automation.module';
+import { MetaCloudModule } from '../meta-cloud/meta-cloud.module';
 import { PLUGIN_SESSION_PORT } from '../../core/plugins/plugin-host-ports';
 
 @Module({
@@ -30,6 +31,7 @@ import { PLUGIN_SESSION_PORT } from '../../core/plugins/plugin-host-ports';
     StatusStoreModule,
     ChatMediaModule,
     AutomationModule,
+    MetaCloudModule, // OpenMsg: a meta-cloud create binds its Cloud API account (docs/32)
   ],
   controllers: [SessionController],
   providers: [

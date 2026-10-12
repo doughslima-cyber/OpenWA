@@ -74,7 +74,9 @@ function tableContainers(doc: string): Set<string>[] {
         if (key) keys.add(key[1]);
       }
     }
-    containers.push(keys);
+    // A `counts` block that names no migration table is some other response (a campaign's
+    // recipient-status counts in docs/06), not a migration-table example.
+    if (TABLE_IMPORTERS.some(importer => keys.has(importer.key))) containers.push(keys);
   }
   return containers;
 }

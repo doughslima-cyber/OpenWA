@@ -6,7 +6,19 @@ import java.util.Map;
  * Request body for creating a session. Requires an OPERATOR-level key; setting {@code proxyUrl}
  * requires an ADMIN key.
  */
-public record CreateSessionRequest(String name, Map<String, Object> config, String proxyUrl, ProxyType proxyType) {
+public record CreateSessionRequest(
+    String name,
+    Map<String, Object> config,
+    String proxyUrl,
+    ProxyType proxyType,
+    SessionEngine engine,
+    MetaCloudCredentials metaCloud
+) {
+    /** The constructor from before {@code engine} and {@code metaCloud}, kept so existing callers compile. */
+    public CreateSessionRequest(String name, Map<String, Object> config, String proxyUrl, ProxyType proxyType) {
+        this(name, config, proxyUrl, proxyType, null, null);
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -16,6 +28,8 @@ public record CreateSessionRequest(String name, Map<String, Object> config, Stri
         private Map<String, Object> config;
         private String proxyUrl;
         private ProxyType proxyType;
+        private SessionEngine engine;
+        private MetaCloudCredentials metaCloud;
 
         /** Alphanumeric + hyphens, 3–50 chars. */
         public Builder name(String v) {
@@ -41,8 +55,20 @@ public record CreateSessionRequest(String name, Map<String, Object> config, Stri
             return this;
         }
 
+        /** {@code meta-cloud} for a WhatsApp Cloud API session (needs META_CLOUD_ENABLED=true); omit for the deployment engine. */
+        public Builder engine(SessionEngine v) {
+            this.engine = v;
+            return this;
+        }
+
+        /** The Cloud API number of a {@code meta-cloud} session. */
+        public Builder metaCloud(MetaCloudCredentials v) {
+            this.metaCloud = v;
+            return this;
+        }
+
         public CreateSessionRequest build() {
-            return new CreateSessionRequest(name, config, proxyUrl, proxyType);
+            return new CreateSessionRequest(name, config, proxyUrl, proxyType, engine, metaCloud);
         }
     }
 }

@@ -549,12 +549,14 @@ Create a new WhatsApp session.
 
 **Request body** — `CreateSessionDto`
 
-| Field       | Type                                      | Required | Constraints                                                                                                                                                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------- | ----------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`      | string                                    | Yes      | `@IsString`; length 3–50; `@Matches(/^[a-zA-Z0-9-]+$/)` (letters, numbers, hyphens only)                                                                                      | Unique session name; duplicate → `409`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `config`    | object                                    | No       | `@IsOptional`; `@IsObject`; `autoRejectCalls`, `maxReconnectAttempts` and `reconnectBaseDelay` validated as on `PATCH /config` (400 naming the key); other keys not validated | Session settings. Only `autoRejectCalls` (boolean, Baileys only), `maxReconnectAttempts` (integer 0-20, default unlimited) and `reconnectBaseDelay` (ms, integer 1000-300000, default 5000) are read; other keys are stored but ignored. Change them later with `PATCH /api/sessions/:sessionId/config`. Defaults to `{}`; never returned in responses                                                                                                                     |
-| `proxyUrl`  | string                                    | No       | `@IsOptional`; `@IsString`; max 255; `@IsUrl` (protocols `http`/`https`/`socks4`/`socks5`, `require_protocol`, `require_tld:false`, `allow_underscores`)                      | Per-session proxy egress; credentialed `http://user:pass@host` and single-label hosts allowed; trusted egress, not SSRF-blocked; setting it requires an ADMIN key (`403` otherwise). ⚠ **Must be a real, reachable proxy** — an unreachable value silently blocks the WhatsApp WebSocket (no QR; on whatsapp-web.js the start answers `504`, on Baileys it succeeds and the session keeps retrying); leave unset unless you need it. See "Per-session egress proxy" below. |
-| `proxyType` | `http` \| `https` \| `socks4` \| `socks5` | No       | `@IsOptional`; `@IsIn([...])`                                                                                                                                                 | Deprecated and ignored: the `proxyUrl` scheme selects the proxy protocol                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Field       | Type                                      | Required                    | Constraints                                                                                                                                                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------- | ----------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`      | string                                    | Yes                         | `@IsString`; length 3–50; `@Matches(/^[a-zA-Z0-9-]+$/)` (letters, numbers, hyphens only)                                                                                      | Unique session name; duplicate → `409`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `config`    | object                                    | No                          | `@IsOptional`; `@IsObject`; `autoRejectCalls`, `maxReconnectAttempts` and `reconnectBaseDelay` validated as on `PATCH /config` (400 naming the key); other keys not validated | Session settings. Only `autoRejectCalls` (boolean, Baileys only), `maxReconnectAttempts` (integer 0-20, default unlimited) and `reconnectBaseDelay` (ms, integer 1000-300000, default 5000) are read; other keys are stored but ignored. Change them later with `PATCH /api/sessions/:sessionId/config`. Defaults to `{}`; never returned in responses                                                                                                                     |
+| `proxyUrl`  | string                                    | No                          | `@IsOptional`; `@IsString`; max 255; `@IsUrl` (protocols `http`/`https`/`socks4`/`socks5`, `require_protocol`, `require_tld:false`, `allow_underscores`)                      | Per-session proxy egress; credentialed `http://user:pass@host` and single-label hosts allowed; trusted egress, not SSRF-blocked; setting it requires an ADMIN key (`403` otherwise). ⚠ **Must be a real, reachable proxy** — an unreachable value silently blocks the WhatsApp WebSocket (no QR; on whatsapp-web.js the start answers `504`, on Baileys it succeeds and the session keeps retrying); leave unset unless you need it. See "Per-session egress proxy" below. |
+| `proxyType` | `http` \| `https` \| `socks4` \| `socks5` | No                          | `@IsOptional`; `@IsIn([...])`                                                                                                                                                 | Deprecated and ignored: the `proxyUrl` scheme selects the proxy protocol                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `engine`    | `meta-cloud`                              | No                          | `@IsIn(['meta-cloud'])`, case-sensitive; required when `metaCloud` is sent                                                                                                    | OpenMsg: omit for a QR session on the deployment's `ENGINE_TYPE`. `meta-cloud` binds the session to a WhatsApp Cloud API number (docs/32) and needs `META_CLOUD_ENABLED=true`                                                                                                                                                                                                                                                                                              |
+| `metaCloud` | object                                    | With `engine: "meta-cloud"` | `phoneNumberId` and `wabaId` non-empty strings up to 64 characters; `accessToken` a non-empty string up to 2048; refused without `engine: "meta-cloud"`                       | OpenMsg: the Cloud API number. The token is stored encrypted under `META_CLOUD_ENCRYPTION_KEY` and never returned; read the account with `GET /api/sessions/:sessionId/meta/account`                                                                                                                                                                                                                                                                                       |
 
 ```json
 {
@@ -627,7 +629,9 @@ whichever proxy they go through.
 
 Like every other session route, this returns the `SessionResponseDto` shape (via `fromEntity`), so `config`, `proxyUrl` and `proxyType` are stripped and `lastActiveAt` appears as `lastActive`. Newly created `status` is `created`. Masked proxy details come only from `GET /api/sessions/{sessionId}/proxy`.
 
-**Errors:** `400` validation (bad `name`/`proxyUrl`/`proxyType`, or an extra non-whitelisted field) · `401` · `403` key lacks OPERATOR role, `proxyUrl` set by a key below ADMIN, or the key is restricted to specific sessions · `409` session name already exists
+A `meta-cloud` session is written together with its Cloud API account, in one transaction: either both rows exist or neither does. It has no QR and no pairing code; `POST /start` reads the number from Graph and moves it to `ready`.
+
+**Errors:** `400` validation (bad `name`/`proxyUrl`/`proxyType`/`engine`/`metaCloud`, or an extra non-whitelisted field), `META_CLOUD_DISABLED` (`META_CLOUD_ENABLED` is not `true`) or `META_CLOUD_NOT_CONFIGURED` (`META_CLOUD_ENCRYPTION_KEY` is unset or not 32 bytes in base64) · `401` · `403` key lacks OPERATOR role, `proxyUrl` set by a key below ADMIN, or the key is restricted to specific sessions · `409` session name already exists, or `META_PHONE_NUMBER_IN_USE`: the `phoneNumberId` is already bound to another session
 
 #### POST /api/sessions/:sessionId/start
 
@@ -849,7 +853,7 @@ Request an 8-char pairing code to link via phone number (alternative to QR).
 
 `status` is the lowercase session status.
 
-**Errors:** `400` validation, or session not started, or already authenticated · `401` · `403` · `404` not found · `409` session not waiting to be linked yet; wait for `status` to read `qr_ready` and retry (after a code was accepted, wait for `ready` instead). On Baileys a session that already reads `qr_ready` can still answer `409` while its socket is closing, for up to the WebSocket close timeout (30 s); that is retryable and the status follows shortly. · `503` whatsapp-web.js only: the gateway stopped waiting after its attempt budget, usually because WhatsApp Web kept reloading its QR page; retryable, and the last attempt's reason rides in the message. An attempt that timed out may still have reached WhatsApp, and a retry starts the linking flow again, so the unlink warning above applies to the retry too.
+**Errors:** `400` validation, or session not started, or already authenticated · `401` · `403` · `404` not found · `409` session not waiting to be linked yet; wait for `status` to read `qr_ready` and retry (after a code was accepted, wait for `ready` instead). On Baileys a session that already reads `qr_ready` can still answer `409` while its socket is closing, for up to the WebSocket close timeout (30 s); that is retryable and the status follows shortly. · `501` the session is a WhatsApp Cloud API (`meta-cloud`) session, which links no device · `503` whatsapp-web.js only: the gateway stopped waiting after its attempt budget, usually because WhatsApp Web kept reloading its QR page; retryable, and the last attempt's reason rides in the message. An attempt that timed out may still have reached WhatsApp, and a retry starts the linking flow again, so the unlink warning above applies to the retry too.
 
 #### POST /api/sessions/:sessionId/presence/subscribe
 
@@ -1292,16 +1296,38 @@ The single-recipient send routes (`send-text`, `send-template`, `send-image`, `s
 
 The key is 1-255 visible ASCII characters (a UUID works), unique per session, and is held for **24 hours** from the first request. Within that window:
 
-| Retry with the same key                                                                         | Answer                                                                                                     |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| first request succeeded, same route and body                                                    | the first response again, with `Idempotent-Replayed: true`; nothing is sent                                |
-| first request still running                                                                     | `409` `IDEMPOTENCY_KEY_IN_PROGRESS`; retry after it finishes                                               |
-| first request failed with an uncertain delivery outcome                                         | `409` `IDEMPOTENCY_OUTCOME_UNKNOWN`: the message may have gone out; check the chat, then use a **new** key |
-| first request was refused with `4xx` or `501` before calling the engine                         | the key was freed, so the retry runs as a new request                                                      |
-| transport explicitly reported that nothing was sent, such as a Baileys recipient lookup timeout | the key was freed, so the retry runs as a new request                                                      |
-| different route or body (key order in the JSON does not matter)                                 | `422` `IDEMPOTENCY_KEY_REUSED`                                                                             |
+| Retry with the same key                                                                            | Answer                                                                                                     |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| first request succeeded, same route and body                                                       | the first response again, with `Idempotent-Replayed: true`; nothing is sent                                |
+| first request still running                                                                        | `409` `IDEMPOTENCY_KEY_IN_PROGRESS`; retry after it finishes                                               |
+| first request failed with an uncertain delivery outcome                                            | `409` `IDEMPOTENCY_OUTCOME_UNKNOWN`: the message may have gone out; check the chat, then use a **new** key |
+| first request was refused with `4xx` or `501` before calling the engine                            | the key was freed, so the retry runs as a new request                                                      |
+| transport explicitly reported that nothing was sent, such as a Baileys recipient lookup timeout    | the key was freed, so the retry runs as a new request                                                      |
+| a WhatsApp Cloud API session's send was refused by Meta with a `400`, `409` or `429` `META_*` code | the key was freed, so the retry runs as a new request                                                      |
+| different route or body (key order in the JSON does not matter)                                    | `422` `IDEMPOTENCY_KEY_REUSED`                                                                             |
 
 A malformed key, or the header sent twice, gets `400` `IDEMPOTENCY_KEY_INVALID`. A request still pending ten minutes after it was claimed (its node most likely stopped) also reads as `IDEMPOTENCY_OUTCOME_UNKNOWN`. HTTP status alone does not prove that nothing was sent: an engine can report `409` after attempting delivery, so engine-stage failures retain the key unless transport explicitly proves that nothing was sent. Keys are stored in the data database (`send_idempotency_keys`); concurrent processes using that database share the claim, and the session-owner proxy forwards the header. This does not change the deployment support limits in [Horizontal scaling](./13-horizontal-scaling.md). `send-bulk` does not take the header: retrying its request can create another batch. A call that outlives the 24-hour key window is outside the retry guarantee.
+
+#### Sends on a WhatsApp Cloud API session (OpenMsg)
+
+A `meta-cloud` session (docs/32) takes the same send routes, bodies and `{ messageId, timestamp }` answer; `messageId` is Meta's `wamid`, and a successful send dispatches one `message.sent`. The chat must be a phone number (`<digits>@c.us`): the Cloud API sends to `to` = those digits, so a group, channel or `@lid` chat answers `400`. Media is loaded the way the QR engines load it (base64, or a URL through the SSRF guard under `MEDIA_DOWNLOAD_MAX_BYTES`), uploaded to Meta, and sent by the returned media id; Meta never fetches a URL. A voice note goes as `audio`. `linkPreview` defaults to `false`, and `customLinkPreview` answers `501`.
+
+`SEND_PACING_*` does not apply to these sessions: Meta paces a Cloud number by its own tiers. Instead each number starts at most `META_CLOUD_MAX_RPS` Graph calls a second (default `40`); a send past that waits for the next second rather than being refused. A Meta throttle (`130429`) is retried twice with backoff before it is answered.
+
+When Graph refuses a send, the answer carries the fork `code` below, with Meta's number in `metaCode` and its trace id in `fbtraceId`:
+
+| Meta error code                    | HTTP  | `code`                        |
+| ---------------------------------- | ----- | ----------------------------- |
+| `190`, `10`, `200`, `131005`       | `409` | `META_TOKEN_INVALID`          |
+| `131047` (outside the 24 h window) | `409` | `META_OUTSIDE_SERVICE_WINDOW` |
+| `131048`, `131049`, `131056`       | `429` | `META_LIMIT_REACHED`          |
+| `130429` (after 3 attempts)        | `429` | `META_RATE_LIMITED`           |
+| `131026`, `131021`                 | `400` | `META_RECIPIENT_UNAVAILABLE`  |
+| `131008`, `131009`                 | `400` | `META_INVALID_PARAMETER`      |
+| `133010`, `131031`                 | `409` | `META_ACCOUNT_RESTRICTED`     |
+| any other code, or a Graph `5xx`   | `502` | `META_UPSTREAM_ERROR`         |
+
+A Graph call that outlives `META_CLOUD_TIMEOUT_MS` or fails to connect answers `503`. The `400`/`409`/`429` rows mean Meta took nothing; a `502` or `503` leaves the outcome unknown, and an `Idempotency-Key` stays held for it. Operations the Cloud API does not offer answer `501`.
 
 #### GET /api/sessions/:sessionId/messages
 
@@ -5889,7 +5915,7 @@ Request a graceful server restart, optionally orchestrating Docker profiles (add
 
 #### GET /api/infra/export-data
 
-Export every row of the 16 migration tables from the Data DB as JSON. Read-only, but runs raw SQL on the `data` DataSource: `SELECT *` for most tables, while `messages` and `message_batches` are read as ids first and then as full rows in chunks, newest-first, of at most 200 rows and max(`EXPORT_INLINE_MEDIA_BUDGET_BYTES`, 1 MiB) of stored payload each (a larger single row is read on its own). Each chunk's payloads are dropped against the budget below before the next is read, so the export holds the rows it returns, one chunk and the budget's worth of media, never every inline payload in the database at once. Rows keep the order the database returns them in.
+Export every row of the 17 migration tables from the Data DB as JSON. Read-only, but runs raw SQL on the `data` DataSource: `SELECT *` for most tables, while `messages` and `message_batches` are read as ids first and then as full rows in chunks, newest-first, of at most 200 rows and max(`EXPORT_INLINE_MEDIA_BUDGET_BYTES`, 1 MiB) of stored payload each (a larger single row is read on its own). Each chunk's payloads are dropped against the budget below before the next is read, so the export holds the rows it returns, one chunk and the budget's worth of media, never every inline payload in the database at once. Rows keep the order the database returns them in.
 
 **Auth:** API key (ADMIN)
 
@@ -5899,7 +5925,7 @@ Export every row of the 16 migration tables from the Data DB as JSON. Read-only,
 >
 > This bounds the media, not the export — a large enough text-only history still exceeds the import limit, because every row costs a few hundred bytes of scaffolding whatever was said. For a backup that keeps everything, use `scripts/backup.sh`: it snapshots the database file itself (and `pg_dump`s Postgres), so inline media rides along regardless of this budget.
 
-The migration set (`MigrationTables`) is, in payload-key order: `sessions`, `webhooks`, `messages`, `messageBatches`, `templates`, `baileysStoredMessages`, `lidMappings`, `chatStates`, `pluginInstances`, `conversationMappings`, `ingressEvents`, `webhookDeliveryFailures`, `webhookOutboxEvents`, `integrationDeliveryFailures`, `statusUpdates`, `automationRules`.
+The migration set (`MigrationTables`) is, in payload-key order: `sessions`, `webhooks`, `messages`, `messageBatches`, `templates`, `baileysStoredMessages`, `lidMappings`, `chatStates`, `pluginInstances`, `conversationMappings`, `ingressEvents`, `webhookDeliveryFailures`, `webhookOutboxEvents`, `integrationDeliveryFailures`, `statusUpdates`, `automationRules`, `metaCloudAccounts`.
 
 **Response** `200`
 
@@ -5938,7 +5964,8 @@ The migration set (`MigrationTables`) is, in payload-key order: `sessions`, `web
     "webhookOutboxEvents": [],
     "integrationDeliveryFailures": [],
     "statusUpdates": [],
-    "automationRules": []
+    "automationRules": [],
+    "metaCloudAccounts": []
   },
   "counts": {
     "sessions": 1,
@@ -5956,16 +5983,17 @@ The migration set (`MigrationTables`) is, in payload-key order: `sessions`, `web
     "webhookOutboxEvents": 0,
     "integrationDeliveryFailures": 0,
     "statusUpdates": 0,
-    "automationRules": 0
+    "automationRules": 0,
+    "metaCloudAccounts": 0
   },
   "skippedTables": [],
   "omittedInlineMedia": { "messages": 0, "messageBatches": 0 }
 }
 ```
 
-Rows are raw DB column shapes (e.g. `messageBatches` rows use snake_case columns: `batch_id`, `session_id`, `current_index`, `created_at`, …). **`webhooks` rows omit `secret` and `headers`** (webhook credentials are excluded from backups; they restore as `null`/`{}`), while `pluginInstances` rows still carry integration secrets — treat the payload as a credential dump. **`sessions` rows have any `user:pass` stripped from `proxyUrl`** (a value that does not parse as a URL exports as `null`), so a restored authenticated proxy reads `hasCredentials: false` and fails on the session's next start until the credentials are re-entered with `PATCH /api/sessions/:sessionId/proxy`. On Postgres the generated `body_ts` FTS column is stripped from `messages` so archives stay dialect-neutral.
+Rows are raw DB column shapes (e.g. `messageBatches` rows use snake_case columns: `batch_id`, `session_id`, `current_index`, `created_at`, …). **`webhooks` rows omit `secret` and `headers`** (webhook credentials are excluded from backups; they restore as `null`/`{}`), while `pluginInstances` rows still carry integration secrets — treat the payload as a credential dump. **`sessions` rows have any `user:pass` stripped from `proxyUrl`** (a value that does not parse as a URL exports as `null`), so a restored authenticated proxy reads `hasCredentials: false` and fails on the session's next start until the credentials are re-entered with `PATCH /api/sessions/:sessionId/proxy`. On Postgres the generated `body_ts` FTS column is stripped from `messages` so archives stay dialect-neutral. **`metaCloudAccounts` rows (WhatsApp Cloud API sessions, OpenMsg) never carry the access token**: `accessTokenEnc` and `accessTokenLast4` are left out of the export and the import never writes them, so a restored Cloud session has no token and does not start until one is set with `PUT /api/sessions/:sessionId/meta/account`. The contacts the Cloud API sessions learned (`meta_cloud_contacts`) are not exported; the next inbound message rebuilds them.
 
-`sessions`/`webhooks` are queried directly, so a hard DB error there yields `500`. The other 14 are queried tolerantly: a _genuinely missing_ table (an older DB that has not run the migration) exports as `[]` and its name is listed in `skippedTables`; any other error (lock, I/O, timeout) fails the export rather than reporting the table as empty. Check `skippedTables` before restoring — a skipped table is "not migrated yet", not "exported empty".
+`sessions`/`webhooks` are queried directly, so a hard DB error there yields `500`. The other 15 are queried tolerantly: a _genuinely missing_ table (an older DB that has not run the migration) exports as `[]` and its name is listed in `skippedTables`; any other error (lock, I/O, timeout) fails the export rather than reporting the table as empty. Check `skippedTables` before restoring — a skipped table is "not migrated yet", not "exported empty".
 
 `omittedInlineMedia` counts, per table, the inline media payloads the `EXPORT_INLINE_MEDIA_BUDGET_BYTES` budget dropped. Zeroes mean everything fitted; an archive with a non-zero count still restores, but those rows come back without their media.
 
@@ -5977,7 +6005,7 @@ Rows are raw DB column shapes (e.g. `messageBatches` rows use snake_case columns
 
 Replace all Data DB rows with the supplied export. **Destructive and transactional (all-or-nothing).**
 
-> **The replace covers all 16 migration tables, not just the ones you send.** Inside the transaction every table in the migration set is emptied first and only then re-populated from the payload, so a table you omit ends up **empty**, not untouched. Always restore a payload produced by `GET /api/infra/export-data` of the same or a newer build — a hand-built body carrying only a subset silently wipes the rest.
+> **The replace covers all 17 migration tables, not just the ones you send.** Inside the transaction every table in the migration set is emptied first and only then re-populated from the payload, so a table you omit ends up **empty**, not untouched. Always restore a payload produced by `GET /api/infra/export-data` of the same or a newer build — a hand-built body carrying only a subset silently wipes the rest.
 
 **Auth:** API key (ADMIN)
 
@@ -5989,7 +6017,7 @@ Replace all Data DB rows with the supplied export. **Destructive and transaction
 | `tables.sessions`             | `SessionRow[]`      | No       | Inserted first; a row whose `id` or `name` is not a safe directory name refuses the whole restore before any engine is stopped or the transaction opens (`imported:false`, the row named in `warnings`; see the orphan-engine pre-flight below). An ACTIVE status in the backup (`ready`, `initializing`, ...) describes the source host's engines: restored as `disconnected` (a notice counts them), unless the session is held by a live peer whose claim the import preserves |
 | `tables.webhooks`             | `WebhookRow[]`      | No       | Export rows omit `secret`/`headers`; an absent key restores as `null`/`{}`                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `tables.messageBatches`       | `MessageBatchRow[]` | No       | snake_case columns                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `tables.*` (the remaining 13) | `Row[]`             | No       | Same keys as the export; an omitted table restores **zero** rows into an emptied table                                                                                                                                                                                                                                                                                                                                                                                            |
+| `tables.*` (the remaining 14) | `Row[]`             | No       | Same keys as the export; an omitted table restores **zero** rows into an emptied table                                                                                                                                                                                                                                                                                                                                                                                            |
 | `stopOrphans`                 | boolean             | No       | Stop the running engines for sessions the backup does not contain, inside this request and before the replace (best-effort, time-bounded per engine). Preferred over `force`                                                                                                                                                                                                                                                                                                      |
 | `force`                       | boolean             | No       | Legacy escape hatch: proceed despite orphaned engines and leave them running until a process restart (`restartRequired: true`)                                                                                                                                                                                                                                                                                                                                                    |
 
@@ -6026,7 +6054,8 @@ Replace all Data DB rows with the supplied export. **Destructive and transaction
     "webhookOutboxEvents": [],
     "integrationDeliveryFailures": [],
     "statusUpdates": [],
-    "automationRules": []
+    "automationRules": [],
+    "metaCloudAccounts": []
   },
   "stopOrphans": true
 }
@@ -6053,7 +6082,8 @@ Replace all Data DB rows with the supplied export. **Destructive and transaction
     "webhookOutboxEvents": 0,
     "integrationDeliveryFailures": 0,
     "statusUpdates": 0,
-    "automationRules": 0
+    "automationRules": 0,
+    "metaCloudAccounts": 0
   },
   "warnings": [],
   "notices": [],
@@ -7190,7 +7220,7 @@ Create a campaign and start sending.
 
 `total` is the number of distinct accepted numbers.
 
-**Errors:** `400` validation, `CAMPAIGN_NO_RECIPIENTS` (no entry is a phone number) or `CAMPAIGN_TOO_MANY_RECIPIENTS` (more than 5000 accepted) · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted with `allowedChats` · `404` no session with this id · `409` `CAMPAIGN_ALREADY_RUNNING`: the session already has a running campaign
+**Errors:** `400` validation, `CAMPAIGN_NO_RECIPIENTS` (no entry is a phone number) or `CAMPAIGN_TOO_MANY_RECIPIENTS` (more than 5000 accepted), or `CAMPAIGN_ENGINE_UNSUPPORTED` (the session's `engine` is `meta-cloud`; campaigns on the Cloud API need Meta templates, docs/32 F4) · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted with `allowedChats` · `404` no session with this id · `409` `CAMPAIGN_ALREADY_RUNNING`: the session already has a running campaign
 
 #### GET /api/sessions/:sessionId/campaigns
 
@@ -7300,6 +7330,73 @@ Cancel a running campaign. Every `pending` recipient becomes `cancelled` and no 
 ```
 
 **Errors:** `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted with `allowedChats` · `404` no such campaign in this session · `409` `CAMPAIGN_NOT_RUNNING`: the campaign is already completed or cancelled
+
+### 6.4.19 WhatsApp Cloud API account (OpenMsg)
+
+The Cloud API number behind a `meta-cloud` session (`MetaCloudAccountController`, `@Controller('sessions/:sessionId/meta')`; an OpenMsg fork resource, not exposed in the SDKs: rotating a token is an operator action). The access token is never returned, only its last 4 characters. Both routes refuse a key restricted to specific sessions (`@RequireUnscopedKey`), like `POST /api/sessions`.
+
+#### GET /api/sessions/:sessionId/meta/account
+
+The session's Cloud API number, without its token.
+
+**Auth:** API key (any role) that is not restricted to specific sessions
+
+**Response** `200`
+
+```json
+{
+  "phoneNumberId": "106540352242922",
+  "wabaId": "102290129340398",
+  "displayPhoneNumber": "+55 11 99999-0000",
+  "verifiedName": "Acme",
+  "qualityRating": "GREEN",
+  "messagingLimitTier": "TIER_1K",
+  "accessTokenLast4": "x9Zq",
+  "webhookUrl": "https://openmsg.example.com/api/meta-webhook"
+}
+```
+
+`displayPhoneNumber`, `verifiedName`, `qualityRating` and `messagingLimitTier` are what Graph reported at the session's last start, `null` before the first. `accessTokenLast4` is `null` after a logout cleared the token. `webhookUrl` is the callback to register in the Meta app, built from the host this request reached.
+
+**Errors:** `400` the session id is not a UUID · `401` missing/invalid key · `403` the key is restricted to specific sessions · `404` no session with this id, or it has no Cloud API account · `501` the session is not a `meta-cloud` session
+
+#### PUT /api/sessions/:sessionId/meta/account
+
+Replace the session's access token. Only `accessToken` can change: another number means a new session.
+
+**Auth:** API key (OPERATOR) that is not restricted to specific sessions
+
+**Request body**
+
+| Field       | Type   | Required | Description                                                    |
+| ----------- | ------ | -------- | -------------------------------------------------------------- |
+| accessToken | string | yes      | The new system-user token, not empty, at most 2048 characters. |
+
+**Response** `200` — the same body as `GET`, with the new `accessTokenLast4`.
+
+The session's next Graph call sends the new token. A session in `action_required` because Meta refused the old token needs `POST /stop` and `POST /start` to return to `ready`.
+
+**Errors:** `400` validation (missing or empty `accessToken`, or any other field) or `META_CLOUD_NOT_CONFIGURED` · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted to specific sessions · `404` no session with this id, or it has no Cloud API account · `501` the session is not a `meta-cloud` session
+
+### 6.4.20 WhatsApp Cloud API webhook (OpenMsg)
+
+The callback URL registered in the Meta app's WhatsApp webhook settings (`MetaCloudWebhookController`, `@Controller('meta-webhook')`; an OpenMsg fork receiver, not exposed in the SDKs, like `ingress`). Both routes answer `404` while `META_CLOUD_ENABLED` is not `true`, and neither is rate limited by the global per-IP tiers: Meta delivers in bursts from few addresses, and the signature is the gate.
+
+**Auth:** **none** — `@Public`, because Meta presents no API key. The handshake is authenticated by `META_WEBHOOK_VERIFY_TOKEN`, every delivery by `X-Hub-Signature-256`: `sha256=` followed by the hex HMAC-SHA256 of the exact request bytes under `META_APP_SECRET`.
+
+#### GET /api/meta-webhook
+
+Meta's verification handshake. With `hub.mode=subscribe` and a `hub.verify_token` equal to `META_WEBHOOK_VERIFY_TOKEN`, answers `200` with `hub.challenge` as the body, `Content-Type: text/plain`.
+
+**Query parameters:** `hub.mode`, `hub.verify_token`, `hub.challenge`
+
+**Errors:** `403` `hub.mode` is not `subscribe`, the token differs, or `META_WEBHOOK_VERIFY_TOKEN` is unset · `404` `META_CLOUD_ENABLED` is not `true`
+
+#### POST /api/meta-webhook
+
+Meta's event delivery: the `whatsapp_business_account` envelope, each `entry[].changes[]` carrying one `field`. The answer is an empty `200`, sent before any event is processed, unless the body names a number that is not live here (below). Each `messages` change goes to the `meta-cloud` session live in this process whose number is the change's `metadata.phone_number_id`: inbound messages become `message.received` (a reaction `message.reaction`, an `interactive` or `button` reply carries `button: { id, text }`, a message Meta could not deliver arrives as `type: "unknown"` with `metadata: { reason, errors }`), media is downloaded through Graph under `MEDIA_DOWNLOAD_MAX_BYTES`, and `statuses[]` become `message.ack` (a `failed` status also `message.failed`, both with Meta's `errorCode`). Other fields (`account_update`, template and quality updates) are accepted and ignored. A change for a number with no Cloud API account on this gateway is accepted, logged and dropped, as is a duplicate delivery, so Meta never retries it. A body whose `messages` changes name a number that has an account but no session live in this process (the gateway is restarting, or the session is not started yet) is refused with `503` and nothing in it is processed, not even the changes for live numbers: Meta delivers the whole body again later, and once the session is `READY` it is accepted. Inbound messages are deduplicated by `wamid`, so a redelivery never yields a second `message.received`.
+
+**Errors:** `401` `X-Hub-Signature-256` missing, or not the HMAC of the body under `META_APP_SECRET` · `404` `META_CLOUD_ENABLED` is not `true` · `503` `META_APP_SECRET` is unset, so no delivery can be verified (logged once per process), or the body names a number whose Cloud API session is not live in this process, or the lookup of the stored Cloud API numbers fails (logged once per refused delivery); in both cases nothing in the body is processed and Meta retries it
 
 ## 6.5 Real-time API (WebSocket)
 

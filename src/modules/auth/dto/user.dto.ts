@@ -1,5 +1,6 @@
 import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ToStrictBoolean } from '../../../common/utils/strict-boolean';
 import { MaxCodePoints } from '../../../common/validation/max-code-points';
 import { ApiKeyRole } from '../entities/api-key.entity';
 
@@ -96,6 +97,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ description: 'Whether the user may sign in.', example: true })
   @IsOptional()
+  @ToStrictBoolean()
   @IsBoolean()
   isActive?: boolean;
 

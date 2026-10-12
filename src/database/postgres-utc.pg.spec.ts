@@ -22,6 +22,7 @@ import { WebhookOutboxService } from '../modules/webhook/webhook-outbox.service'
 import { IntegrationDeliveryFailure } from '../modules/integration/entities/integration-delivery-failure.entity';
 import { StatusUpdate } from '../modules/status-store/entities/status-update.entity';
 import { AutomationRule } from '../modules/automation/entities/automation-rule.entity';
+import { MetaCloudAccount } from '../engine/adapters/meta-cloud-account.entity';
 import { StatsService } from '../modules/stats/stats.service';
 import type { MigrationTables } from '../modules/infra/migration-tables.types';
 
@@ -66,6 +67,7 @@ const ENTITIES = [
   IntegrationDeliveryFailure,
   StatusUpdate,
   AutomationRule,
+  MetaCloudAccount,
 ];
 
 /**

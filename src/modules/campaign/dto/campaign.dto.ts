@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { ToStrictNumber } from '../../../common/utils/strict-boolean';
 import { MaxCodePoints } from '../../../common/validation/max-code-points';
 import { NoNulCharacter } from '../../../common/validation/no-nul-character';
 import { MESSAGE_TEXT_MAX_LENGTH } from '../../message/dto/send-message.dto';
@@ -66,6 +67,7 @@ export class ListRecipientsQueryDto {
 
   @ApiPropertyOptional({ description: 'Rows to skip', default: 0, minimum: 0 })
   @IsOptional()
+  @ToStrictNumber()
   @IsInt()
   @Min(0)
   offset?: number;

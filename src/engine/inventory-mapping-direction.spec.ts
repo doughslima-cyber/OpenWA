@@ -60,7 +60,9 @@ function isHandle(expr: ts.Expression, engine: Engine): boolean {
  * The engine an adapter file belongs to, or undefined for a module both adapters share. Mirrors the
  * attribution in engine-parity.spec.ts, which also fails on an unprefixed file nobody attributed.
  */
-function fileEngine(file: string): Engine | undefined {
+function fileEngine(file: string): Engine | 'cloud' | undefined {
+  // OpenMsg (docs/32): the Cloud API adapter calls neither library, so its code backs no mark here.
+  if (file.startsWith('meta-cloud-')) return 'cloud';
   if (file.startsWith('baileys') || file === 'safe-link-preview.ts') return 'baileys';
   if (file.startsWith('wwebjs-') || file.startsWith('whatsapp-web-js') || file === 'chromium-profile-hygiene.ts') {
     return 'wwjs';

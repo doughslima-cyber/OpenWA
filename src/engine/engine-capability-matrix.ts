@@ -1,7 +1,8 @@
 /**
  * Engine capability matrix: for each `IWhatsAppEngine` method, the REAL availability on each
  * adapter — `wwjs` = whatsapp-web.js (the default engine), `baileys` = the browser-free
- * alternative.
+ * alternative, and (OpenMsg) `cloud` = the WhatsApp Cloud API adapter, whose column is derived from
+ * `meta-cloud-capability-column.ts` rather than curated here.
  *
  * DERIVED — membership and the default. The method list is not hand-maintained: it is read from
  * `interfaces/whatsapp-engine.interface.ts` with the same member regex the parity gate
@@ -53,6 +54,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { cloudCapability } from './meta-cloud-capability-column';
 
 export type CapabilityStatus = 'supported' | 'not-available';
 export type RootCause = 'adapter-gap' | 'library-limitation' | 'uncertain';
@@ -66,9 +68,14 @@ export interface AdapterCapability {
 export interface MethodCapability {
   wwjs: AdapterCapability;
   baileys: AdapterCapability;
+  /** OpenMsg (docs/32 D6): the Cloud API adapter, derived from meta-cloud-capability-column.ts. */
+  cloud: AdapterCapability;
   /** Cited library symbols (baileys; wwjs). Required when at least one adapter is not-available. */
   evidence?: string;
 }
+
+/** A curated row: the two QR engines. The `cloud` cell is never curated here. */
+export type CuratedCapability = Omit<MethodCapability, 'cloud'>;
 
 /**
  * The hand-curated half: every method whose capability is more than the supported/supported
@@ -76,7 +83,7 @@ export interface MethodCapability {
  * already produces it); an entry whose method leaves the interface is a fence failure, not a
  * silent drop.
  */
-export const CURATED_CAPABILITY_EXCEPTIONS: Record<string, MethodCapability> = {
+export const CURATED_CAPABILITY_EXCEPTIONS: Record<string, CuratedCapability> = {
   upsertLabel: {
     wwjs: { status: 'not-available', rootCause: 'library-limitation' },
     baileys: { status: 'supported' },
@@ -508,6 +515,7 @@ function deriveEngineCapabilityMatrix(): Record<string, MethodCapability> {
         wwjs: { status: 'supported' },
         baileys: { status: 'supported' },
       },
+      method,
     );
   }
   return matrix;
@@ -515,8 +523,12 @@ function deriveEngineCapabilityMatrix(): Record<string, MethodCapability> {
 
 /** A two-level copy — exactly the shape MethodCapability has, so the derived row shares no object
  * with the curated table it came from. */
-function copyCapability(entry: MethodCapability): MethodCapability {
-  const copy: MethodCapability = { wwjs: { ...entry.wwjs }, baileys: { ...entry.baileys } };
+function copyCapability(entry: CuratedCapability, method: string): MethodCapability {
+  const copy: MethodCapability = {
+    wwjs: { ...entry.wwjs },
+    baileys: { ...entry.baileys },
+    cloud: cloudCapability(method),
+  };
   if (entry.evidence !== undefined) copy.evidence = entry.evidence;
   return copy;
 }

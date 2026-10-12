@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   ExecutionContext,
@@ -12,6 +13,7 @@ import { lastValueFrom, of, throwError } from 'rxjs';
 import { EngineNotReadyError } from '../../../common/errors/engine-not-ready.error';
 import { markEngineSendFailure } from '../../../common/errors/engine-send-failure';
 import { EngineNotSentError } from '../../../common/errors/engine-not-sent.error';
+import { EngineRejectedSendError } from '../../../common/errors/engine-rejected-send.error';
 import { SendIdempotencyInterceptor, sendFailureProvesNothingSent } from './send-idempotency.interceptor';
 import { hashSendRequest, SendIdempotencyService } from './send-idempotency.service';
 
@@ -166,6 +168,26 @@ describe('sendFailureProvesNothingSent', () => {
     ['string', false],
   ])('%p -> %p', (error, expected) => {
     expect(sendFailureProvesNothingSent(error)).toBe(expected);
+  });
+
+  // OpenMsg (docs/32, AD-004): a Cloud API refusal Meta names (4xx) proves nothing was sent even from
+  // inside the engine send; its 502 for any other answer stays uncertain.
+  it.each([400, 409, 429])(
+    'C89 frees the key for a Cloud API refusal answered %d from inside the engine send',
+    status => {
+      const refusal = new EngineRejectedSendError({
+        statusCode: status,
+        error: 'Refused',
+        message: 'Graph API error',
+        code: 'META_X',
+      });
+      expect(sendFailureProvesNothingSent(markEngineSendFailure(refusal))).toBe(true);
+    },
+  );
+
+  it('C89 keeps a Cloud API 502 from inside the engine send uncertain', () => {
+    const upstream = new BadGatewayException({ statusCode: 502, code: 'META_UPSTREAM_ERROR' });
+    expect(sendFailureProvesNothingSent(markEngineSendFailure(upstream))).toBe(false);
   });
 
   it('treats 501 as a refusal', () => {

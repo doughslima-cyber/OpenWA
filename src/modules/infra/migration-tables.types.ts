@@ -14,6 +14,8 @@ export interface SessionRow {
   updatedAt: string;
   // Absent from backups written before the column existed.
   desiredState?: string | null;
+  // Absent from backups written before the column existed.
+  engine?: string | null;
 }
 
 export interface WebhookRow {
@@ -258,6 +260,27 @@ export interface AutomationRuleRow {
   updatedAt: string | Date;
 }
 
+/**
+ * OpenMsg (docs/32, AD-005): the account behind a `meta-cloud` session, without its token. The export
+ * never reads `accessTokenEnc` or `accessTokenLast4`, and the importer writes neither, so a restored
+ * row holds NULL in both until `PUT /api/sessions/:id/meta/account` sets a token again. A hand-edited
+ * archive may still carry them; they are ignored.
+ */
+export interface MetaCloudAccountRow {
+  sessionId: string;
+  phoneNumberId: string;
+  wabaId: string;
+  accessTokenEnc?: string | null;
+  accessTokenLast4?: string | null;
+  displayPhoneNumber: string | null;
+  verifiedName: string | null;
+  qualityRating: string | null;
+  messagingLimitTier: string | null;
+  lastCheckedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface MigrationTables {
   sessions: SessionRow[];
   webhooks: WebhookRow[];
@@ -275,6 +298,7 @@ export interface MigrationTables {
   integrationDeliveryFailures: IntegrationDeliveryFailureRow[];
   statusUpdates: StatusUpdateRow[];
   automationRules: AutomationRuleRow[];
+  metaCloudAccounts: MetaCloudAccountRow[];
 }
 
 export type TableCounts = { [K in keyof MigrationTables]: number };

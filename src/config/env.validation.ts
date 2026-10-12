@@ -384,6 +384,10 @@ export function validateEnv(config: EnvConfig): EnvConfig {
     'SESSION_LEASE_HEARTBEAT_MS',
     'SESSION_TAKEOVER_SWEEP_MS',
     'SESSION_PROXY_TIMEOUT_MS',
+    // OpenMsg: each Graph call's limit; read with parseInt, so `15s` would become 15 ms.
+    'META_CLOUD_TIMEOUT_MS',
+    // OpenMsg: read with parseInt and a `> 0` guard, so `0` would silently mean the default of 40.
+    'META_CLOUD_MAX_RPS',
     // Positive-only is the POINT here, not a convention: 0 arms no Puppeteer timer at all, so a
     // wedged renderer holds the request forever (see wwebjs-lifecycle.ts).
     'PUPPETEER_PROTOCOL_TIMEOUT_MS',
@@ -456,6 +460,7 @@ export function validateEnv(config: EnvConfig): EnvConfig {
     ['SESSION_TAKEOVER_SWEEP_MS', 'the takeover sweep reruns every millisecond'],
     ['SESSION_LEASE_HEARTBEAT_MS', 'the lease heartbeat renews every millisecond'],
     ['SESSION_PROXY_TIMEOUT_MS', 'every proxied request times out after 1 ms'],
+    ['META_CLOUD_TIMEOUT_MS', 'every Cloud API call times out after 1 ms'],
     ['MEDIA_DOWNLOAD_TIMEOUT_MS', 'every media download fails'],
     ['WEBHOOK_TIMEOUT', 'every webhook delivery fails'],
     ['RATE_LIMIT_SHORT_TTL', 'each hit expires after 1 ms and that rate-limit tier never blocks'],
@@ -593,6 +598,8 @@ export function validateEnv(config: EnvConfig): EnvConfig {
     // Read with `=== 'true'`, so a typo leaves sends unpaced — the silent failure this whole
     // feature exists to avoid, and invisible without this check.
     'SEND_PACING_ENABLED',
+    // OpenMsg: read with `=== 'true'`; a typo leaves Cloud API sessions refused with no hint why.
+    'META_CLOUD_ENABLED',
     // Opt-in feature flags read with `=== 'true'`: a typo silently leaves the feature OFF, so the
     // conversion/archive endpoints answer as if nothing was configured. Same class as the above.
     'MEDIA_CONVERSION_ENABLED',

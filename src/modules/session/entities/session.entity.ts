@@ -91,6 +91,13 @@ export class Session {
   @Column({ type: 'varchar', length: 20, nullable: true })
   desiredState!: 'stopped' | null;
 
+  /**
+   * The engine this session runs (OpenMsg, docs/32). NULL, which every row that predates the
+   * column keeps, means the deployment's ENGINE_TYPE; the only value written is 'meta-cloud'.
+   */
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  engine?: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

@@ -38,6 +38,7 @@ const DATA_ENTITY_ROOTS = [
   'modules/integration',
   'modules/status-store',
   'modules/automation',
+  'modules/campaign',
 ];
 // The main-connection (auth/audit) roots; their tables are not this endpoint's payload.
 const MAIN_ENTITY_ROOTS = ['modules/auth', 'modules/audit'];
@@ -168,7 +169,11 @@ describe('export-tables registry: every data-DB entity table has a backup decisi
 
   it('flags exactly the tables with an FK to sessions, so the export drops their orphaned rows', () => {
     const flagged = EXPORT_TABLES.filter(entry => entry.sessionFk).map(entry => entry.table);
-    const withFk = entityFiles.filter(f => f.connection === 'data').flatMap(f => f.sessionFkTables);
+    // An excluded table is never exported, so it has no orphaned rows for the export to drop.
+    const withFk = entityFiles
+      .filter(f => f.connection === 'data')
+      .flatMap(f => f.sessionFkTables)
+      .filter(table => !(table in EXPORT_TABLE_EXCLUSIONS));
     expect(flagged.sort()).toEqual(withFk.sort());
     expect(flagged.length).toBeGreaterThan(0);
   });
@@ -217,6 +222,16 @@ describe('InfraDataService.exportData validates the registry against live entity
     };
     await expect(build(ds).exportData()).rejects.toThrow(/no backup decision/);
     expect(query).not.toHaveBeenCalled();
+  });
+
+  it('exports past the guard when the metadata carries the excluded tables, the campaign ones included', async () => {
+    const query = jest.fn().mockResolvedValue([]);
+    const excluded = Object.keys(EXPORT_TABLE_EXCLUSIONS);
+    expect(excluded).toEqual(expect.arrayContaining(['campaigns', 'campaign_recipients']));
+    const ds = { query, entityMetadatas: [...registryTables(), ...excluded].map(tableName => ({ tableName })) };
+
+    await expect(build(ds).exportData()).resolves.toBeDefined();
+    expect(query).toHaveBeenCalled();
   });
 });
 

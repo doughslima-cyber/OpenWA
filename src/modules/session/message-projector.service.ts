@@ -772,6 +772,7 @@ export class MessageProjector {
     messageId: string,
     status: DeliveryStatus,
     chatId?: string,
+    errorCode?: number,
   ): void {
     if (!this.engines.isLive(id, engine)) return;
     this.logger.debug(`Message ack: ${messageId} -> ${status}`, {
@@ -837,6 +838,8 @@ export class MessageProjector {
       status,
       ack: deliveryStatusToAck(status),
       ...(chatId ? { chatId } : {}),
+      // OpenMsg: the engine's reason for a failed status (Meta's error code on a Cloud API session).
+      ...(errorCode !== undefined ? { errorCode } : {}),
     };
 
     // Push the live delivery/read tick to the dashboard over the websocket.

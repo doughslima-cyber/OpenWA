@@ -10,6 +10,9 @@ import { BaileysMessageStoreService } from './adapters/baileys-message-store.ser
 import { LidMappingStoreService } from './identity/lid-mapping-store.service';
 import { ChatStateStoreService } from './adapters/baileys-chat-state-store.service';
 import { baileysAuthDir, wwjsAuthDir } from './auth-dir-paths';
+import { ModuleRef } from '@nestjs/core';
+import { PluginStorageService } from '../core/plugins/plugin-storage.service';
+import { HookManager } from '../core/hooks';
 
 describe('EngineFactory', () => {
   // The auth-dir key is Session.id (#1597), so the on-disk assertions below use a UUID and build the
@@ -422,6 +425,137 @@ describe('EngineFactory', () => {
       await factory.purgeSessionData(SESSION_ID, '../baileys-evil');
 
       expect(fs.existsSync(sibling)).toBe(true);
+    });
+  });
+  // OpenMsg (docs/32): a session's engine is its row's `engine`, NULL meaning ENGINE_TYPE, and the
+  // Cloud API engine is a third built-in enabled beside ENGINE_TYPE when META_CLOUD_ENABLED=true.
+  describe('per-session engine (meta-cloud)', () => {
+    const prevFlag = process.env.META_CLOUD_ENABLED;
+    let tmpRoot: string;
+
+    beforeEach(() => {
+      tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'engine-per-session-'));
+    });
+    afterEach(() => {
+      if (prevFlag === undefined) delete process.env.META_CLOUD_ENABLED;
+      else process.env.META_CLOUD_ENABLED = prevFlag;
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    });
+
+    /** A factory over a stub loader whose plugins are keyed by id, each with its own createEngine. */
+    const factoryWithPlugins = (engineType: string) => {
+      const created: Record<string, jest.Mock> = {
+        'whatsapp-web.js': jest.fn().mockReturnValue({ engine: 'wwjs' }),
+        baileys: jest.fn().mockReturnValue({ engine: 'baileys' }),
+        'meta-cloud': jest.fn().mockReturnValue({ engine: 'meta-cloud' }),
+      };
+      const getPlugin = jest.fn((id: string) =>
+        created[id] ? { instance: { type: PluginType.ENGINE, createEngine: created[id] } } : undefined,
+      );
+      const factory = new EngineFactory(
+        buildConfigService({
+          'engine.type': engineType,
+          'engine.sessionDataPath': path.join(tmpRoot, 'sessions'),
+          'engine.baileys.authDir': path.join(tmpRoot, 'baileys'),
+        }),
+        { getPlugin } as unknown as PluginLoaderService,
+        buildMessageStore(),
+        buildLidStore(),
+        buildChatStateStore(),
+      );
+      return { factory, created, getPlugin };
+    };
+
+    /** A factory over a real plugin loader, so enablement goes through the real lifecycle. */
+    const factoryWithRealLoader = (engineType: string) => {
+      const settings: Record<string, unknown> = {
+        'plugins.dir': path.join(tmpRoot, 'plugins'),
+        dataDir: tmpRoot,
+        'engine.type': engineType,
+        'engine.sessionDataPath': path.join(tmpRoot, 'sessions'),
+        'engine.baileys.authDir': path.join(tmpRoot, 'baileys'),
+        engine: { type: engineType },
+      };
+      const config = { get: (k: string) => settings[k] } as unknown as ConfigService;
+      const loader = new PluginLoaderService(
+        config,
+        new HookManager(),
+        new PluginStorageService(config),
+        {} as unknown as ModuleRef,
+      );
+      const factory = new EngineFactory(config, loader, buildMessageStore(), buildLidStore(), buildChatStateStore());
+      return { factory, loader };
+    };
+
+    it('C2 creates a session whose engine is unset from the ENGINE_TYPE plugin', () => {
+      const { factory, created, getPlugin } = factoryWithPlugins('baileys');
+
+      const engine = factory.create({ sessionId: SESSION_ID, dbSessionId: SESSION_ID, engine: undefined });
+
+      expect(engine).toEqual({ engine: 'baileys' });
+      expect(getPlugin).toHaveBeenCalledWith('baileys');
+      expect(created.baileys).toHaveBeenCalledTimes(1);
+      expect(created['meta-cloud']).not.toHaveBeenCalled();
+    });
+
+    it('C3 creates a meta-cloud session from the meta-cloud plugin under ENGINE_TYPE=baileys, never from baileys', () => {
+      process.env.META_CLOUD_ENABLED = 'true';
+      const { factory, created } = factoryWithPlugins('baileys');
+
+      const engine = factory.create({ sessionId: SESSION_ID, dbSessionId: SESSION_ID, engine: 'meta-cloud' });
+
+      expect(engine).toEqual({ engine: 'meta-cloud' });
+      expect(created['meta-cloud']).toHaveBeenCalledTimes(1);
+      expect(created.baileys).not.toHaveBeenCalled();
+    });
+
+    it('C90 refuses to start a meta-cloud session while META_CLOUD_ENABLED is off', () => {
+      delete process.env.META_CLOUD_ENABLED;
+      const { factory, created } = factoryWithPlugins('baileys');
+
+      expect(() => factory.create({ sessionId: SESSION_ID, dbSessionId: SESSION_ID, engine: 'meta-cloud' })).toThrow(
+        /META_CLOUD_ENABLED/,
+      );
+      expect(created['meta-cloud']).not.toHaveBeenCalled();
+      expect(created.baileys).not.toHaveBeenCalled();
+    });
+
+    it('C6 enables both baileys and meta-cloud on init with META_CLOUD_ENABLED=true and ENGINE_TYPE=baileys', async () => {
+      process.env.META_CLOUD_ENABLED = 'true';
+      const { factory, loader } = factoryWithRealLoader('baileys');
+
+      await factory.onModuleInit();
+
+      expect(loader.isPluginEnabled('baileys')).toBe(true);
+      expect(loader.isPluginEnabled('meta-cloud')).toBe(true);
+      expect(loader.isPluginEnabled('whatsapp-web.js')).toBe(false);
+    });
+
+    it('C6 registers meta-cloud without enabling it when META_CLOUD_ENABLED is unset', async () => {
+      delete process.env.META_CLOUD_ENABLED;
+      const { factory, loader } = factoryWithRealLoader('baileys');
+
+      await factory.onModuleInit();
+
+      expect(loader.getPlugin('meta-cloud')).toBeDefined();
+      expect(loader.isPluginEnabled('meta-cloud')).toBe(false);
+      expect(loader.isPluginEnabled('baileys')).toBe(true);
+    });
+
+    it('C10 lists meta-cloud as enabled with library whatsapp-cloud-api when META_CLOUD_ENABLED=true', async () => {
+      process.env.META_CLOUD_ENABLED = 'true';
+      const { factory } = factoryWithRealLoader('baileys');
+      await factory.onModuleInit();
+
+      const metaCloud = factory.getAvailableEngines().find(e => e.id === 'meta-cloud');
+
+      expect(metaCloud).toEqual(
+        expect.objectContaining({
+          id: 'meta-cloud',
+          enabled: true,
+          library: expect.objectContaining({ name: 'whatsapp-cloud-api', version: 'v26.0' }) as unknown,
+        }),
+      );
     });
   });
 });

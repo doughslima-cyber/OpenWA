@@ -98,3 +98,83 @@ describe('CreateSessionDto config keys through the global pipe', () => {
     expect(dto.config).toEqual({ custom: 'x', maxReconnectAttempts: null });
   });
 });
+
+/**
+ * OpenMsg (docs/32): `engine` takes only `meta-cloud`. whatsapp-web.js vs baileys stays the deployment's
+ * ENGINE_TYPE, the match is case-sensitive, and an empty string is a value, not an omission.
+ */
+describe('CreateSessionDto engine through the global pipe', () => {
+  const pipe = new ValidationPipe(GLOBAL_VALIDATION_OPTIONS);
+  const create = (body: Record<string, unknown>): Promise<CreateSessionDto> =>
+    pipe.transform(
+      { name: 'my-bot', ...body },
+      { type: 'body', metatype: CreateSessionDto },
+    ) as Promise<CreateSessionDto>;
+
+  it.each(['baileys', 'whatsapp-web.js', 'META-CLOUD', ''])('C4 rejects engine %j with a 400', async engine => {
+    const error = await create({ engine }).then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(BadRequestException);
+    expect(((error as BadRequestException).getResponse() as { message: string[] }).message).toEqual([
+      expect.stringContaining('engine'),
+    ]);
+  });
+
+  it('accepts engine meta-cloud with its credentials, and a body without engine', async () => {
+    await expect(
+      create({ engine: 'meta-cloud', metaCloud: { phoneNumberId: '1065', wabaId: '1022', accessToken: 'EAAG-token' } }),
+    ).resolves.toMatchObject({ engine: 'meta-cloud' });
+    await expect(create({})).resolves.toMatchObject({ name: 'my-bot' });
+  });
+});
+
+/**
+ * OpenMsg (docs/32): `engine: "meta-cloud"` and `metaCloud` come together. A Cloud session without its
+ * number cannot start, and credentials on a QR session would be silently dropped.
+ */
+describe('CreateSessionDto meta-cloud credentials through the global pipe', () => {
+  const pipe = new ValidationPipe(GLOBAL_VALIDATION_OPTIONS);
+  const create = (body: Record<string, unknown>): Promise<CreateSessionDto> =>
+    pipe.transform(
+      { name: 'my-cloud', ...body },
+      { type: 'body', metatype: CreateSessionDto },
+    ) as Promise<CreateSessionDto>;
+  const complete = { phoneNumberId: '106540352242922', wabaId: '102290129340398', accessToken: 'EAAG-token-value' };
+  const rejection = (body: Record<string, unknown>): Promise<unknown> =>
+    create(body).then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+
+  it.each([
+    ['metaCloud missing', undefined],
+    ['phoneNumberId empty', { ...complete, phoneNumberId: '' }],
+    ['wabaId empty', { ...complete, wabaId: '' }],
+    ['accessToken empty', { ...complete, accessToken: '' }],
+  ])('C16 rejects engine meta-cloud with %s with a 400', async (_label, metaCloud) => {
+    const error = await rejection({ engine: 'meta-cloud', ...(metaCloud === undefined ? {} : { metaCloud }) });
+
+    expect(error).toBeInstanceOf(BadRequestException);
+    expect(((error as BadRequestException).getResponse() as { message: string[] }).message).toEqual([
+      expect.stringContaining('metaCloud'),
+    ]);
+  });
+
+  it('C17 rejects metaCloud without engine with a 400', async () => {
+    const error = await rejection({ metaCloud: complete });
+
+    expect(error).toBeInstanceOf(BadRequestException);
+    expect(((error as BadRequestException).getResponse() as { message: string[] }).message).toEqual([
+      expect.stringContaining('engine'),
+    ]);
+  });
+
+  it('accepts engine meta-cloud with complete credentials', async () => {
+    await expect(create({ engine: 'meta-cloud', metaCloud: complete })).resolves.toMatchObject({
+      engine: 'meta-cloud',
+      metaCloud: complete,
+    });
+  });
+});

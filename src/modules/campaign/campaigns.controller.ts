@@ -33,7 +33,7 @@ export class CampaignsController {
     status: 400,
     description:
       'Invalid name or text, or the list holds no phone number (`CAMPAIGN_NO_RECIPIENTS`) or more than 5000 ' +
-      '(`CAMPAIGN_TOO_MANY_RECIPIENTS`)',
+      '(`CAMPAIGN_TOO_MANY_RECIPIENTS`), or the session runs on the WhatsApp Cloud API (`CAMPAIGN_ENGINE_UNSUPPORTED`)',
   })
   @ApiResponse({ status: 403, description: CHAT_RESTRICTED_403 })
   @ApiResponse({ status: 404, description: 'No session with this id' })

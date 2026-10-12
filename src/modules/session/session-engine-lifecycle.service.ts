@@ -649,6 +649,8 @@ export class SessionEngineLifecycle {
       dbSessionId: id,
       proxyUrl: session.proxyUrl || undefined,
       proxyType: session.proxyType || undefined,
+      // OpenMsg: the row's engine (NULL = ENGINE_TYPE), so a Cloud session runs beside QR ones.
+      engine: session.engine ?? undefined,
     });
     // The proxy is registered with the engine, not re-read from the row later: it is the egress this
     // engine will use until it is replaced, and a fetch made on the session's behalf must match it.

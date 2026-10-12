@@ -506,6 +506,7 @@ export class SessionController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   @ApiResponse({ status: 409, description: PAIRING_NOT_READY_409 })
   @ApiResponse({ status: 503, description: PAIRING_TRANSPORT_503 })
+  @ApiResponse({ status: 501, description: 'The session is a WhatsApp Cloud API session, which has no pairing code' })
   async requestPairingCode(
     @Param('sessionId', ParseUUIDPipe) id: string,
     @Body() dto: RequestPairingCodeDto,

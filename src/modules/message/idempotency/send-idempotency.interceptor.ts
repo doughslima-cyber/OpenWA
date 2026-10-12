@@ -14,6 +14,7 @@ import { from, lastValueFrom, Observable, of } from 'rxjs';
 import { createLogger } from '../../../common/services/logger.service';
 import { isEngineSendFailure } from '../../../common/errors/engine-send-failure';
 import { EngineNotSentError } from '../../../common/errors/engine-not-sent.error';
+import { EngineRejectedSendError } from '../../../common/errors/engine-rejected-send.error';
 import { hashSendRequest, isValidIdempotencyKey, SendIdempotencyService } from './send-idempotency.service';
 
 /** Request header a client sets to make a send safe to retry. */
@@ -25,11 +26,12 @@ export const IDEMPOTENT_REPLAYED_HEADER = 'idempotent-replayed';
  * Whether a failed send proves nothing reached WhatsApp, so the key can be freed for a retry.
  *
  * A 4xx or 501 before the engine call is a refusal. Errors escaping the shared engine-send failure
- * boundary stay uncertain unless transport explicitly reports nothing was sent: a socket can report 409 after
+ * boundary stay uncertain unless transport explicitly reports nothing was sent, or the Cloud API refused the
+ * send by name (EngineRejectedSendError): a socket can report 409 after
  * WhatsApp accepted the message. Other server errors/timeouts also keep the key taken.
  */
 export function sendFailureProvesNothingSent(error: unknown): boolean {
-  if (error instanceof EngineNotSentError) return true;
+  if (error instanceof EngineNotSentError || error instanceof EngineRejectedSendError) return true;
   if (isEngineSendFailure(error) || !(error instanceof HttpException)) return false;
   const status: number = error.getStatus();
   const notImplemented: number = HttpStatus.NOT_IMPLEMENTED;

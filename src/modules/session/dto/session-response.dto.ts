@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { Session } from '../entities/session.entity';
 import { SessionStatus } from '../entities/session.entity';
+import { sessionEngineOf } from '../../../engine/session-engine';
 
 export class AccountRestrictionDto {
   @ApiProperty({
@@ -102,6 +103,14 @@ export class SessionResponseDto {
   })
   engineLoaded!: boolean;
 
+  @ApiProperty({
+    description:
+      'The engine this session runs: `meta-cloud` for a WhatsApp Cloud API session, otherwise the ' +
+      "deployment's ENGINE_TYPE (`whatsapp-web.js` or `baileys`).",
+    example: 'baileys',
+  })
+  engine!: string;
+
   /**
    * Map a Session entity to the public response shape, stripping sensitive
    * engine config fields (`config`, `proxyUrl`, `proxyType`) that must not
@@ -134,6 +143,7 @@ export class SessionResponseDto {
           }
         : null,
       engineLoaded,
+      engine: sessionEngineOf(session),
     };
   }
 }

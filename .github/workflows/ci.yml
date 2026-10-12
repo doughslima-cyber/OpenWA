@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # OpenMsg fork: push/pull_request events do not start workflows on this fork, so CI is run by hand.
+  workflow_dispatch:
 
 env:
   NODE_VERSION: '22'

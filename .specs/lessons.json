@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 6,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "gate_fail::settle a proof marked as failing on windows by running it on an lf checkout never by exempting it",
+      "text": "Settle a proof marked as failing on Windows by running it on an LF checkout, never by exempting it",
+      "signal": "gate_fail",
+      "scope": "sdk",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-api"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md C80 - sdk/python/openwa/types.py:269 (sdk)"
+      ],
+      "created": "2026-10-12T02:57:01Z",
+      "last_seen": "2026-10-12T02:57:01Z"
+    },
+    {
+      "id": "L-002",
+      "key": "ac_gap::prove every check that names an http status with a test that crosses the http boundary",
+      "text": "Prove every check that names an HTTP status with a test that crosses the HTTP boundary",
+      "signal": "ac_gap",
+      "scope": "routes",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-api"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md C16, C17 - create-session.dto.spec.ts:159 (routes)"
+      ],
+      "created": "2026-10-12T02:57:01Z",
+      "last_seen": "2026-10-12T02:57:01Z"
+    },
+    {
+      "id": "L-003",
+      "key": "ac_gap::give every decision branch the code adds a coverage member including default branches and errors a service raises on update routes",
+      "text": "Give every decision branch the code adds a coverage member, including default branches and errors a service raises on update routes",
+      "signal": "ac_gap",
+      "scope": "coverage",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-api"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md gaps 3-7 - meta-cloud-account.service.ts:74, meta-cloud-inbound.mapper.ts:192 (coverage)"
+      ],
+      "created": "2026-10-12T02:57:01Z",
+      "last_seen": "2026-10-12T02:57:01Z"
+    },
+    {
+      "id": "L-004",
+      "key": "ac_gap::assert every column a backup or restore claims to carry by comparing the whole restored row",
+      "text": "Assert every column a backup or restore claims to carry, by comparing the whole restored row",
+      "signal": "ac_gap",
+      "scope": "infra",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-api"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 3 gap 1 - src/modules/infra/meta-cloud-backup.spec.ts:126 (infra)"
+      ],
+      "created": "2026-10-12T04:31:23Z",
+      "last_seen": "2026-10-12T04:31:23Z"
+    },
+    {
+      "id": "L-005",
+      "key": "spec_precision_gap::reclassify a file in the test policy evidence when a fix adds a conditional to it",
+      "text": "Reclassify a file in the Test policy evidence when a fix adds a conditional to it",
+      "signal": "spec_precision_gap",
+      "scope": "coverage",
+      "status": "candidate",
+      "features": [
+        "meta-cloud-api"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 3 gap 2 - meta-cloud-account.controller.ts:67 (coverage)"
+      ],
+      "created": "2026-10-12T04:31:23Z",
+      "last_seen": "2026-10-12T04:31:23Z"
+    }
+  ]
+}

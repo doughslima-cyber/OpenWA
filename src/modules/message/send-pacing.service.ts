@@ -12,6 +12,7 @@ import { EngineNotSupportedError } from '../../common/errors/engine-not-supporte
 import { EngineThrottledError } from '../../common/errors/engine-throttled.error';
 import { EngineNotSentError } from '../../common/errors/engine-not-sent.error';
 import { SsrfBlockedError } from '../../common/security/ssrf-guard';
+import { META_CLOUD_ENGINE } from '../../engine/session-engine';
 import { AuditService } from '../audit/audit.service';
 import { AuditAction } from '../audit/entities/audit-log.entity';
 
@@ -255,8 +256,11 @@ export class SendPacingService {
     const config = resolveSendPacingConfig(this.configService);
     if (!config.enabled) return;
 
-    this.assertBreakerClosed(sessionId, config);
     const session = await this.sessionRepository.findOne({ where: { id: sessionId } });
+    // OpenMsg (docs/32): a Cloud API number is not a linked device; Meta paces it by its own tiers, so
+    // the anti-ban governor neither counts nor refuses its sends.
+    if (session?.engine === META_CLOUD_ENGINE) return;
+    this.assertBreakerClosed(sessionId, config);
     // No row means the send is about to fail on its own for a better reason than pacing; let it.
     if (!session) return;
 

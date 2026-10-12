@@ -2150,6 +2150,16 @@
               }
             }
           },
+          "501": {
+            "description": "The session is a WhatsApp Cloud API session, which has no pairing code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "503": {
             "description": "The pairing code could not be generated: the gateway stopped waiting after its attempt budget, usually because WhatsApp Web kept reloading its QR page. The condition is transient and the request is worth retrying; the last attempt's reason is carried in the message. An attempt that timed out may still have reached WhatsApp, and a retry starts the linking flow again, with the same risk of unlinking an already-linked device that this route carries generally. The Baileys engine does not answer this, having no page to reload.",
             "content": {
@@ -4627,6 +4637,253 @@
         "tags": [
           "automation"
         ]
+      }
+    },
+    "/api/sessions/{sessionId}/meta/account": {
+      "get": {
+        "operationId": "MetaCloudAccountController_getAccount",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaCloudAccountResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The session id is not a UUID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key is restricted to specific sessions, or is below the route's role. Also returned when the API key's role, session or chat scope, or IP allow-list does not allow this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found, or it has no Cloud API account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The session is not a WhatsApp Cloud API session (its engine is not `meta-cloud`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get the WhatsApp Cloud API number of a session, without its token",
+        "tags": [
+          "sessions"
+        ]
+      },
+      "put": {
+        "description": "Only `accessToken` can change; binding another number means a new session. The session's next Graph call sends the new token; a session in `action_required` needs a stop and start.",
+        "operationId": "MetaCloudAccountController_updateAccount",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMetaCloudAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaCloudAccountResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or empty `accessToken`, a field other than `accessToken`, or META_CLOUD_ENCRYPTION_KEY is not configured (`META_CLOUD_NOT_CONFIGURED`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing, unknown, revoked, or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key is restricted to specific sessions, or is below the route's role. Also returned when the API key's role, session or chat scope, or IP allow-list does not allow this operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found, or it has no Cloud API account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The session is not a WhatsApp Cloud API session (its engine is not `meta-cloud`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Replace the access token of a WhatsApp Cloud API session",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/meta-webhook": {
+      "get": {
+        "operationId": "MetaCloudWebhookController_verify",
+        "parameters": [
+          {
+            "name": "hub.challenge",
+            "required": false,
+            "in": "query",
+            "description": "Echoed back as the body",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hub.verify_token",
+            "required": false,
+            "in": "query",
+            "description": "Must equal META_WEBHOOK_VERIFY_TOKEN",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hub.mode",
+            "required": false,
+            "in": "query",
+            "description": "Must be `subscribe`",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`hub.challenge`, as `text/plain`"
+          },
+          "403": {
+            "description": "`hub.mode` is not `subscribe`, the token differs, or META_WEBHOOK_VERIFY_TOKEN is unset"
+          },
+          "404": {
+            "description": "META_CLOUD_ENABLED is not `true`: Cloud API sessions are switched off"
+          }
+        },
+        "summary": "Meta's webhook verification handshake (WhatsApp Cloud API sessions)",
+        "tags": [
+          "integration"
+        ],
+        "security": []
+      },
+      "post": {
+        "description": "Answers 200 before the events are processed. Each `messages` change goes to the session live in this process for its `phone_number_id`; a change for a number with no Cloud API account here is logged and dropped. A body naming a number that has an account but no live session in this process (restarting, not started) is refused with 503 and nothing in it is processed, so Meta delivers it again later.",
+        "operationId": "MetaCloudWebhookController_receive",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Accepted (also for a duplicate delivery and for a number with no Cloud API account here)"
+          },
+          "401": {
+            "description": "`X-Hub-Signature-256` is missing or is not the HMAC of the body"
+          },
+          "404": {
+            "description": "META_CLOUD_ENABLED is not `true`: Cloud API sessions are switched off"
+          },
+          "503": {
+            "description": "META_APP_SECRET is not set, so no delivery can be verified; or the body names a number whose Cloud API session is not live in this process, or the lookup of the stored Cloud API numbers failed; nothing in the body is processed and Meta retries it later"
+          }
+        },
+        "summary": "Receive WhatsApp Cloud API events from Meta",
+        "tags": [
+          "integration"
+        ],
+        "security": []
       }
     },
     "/api/sessions/{sessionId}/messages": {
@@ -15783,7 +16040,7 @@
             }
           },
           "400": {
-            "description": "Invalid name or text, or the list holds no phone number (`CAMPAIGN_NO_RECIPIENTS`) or more than 5000 (`CAMPAIGN_TOO_MANY_RECIPIENTS`)",
+            "description": "Invalid name or text, or the list holds no phone number (`CAMPAIGN_NO_RECIPIENTS`) or more than 5000 (`CAMPAIGN_TOO_MANY_RECIPIENTS`), or the session runs on the WhatsApp Cloud API (`CAMPAIGN_ENGINE_UNSUPPORTED`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -19481,6 +19738,35 @@
           }
         }
       },
+      "MetaCloudCredentialsDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumberId": {
+            "type": "string",
+            "description": "Phone Number ID of the number in Meta",
+            "example": "106540352242922",
+            "maxLength": 64
+          },
+          "wabaId": {
+            "type": "string",
+            "description": "WhatsApp Business Account ID that owns the number",
+            "example": "102290129340398",
+            "maxLength": 64
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "System-user access token. Stored encrypted and never returned by any route.",
+            "writeOnly": true,
+            "maxLength": 2048,
+            "example": "EAAG..."
+          }
+        },
+        "required": [
+          "phoneNumberId",
+          "wabaId",
+          "accessToken"
+        ]
+      },
       "CreateSessionDto": {
         "type": "object",
         "properties": {
@@ -19515,6 +19801,21 @@
               "socks5"
             ],
             "deprecated": true
+          },
+          "engine": {
+            "type": "string",
+            "description": "Engine for this session. Omit to use the deployment's ENGINE_TYPE. `meta-cloud` binds the session to a WhatsApp Cloud API number given in `metaCloud`; it needs META_CLOUD_ENABLED=true (400 META_CLOUD_DISABLED otherwise).",
+            "enum": [
+              "meta-cloud"
+            ]
+          },
+          "metaCloud": {
+            "description": "The Cloud API number of a `meta-cloud` session: required with `engine: \"meta-cloud\"`, refused without it.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MetaCloudCredentialsDto"
+              }
+            ]
           }
         },
         "required": [
@@ -19629,6 +19930,11 @@
             "type": "boolean",
             "description": "Whether the gateway currently holds a live engine for this session: an engine in the answering process or, in a multi-node deployment, a live claim by the node running the session. `status` alone does not imply it: a `disconnected` session keeps its engine for the duration of an automatic reconnect backoff, while a session stopped through `POST /sessions/:sessionId/stop` carries the same status with no engine. On the node running the session, `true` means `stop`, `logout` and `force-kill` can act and `start` answers 400; `false` means the reverse. For a session another node runs, request routing (NODE_URL set on every node) forwards the lifecycle routes to that node, where they act; without routing, only that node can act on it, and any other node answers 409 to `start` and `stop` and 400 to `logout` and `force-kill`. Derived per request from live state, so it is never persisted and never historical.",
             "example": true
+          },
+          "engine": {
+            "type": "string",
+            "description": "The engine this session runs: `meta-cloud` for a WhatsApp Cloud API session, otherwise the deployment's ENGINE_TYPE (`whatsapp-web.js` or `baileys`).",
+            "example": "baileys"
           }
         },
         "required": [
@@ -19637,7 +19943,8 @@
           "status",
           "createdAt",
           "updatedAt",
-          "engineLoaded"
+          "engineLoaded",
+          "engine"
         ]
       },
       "SessionConfigResponseDto": {
@@ -20874,6 +21181,76 @@
             "description": "Whether the rule is active"
           }
         }
+      },
+      "MetaCloudAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumberId": {
+            "type": "string",
+            "example": "106540352242922"
+          },
+          "wabaId": {
+            "type": "string",
+            "example": "102290129340398"
+          },
+          "displayPhoneNumber": {
+            "type": "string",
+            "nullable": true,
+            "example": "+55 11 99999-0000",
+            "description": "As Graph last reported it; null until the session first starts"
+          },
+          "verifiedName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Acme"
+          },
+          "qualityRating": {
+            "type": "string",
+            "nullable": true,
+            "example": "GREEN"
+          },
+          "messagingLimitTier": {
+            "type": "string",
+            "nullable": true,
+            "example": "TIER_1K"
+          },
+          "accessTokenLast4": {
+            "type": "string",
+            "nullable": true,
+            "example": "x9Zq",
+            "description": "Last 4 characters of the stored token; null after a logout cleared it"
+          },
+          "webhookUrl": {
+            "type": "string",
+            "example": "https://openmsg.example.com/api/meta-webhook",
+            "description": "The callback URL to register in the Meta app"
+          }
+        },
+        "required": [
+          "phoneNumberId",
+          "wabaId",
+          "displayPhoneNumber",
+          "verifiedName",
+          "qualityRating",
+          "messagingLimitTier",
+          "accessTokenLast4",
+          "webhookUrl"
+        ]
+      },
+      "UpdateMetaCloudAccountDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "New system-user access token. Stored encrypted and never returned by any route.",
+            "writeOnly": true,
+            "maxLength": 2048,
+            "example": "EAAG..."
+          }
+        },
+        "required": [
+          "accessToken"
+        ]
       },
       "MessageListItemDto": {
         "type": "object",
@@ -23632,6 +24009,12 @@
             "items": {
               "type": "object"
             }
+          },
+          "metaCloudAccounts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
@@ -23650,7 +24033,8 @@
           "webhookOutboxEvents",
           "integrationDeliveryFailures",
           "statusUpdates",
-          "automationRules"
+          "automationRules",
+          "metaCloudAccounts"
         ]
       },
       "TableCountsDto": {
@@ -23719,6 +24103,10 @@
           "automationRules": {
             "type": "number",
             "example": 2
+          },
+          "metaCloudAccounts": {
+            "type": "number",
+            "example": 1
           }
         },
         "required": [
@@ -23737,7 +24125,8 @@
           "webhookOutboxEvents",
           "integrationDeliveryFailures",
           "statusUpdates",
-          "automationRules"
+          "automationRules",
+          "metaCloudAccounts"
         ]
       },
       "OmittedInlineMediaDto": {
@@ -23814,7 +24203,7 @@
         "properties": {
           "tables": {
             "type": "object",
-            "description": "Every one of the 16 migration tables is emptied before the restore runs, so a key omitted here is restored EMPTY rather than left untouched. Post the whole GET /api/infra/export-data payload, not a hand-built subset.",
+            "description": "Every one of the 17 migration tables is emptied before the restore runs, so a key omitted here is restored EMPTY rather than left untouched. Post the whole GET /api/infra/export-data payload, not a hand-built subset.",
             "properties": {
               "sessions": {
                 "type": "array"
@@ -23862,6 +24251,9 @@
                 "type": "array"
               },
               "automationRules": {
+                "type": "array"
+              },
+              "metaCloudAccounts": {
                 "type": "array"
               }
             }
