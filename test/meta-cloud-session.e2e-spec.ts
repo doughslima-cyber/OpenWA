@@ -318,6 +318,25 @@ describe('Meta Cloud API sessions (e2e)', () => {
     expect(body).toMatchObject({ phoneNumberId: PHONE_NUMBER_ID, wabaId: WABA_ID, verifiedName: 'Acme' });
   });
 
+  it('C92 webhookUrl is built from BASE_URL when it is set, and from the request when it is not', async () => {
+    const createdId = await startedCloudSession();
+    const previous = process.env.BASE_URL;
+    try {
+      process.env.BASE_URL = 'https://openmsg.example.com/';
+      const withBase = await get(`/api/sessions/${createdId}/meta/account`).expect(200);
+      expect((withBase.body as { webhookUrl: string }).webhookUrl).toBe('https://openmsg.example.com/api/meta-webhook');
+
+      delete process.env.BASE_URL;
+      const withoutBase = await get(`/api/sessions/${createdId}/meta/account`).expect(200);
+      expect((withoutBase.body as { webhookUrl: string }).webhookUrl).toMatch(
+        /^http:\/\/127\.0\.0\.1:\d+\/api\/meta-webhook$/,
+      );
+    } finally {
+      if (previous === undefined) delete process.env.BASE_URL;
+      else process.env.BASE_URL = previous;
+    }
+  });
+
   it('C31 GET and PUT .../meta/account answer 501 on a session whose engine is NULL', async () => {
     await get(`/api/sessions/${qrSessionId}/meta/account`).expect(501);
     await http()

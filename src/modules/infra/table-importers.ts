@@ -137,8 +137,8 @@ export const TABLE_IMPORTERS: AnyTableImporter[] = [
   defineTableImporter({
     key: 'sessions',
     label: 'session',
-    sql: `INSERT INTO sessions (id, name, status, phone, "pushName", config, "proxyUrl", "proxyType", "connectedAt", "lastActiveAt", "createdAt", "updatedAt", "desiredState")
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+    sql: `INSERT INTO sessions (id, name, status, phone, "pushName", config, "proxyUrl", "proxyType", "connectedAt", "lastActiveAt", "createdAt", "updatedAt", "desiredState", "engine")
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
     id: (session: SessionRow) => session.id,
     // Both columns reach an auth-directory path: the id keys the directory itself, and the name is
     // still weighed against it (the boot migration and the legacy purge on delete). An unvalidated
@@ -168,6 +168,9 @@ export const TABLE_IMPORTERS: AnyTableImporter[] = [
       // 'stopped' is the only value the column holds. A backup written before the column existed,
       // or an unknown value, restores as NULL: eligible for auto-start and takeover, as before.
       session.desiredState === 'stopped' ? 'stopped' : null,
+      // 'meta-cloud' is the only value the column holds (NULL = the deployment's ENGINE_TYPE). A backup
+      // written before the column existed, or an unknown value, restores as NULL, as before.
+      session.engine === 'meta-cloud' ? 'meta-cloud' : null,
     ],
   }),
 

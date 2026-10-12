@@ -45,6 +45,21 @@ describe('sessions table importer: desiredState', () => {
   });
 });
 
+describe('sessions table importer: engine', () => {
+  const sessions = TABLE_IMPORTERS.find(importer => importer.key === 'sessions');
+  const base = { id: '0a941dac-a965-45e7-b318-74ae8be134f0', name: 'my-bot', status: 'disconnected' };
+  const mapped = (extra: Record<string, unknown>): unknown[] => sessions!.map({ ...base, ...extra } as never);
+
+  it('C91 restores a meta-cloud row as meta-cloud, and a row without the field or with another value as NULL', () => {
+    expect(sessions?.sql).toContain('"engine"');
+    expect(sessions?.sql).toContain('$14');
+    expect(mapped({ engine: 'meta-cloud' })[13]).toBe('meta-cloud');
+    expect(mapped({})[13]).toBeNull();
+    expect(mapped({ engine: null })[13]).toBeNull();
+    expect(mapped({ engine: 'baileys' })[13]).toBeNull();
+  });
+});
+
 /**
  * A restore bypasses CreateWebhookDto. Dispatch reads a filters object without a conditions array as
  * "no filtering", so a malformed one stored verbatim would deliver every subscribed event; a non-list

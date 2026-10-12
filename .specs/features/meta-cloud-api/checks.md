@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/meta-cloud-api/plan.md`
 
-90 checks in 5 slices, governance and verification round 1 · 11 one-way doors · 2 open, of which 0 block building (both block go-live)
+92 checks in 5 slices, governance, verification round 1 and PR review · 11 one-way doors · 2 open, of which 0 block building (both block go-live)
 
 Proof commands, from `package.json` and `.github/workflows/ci.yml`:
 
@@ -331,12 +331,24 @@ Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-send.e2e-spec.ts 
 **C90** - With `META_CLOUD_ENABLED` unset and `ENGINE_TYPE=baileys`, `EngineFactory.create` for a `meta-cloud` row throws an error naming `META_CLOUD_ENABLED`, and neither the `meta-cloud` nor the Baileys plugin's `createEngine` is called (ENG-01, AC 6) ✅
 Proof: `npx jest src/engine/engine.factory.spec.ts -t "C90 "`
 
+### PR review additions
+
+Added after the Codex review of [doughslima-cyber/OpenWA#6](https://github.com/doughslima-cyber/OpenWA/pull/6) (inline comments on `session.entity.ts` and `meta-cloud-account.controller.ts`). Both are defects inside the approved shape, found after the round-2 PASS.
+
+**C91** - The sessions restore importer writes `engine`: a backed-up row with `engine: "meta-cloud"` restores as `meta-cloud`; a row without the field (a backup from before the column), with `null`, or with any other value restores as NULL (Impact - stored data · door 1) ✅
+Proof: `npx jest src/modules/infra/table-importers.spec.ts -t "C91 "`
+
+**C92** - `GET .../meta/account` reports `webhookUrl` as `<BASE_URL without trailing slashes>/api/meta-webhook` when `BASE_URL` is set (`https://openmsg.example.com/` gives `https://openmsg.example.com/api/meta-webhook`), and as `<protocol>://<host>/api/meta-webhook` of the request when it is unset (MCA-03, AC 23) ✅
+Proof: `npx jest --config ./test/jest-e2e.json test/meta-cloud-session.e2e-spec.ts -t "C92 "`
+
 ## Coverage
 
 | Set (size)                                                                     | Member -> proof                                                                                                                                                                                                                                                         | Unproven |
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `POST /api/sessions` statuses (3)                                              | 201 C11 · 400 C4, C5, C15, C16, C17 (each at HTTP) · 409 C18, C19                                                                                                                                                                                                       | -        |
 | `GET /api/sessions`, `GET /api/sessions/:id` statuses this feature changes (1) | 200 with `engine` C1; the 404 for an unknown id is existing and unchanged (`session.service.spec.ts:1023`)                                                                                                                                                              | -        |
+| `webhookUrl` sources (2)                                                       | `BASE_URL` set C92 · unset C92                                                                                                                                                                                                                                          | -        |
+| `sessions.engine` on restore (4 inputs)                                        | `meta-cloud` C91 · absent C91 · `null` C91 · other value C91                                                                                                                                                                                                            | -        |
 | `GET /api/sessions/:id/meta/account` statuses (5)                              | 200 C30 · 400 non-UUID id C88 · 403 fence C79 · 404 unknown session C31, no account row C85 · 501 C31                                                                                                                                                                   | -        |
 | `PUT /api/sessions/:id/meta/account` statuses (5)                              | 200 C32 · 400 DTO C33, `META_CLOUD_NOT_CONFIGURED` C84, non-UUID id C88 · 403 fence C79 (and the existing operator-role guard) · 404 unknown session C31, no account row C85 · 501 C31                                                                                  | -        |
 | `GET /api/meta-webhook` statuses (3)                                           | 200 C49 · 403 C50 · 404 C54                                                                                                                                                                                                                                             | -        |
@@ -422,7 +434,7 @@ signature check are proven only by the one path each e2e test happens to take.
 - authorization: C51, C52, C50 (webhook); existing - `@RequireUnscopedKey()` on create and on the account routes
   (C79 holds the fence)
 - concurrency: C19 (two creates for one number), C47 (per-number rate limiter), C65 (status order)
-- data lifecycle: C34 (logout clears the token), C35 (delete cascades), C81 (backup exclusion)
+- data lifecycle: C34 (logout clears the token), C35 (delete cascades), C81 (backup exclusion), C91 (restore keeps the engine)
 - dependency failure: C27, C28, C46, C48
 - state transitions: C22, C25, C26, C27, C34
 - observability: C53 (secret unset, logged once), C66 (dropped change logged); metrics are doc 32 F5
