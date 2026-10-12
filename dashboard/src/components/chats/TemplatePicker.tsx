@@ -18,6 +18,7 @@ import {
 const PLACEHOLDER = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g;
 const MEDIA_FORMATS = new Set(['IMAGE', 'VIDEO', 'DOCUMENT', 'LOCATION']);
 const PARAMETER_BUTTONS = new Set(['COPY_CODE', 'OTP']);
+const FILLABLE_COMPONENTS = new Set(['HEADER', 'BODY', 'FOOTER', 'BUTTONS']);
 
 const componentOf = (template: MetaTemplate, type: string): MetaTemplateComponent | undefined =>
   template.components.find(c => c.type === type);
@@ -41,6 +42,9 @@ function isNamed(template: MetaTemplate): boolean {
  * parameter, needs values this picker does not ask for (doc 32 F4).
  */
 function isSendable(template: MetaTemplate): boolean {
+  // A CAROUSEL nests per-card media and buttons, and Meta adds component types over time: anything
+  // beyond these four needs values this picker cannot ask for.
+  if (template.components.some(c => !FILLABLE_COMPONENTS.has(c.type))) return false;
   const header = componentOf(template, 'HEADER');
   if (header && (MEDIA_FORMATS.has(header.format ?? '') || (header.text ?? '').includes('{{'))) return false;
   const buttons = componentOf(template, 'BUTTONS')?.buttons ?? [];

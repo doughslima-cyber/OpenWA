@@ -264,3 +264,32 @@ test('C57 a list refused with META_TOKEN_MISSING shows the catalog text, not the
   assert.ok(await rtl.screen.findByText(en.metaCloud.errors.META_TOKEN_MISSING));
   assert.equal(rtl.screen.queryByText(serverMessage) === null, true);
 });
+
+test('C60 a template with a CAROUSEL component, and one with a component type the picker does not know, are not sendable', async () => {
+  templates = [
+    tpl('carousel_offer', {
+      components: [
+        body('Veja nossas ofertas'),
+        {
+          type: 'CAROUSEL',
+          cards: [
+            {
+              components: [
+                { type: 'HEADER', format: 'IMAGE' },
+                { type: 'BUTTONS', buttons: [{ type: 'URL', text: 'Ver', url: 'https://x.test/{{1}}' }] },
+              ],
+            },
+          ],
+        },
+      ],
+    }),
+    tpl('flash_sale', { components: [body('Oferta relâmpago'), { type: 'LIMITED_TIME_OFFER', text: 'Acaba hoje' }] }),
+  ];
+  renderPicker();
+  for (const name of ['carousel_offer', 'flash_sale']) {
+    await rtl.screen.findByText(/carousel_offer/);
+    rtl.fireEvent.click(item(name));
+    assert.ok(rtl.screen.getAllByText(en.metaCloud.templates.notSendable).length > 0);
+    assert.equal(sendButton().disabled, true);
+  }
+});
