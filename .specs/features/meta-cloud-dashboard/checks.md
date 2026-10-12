@@ -173,15 +173,15 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 Proof: `npx jest src/common/openapi/docs-06-contract.spec.ts -t "documents every contract operation|documents every route-specific status code" --testPathIgnorePatterns=/node_modules/`
 Proof: `npm run openapi:export && git diff --exit-code openapi.json`
 
-**C47** - The window and send routes carry `@ChatScoped('fenced')` and the chat-scope coverage gate holds; the global route fence holds (MCT-02, AC 28)
+**C47** - The window and send routes carry `@ChatScoped('fenced')` and the chat-scope coverage gate holds; the global route fence holds (MCT-02, AC 28) ✅
 Proof: `npx jest src/modules/auth/chat-scope-coverage.spec.ts -t "pairs every decorator with a parsed handler|keeps the pinned handlers unmarked"`
 Proof: `npx jest src/modules/auth/global-route-fence-coverage.spec.ts -t "no real controller exposes an unfenced deployment-global route" --testPathIgnorePatterns=/node_modules/`
 
-**C48** - SDK route and coverage checks pass with the new routes inside the excluded `meta` resource (door 1)
+**C48** - SDK route and coverage checks pass with the new routes inside the excluded `meta` resource (door 1) ✅
 Proof: `npm run check:sdk-routes`
 Proof: `npm run check:sdk-coverage`
 
-**C49** - The dashboard's hand types match the contract for every shape this feature reads (`Session.engine`, the account, template and window responses) on an LF checkout (Surface)
+**C49** - The dashboard's hand types match the contract for every shape this feature reads (`Session.engine`, the account, template and window responses) on an LF checkout (Surface) ✅
 Proof: `npm run check:contract-shapes` (run on an LF checkout - `git -c core.autocrlf=false worktree add` - per lesson L-001; on a CRLF Windows checkout the Python SDK pairs fail regardless)
 
 **C50** - The dashboard type-checks, lints and keeps its formatting (MCD-07)
