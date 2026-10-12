@@ -28,6 +28,8 @@ on:
         'src/**/*.service.ts',
         'src/engine/interfaces/whatsapp-engine.interface.ts',
       ]
+  # OpenMsg fork: push/pull_request events do not start workflows on this fork, so CI is run by hand.
+  workflow_dispatch:
 
 permissions:
   contents: read
