@@ -159,7 +159,7 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 
 ### S5 - Copy and conventions · 18 files · ~60 KB · ~15k
 
-**C44** - `npm run i18n:check` in `dashboard/` exits 0, and the en catalog holds every key this feature's components call (a test renders each new screen state and asserts no raw key string, i.e. no text matching a dotted catalog path, appears) (MCD-07, AC 39)
+**C44** - `npm run i18n:check` in `dashboard/` exits 0, and the en catalog holds every key this feature's components call (a test renders each new screen state and asserts no raw key string, i.e. no text matching a dotted catalog path, appears) (MCD-07, AC 39) ✅
 Proof: `cd dashboard && npm run i18n:check`
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C44 " src/pages/Sessions.metaCloud.test.ts`
 

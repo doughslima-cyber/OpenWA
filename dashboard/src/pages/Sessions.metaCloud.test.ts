@@ -5,8 +5,8 @@
 import '../test-helpers/register-hooks.ts';
 import { test, before, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { createElement } from 'react';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { createElement, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Session } from '../services/api';
 
@@ -25,6 +25,8 @@ const en = JSON.parse(readFileSync(new URL('../i18n/locales/en.json', import.met
     tokenHint: string;
     account: Record<string, string>;
     errors: Record<string, string>;
+    window: Record<string, string>;
+    templates: Record<string, string>;
   };
 };
 
@@ -100,6 +102,8 @@ let calls: Array<{ method: string; path: string; body?: unknown }> = [];
 let createReply: (() => Response) | null = null;
 let accountReply: (() => Response) | null = null;
 let putReply: ((token: string) => Response) | null = null;
+let templatesReply: (() => Response) | null = null;
+let sendReply: (() => Response) | null = null;
 
 const fresh = () =>
   [CLOUD_STARTING, CLOUD_READY, CLOUD_STOPPED, CLOUD_TOKEN_INVALID, CLOUD_TOKEN_MISSING, QR_SESSION].map(s => ({
@@ -141,6 +145,12 @@ function installFetchStub(): void {
       Object.assign(row, { status: 'initializing', engineLoaded: true });
       return Promise.resolve(jsonResponse(row));
     }
+    if (method === 'GET' && /^\/api\/sessions\/[^/]+\/meta\/templates/.test(path) && templatesReply) {
+      return Promise.resolve(templatesReply());
+    }
+    if (method === 'POST' && /^\/api\/sessions\/[^/]+\/messages\/send-text$/.test(path) && sendReply) {
+      return Promise.resolve(sendReply());
+    }
     if (/\/qr$/.test(path))
       return Promise.resolve(jsonResponse({ qrCode: 'data:image/png;base64,FAKE', status: 'qr_ready' }));
     return Promise.resolve(jsonResponse({ message: `unstubbed ${method} ${path}` }, 404));
@@ -176,6 +186,8 @@ afterEach(async () => {
   createReply = null;
   accountReply = null;
   putReply = null;
+  templatesReply = null;
+  sendReply = null;
 });
 
 async function renderSessions(): Promise<void> {
@@ -420,4 +432,234 @@ test('C14 a NULL-engine detail requests no meta account, shows no Cloud section 
   );
   assert.equal(rtl.within(dialog).queryByText(en.metaCloud.account.webhookUrl) === null, true);
   assert.equal(rtl.within(dialog).queryByText(en.metaCloud.account.title) === null, true);
+});
+
+// C44: a key missing from the catalog renders as its own dotted path ("metaCloud.badge"), so every new
+// screen state is rendered and its text and labels are searched for one.
+const CATALOG_PATH = new RegExp(`\\b(?:${Object.keys(en).join('|')})(?:\\.[A-Za-z][A-Za-z0-9_]*)+`);
+
+function rawKeysIn(root: HTMLElement): string[] {
+  // Text node by node: the element's textContent runs neighbours together ("META_TOKEN_INVALIDmetaCloud...").
+  const texts: string[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) texts.push(node.textContent ?? '');
+  for (const el of root.querySelectorAll('*')) {
+    for (const attr of ['aria-label', 'placeholder', 'title', 'alt']) {
+      const value = el.getAttribute(attr);
+      if (value) texts.push(value);
+    }
+  }
+  return texts.map(text => text.match(CATALOG_PATH)?.[0]).filter((m): m is string => Boolean(m));
+}
+
+function assertNoRawKeys(state: string): void {
+  assert.deepEqual(rawKeysIn(document.body), [], `${state} shows a raw catalog key`);
+}
+
+/** Literal `metaCloud.*` keys the dashboard code calls, and the codes it translates, that en.json lacks. */
+function missingFeatureKeys(): string[] {
+  const files: URL[] = [];
+  const walk = (dir: URL): void => {
+    for (const name of readdirSync(dir)) {
+      const entry = new URL(name, dir);
+      if (statSync(entry).isDirectory()) walk(new URL(`${name}/`, dir));
+      else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) files.push(entry);
+    }
+  };
+  walk(new URL('../', import.meta.url));
+  const resolve = (path: string): unknown =>
+    path.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], en);
+  const missing = new Set<string>();
+  for (const file of files) {
+    for (const [, key] of readFileSync(file, 'utf8').matchAll(/['"`](metaCloud\.[A-Za-z0-9_.]+)['"`]/g)) {
+      if (typeof resolve(key) !== 'string') missing.add(key);
+    }
+  }
+  const service = readFileSync(new URL('../services/metaCloud.ts', import.meta.url), 'utf8');
+  const codes = service.match(/META_ERROR_CODES = new Set\(\[([^\]]*)\]/)?.[1].match(/META_[A-Z_]+/g) ?? [];
+  assert.ok(codes.length > 0, 'the translated Cloud codes were found');
+  for (const code of codes) if (typeof resolve(`metaCloud.errors.${code}`) !== 'string') missing.add(code);
+  if (typeof resolve('campaigns.errors.CAMPAIGN_ENGINE_UNSUPPORTED') !== 'string') {
+    missing.add('campaigns.errors.CAMPAIGN_ENGINE_UNSUPPORTED');
+  }
+  return [...missing];
+}
+
+const PICKER_TEMPLATES = [
+  {
+    name: 'order_shipped',
+    language: 'pt_BR',
+    status: 'APPROVED',
+    category: 'UTILITY',
+    parameterFormat: 'POSITIONAL',
+    components: [{ type: 'BODY', text: 'Olá {{1}}, seu pedido {{2}} saiu' }],
+  },
+  {
+    name: 'promo_banner',
+    language: 'pt_BR',
+    status: 'APPROVED',
+    category: 'MARKETING',
+    parameterFormat: 'POSITIONAL',
+    components: [
+      { type: 'HEADER', format: 'IMAGE' },
+      { type: 'BODY', text: 'Promo' },
+    ],
+  },
+];
+
+function renderWithProviders(element: ReturnType<typeof createElement>): void {
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 1_000 } } });
+  rtl.render(
+    createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      createElement(RoleProvider, null, createElement(ToastProvider, null, element)),
+    ),
+  );
+}
+
+test('C44 every new screen state renders catalog text and no raw key', async () => {
+  assert.deepEqual(missingFeatureKeys(), [], 'keys the code calls that en.json lacks');
+
+  // Sessions: the Cloud cards (badge, token hints), the Cloud create form and each create refusal.
+  await renderSessions();
+  assertNoRawKeys('session cards');
+  openCreate();
+  fillCloud('cloud-keys', FIELDS);
+  assertNoRawKeys('Cloud create form');
+  for (const [status, code] of [
+    [400, 'META_CLOUD_DISABLED'],
+    [400, 'META_CLOUD_NOT_CONFIGURED'],
+    [409, 'META_PHONE_NUMBER_IN_USE'],
+  ] as const) {
+    rtl.cleanup();
+    createReply = () => jsonResponse({ statusCode: status, message: 'refused', code }, status);
+    await renderSessions();
+    openCreate();
+    fillCloud('cloud-keys', FIELDS);
+    rtl.fireEvent.click(createButton());
+    await rtl.screen.findAllByText(en.metaCloud.errors[code]);
+    assertNoRawKeys(`create refused with ${code}`);
+  }
+  createReply = null;
+
+  // Sessions: the Cloud detail while its account loads, loaded, and after a token change.
+  rtl.cleanup();
+  let releaseAccount: () => void = () => undefined;
+  const accountHeld = new Promise<void>(resolve => (releaseAccount = resolve));
+  accountReply = null;
+  const stubbedFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (url.endsWith('/meta/account') && (init?.method ?? 'GET') === 'GET') await accountHeld;
+    return stubbedFetch(input, init);
+  }) as typeof fetch;
+  try {
+    await renderSessions();
+    const dialog = await openDetail('cloud-ready');
+    await rtl.within(dialog).findByText(en.metaCloud.account.loading);
+    assertNoRawKeys('Cloud detail loading');
+    releaseAccount();
+    await rtl.within(dialog).findByText('•••• 1234');
+    assertNoRawKeys('Cloud detail');
+    rtl.fireEvent.change(rtl.within(dialog).getByLabelText(en.metaCloud.account.newToken), {
+      target: { value: 'new-token-5678' },
+    });
+    rtl.fireEvent.click(rtl.within(dialog).getByRole('button', { name: en.metaCloud.account.changeToken }));
+    await rtl.within(dialog).findByText('•••• 5678');
+    await rtl.screen.findByText(en.metaCloud.account.tokenChanged);
+    assertNoRawKeys('token changed');
+  } finally {
+    globalThis.fetch = stubbedFetch;
+  }
+
+  // Sessions: a refused token change.
+  rtl.cleanup();
+  putReply = () => jsonResponse({ statusCode: 400, message: 'refused', code: 'META_CLOUD_NOT_CONFIGURED' }, 400);
+  await renderSessions();
+  const failing = await openDetail('cloud-ready');
+  await rtl.within(failing).findByText('•••• 1234');
+  rtl.fireEvent.change(rtl.within(failing).getByLabelText(en.metaCloud.account.newToken), {
+    target: { value: 'another-token-0000' },
+  });
+  rtl.fireEvent.click(rtl.within(failing).getByRole('button', { name: en.metaCloud.account.changeToken }));
+  await rtl.within(failing).findByText(en.metaCloud.errors.META_CLOUD_NOT_CONFIGURED);
+  assertNoRawKeys('token change refused');
+  putReply = null;
+
+  // Chats: the template picker with a template chosen, an unsendable one, empty, and failing.
+  const { default: TemplatePicker } = await import('../components/chats/TemplatePicker.tsx');
+  const renderPicker = async (reply: () => Response): Promise<void> => {
+    rtl.cleanup();
+    await queryClient?.cancelQueries();
+    queryClient?.clear();
+    templatesReply = reply;
+    renderWithProviders(
+      createElement(TemplatePicker, {
+        sessionId: CLOUD_READY.id,
+        chatId: '5511988887777@c.us',
+        onClose: () => undefined,
+        onSent: () => undefined,
+      }),
+    );
+  };
+  await renderPicker(() => jsonResponse({ templates: PICKER_TEMPLATES }));
+  rtl.fireEvent.click(await rtl.screen.findByRole('button', { name: /^order_shipped\b/ }));
+  await rtl.screen.findByText(en.metaCloud.templates.preview);
+  assertNoRawKeys('template picker with a template chosen');
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: /^promo_banner\b/ }));
+  assertNoRawKeys('template picker with an unsendable template');
+  await renderPicker(() => jsonResponse({ templates: [] }));
+  await rtl.screen.findByText(en.metaCloud.templates.empty);
+  assertNoRawKeys('template picker empty');
+  await renderPicker(() => jsonResponse({ statusCode: 409, message: 'refused', code: 'META_TOKEN_INVALID' }, 409));
+  await rtl.screen.findByText(en.metaCloud.errors.META_TOKEN_INVALID);
+  assertNoRawKeys('template picker failing');
+
+  // Chats: the composer with the service window closed, and a send Meta refuses.
+  rtl.cleanup();
+  await queryClient?.cancelQueries();
+  queryClient?.clear();
+  const { default: ChatComposer } = await import('../components/chats/ChatComposer.tsx');
+  type ComposerProps = Parameters<typeof ChatComposer>[0];
+  const chat = {
+    id: '5511988887777@c.us',
+    name: 'Ana',
+    isGroup: false,
+    kind: 'individual',
+    unreadCount: 0,
+    timestamp: 0,
+    archived: false,
+    pinned: false,
+    muted: false,
+  } as ComposerProps['activeChat'];
+  sendReply = () => jsonResponse({ statusCode: 400, message: 'refused', code: 'META_OUTSIDE_SERVICE_WINDOW' }, 400);
+  function Composer() {
+    const [messageInput, setMessageInput] = useState('');
+    const [attachment, setAttachment] = useState<ComposerProps['attachment']>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [replyingTo, setReplyingTo] = useState<ComposerProps['replyingTo']>(null);
+    return createElement(ChatComposer, {
+      selectedSessionId: CLOUD_READY.id,
+      activeChat: chat,
+      replyingTo,
+      setReplyingTo,
+      onMessageAppended: () => undefined,
+      onSent: () => undefined,
+      messageInput,
+      setMessageInput,
+      attachment,
+      setAttachment,
+      previewUrl,
+      setPreviewUrl,
+      metaCloud: { windowClosed: true, onSendTemplate: () => undefined },
+    });
+  }
+  renderWithProviders(createElement(Composer));
+  assert.ok(rtl.screen.getByText(en.metaCloud.window.closed));
+  assertNoRawKeys('composer with the window closed');
+  rtl.fireEvent.change(document.querySelector('.message-text-input')!, { target: { value: 'oi' } });
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: 'Send' }));
+  await rtl.screen.findAllByText(en.metaCloud.errors.META_OUTSIDE_SERVICE_WINDOW);
+  assertNoRawKeys('send refused outside the window');
 });

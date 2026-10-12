@@ -1324,7 +1324,7 @@
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
       "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
-      "CAMPAIGN_ENGINE_UNSUPPORTED": "Campaigns are not available on an official Meta API session yet."
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Kampanye belum tersedia pada sesi API resmi Meta."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1387,66 +1387,65 @@
   },
   "metaCloud": {
     "engine": {
-      "label": "Connection",
-      "qr": "Linked device (QR)",
-      "cloud": "Official Meta API"
+      "label": "Koneksi",
+      "qr": "Perangkat tertaut (QR)",
+      "cloud": "API resmi Meta"
     },
     "fields": {
       "phoneNumberId": "Phone Number ID",
       "wabaId": "WABA ID",
-      "accessToken": "Access token",
-      "hint": "Copy these from your Meta app in Meta for Developers. The token is stored encrypted and never shown again."
+      "accessToken": "Token akses",
+      "hint": "Salin dari aplikasi Meta Anda di Meta for Developers. Token disimpan terenkripsi dan tidak pernah ditampilkan lagi."
     },
-    "badge": "Official API",
-    "tokenHint": "Meta refused the access token, or none is stored. Open the session details, change the token, then start the session again.",
+    "badge": "API resmi",
+    "tokenHint": "Meta menolak token akses, atau tidak ada yang tersimpan. Buka detail sesi, ganti token, lalu mulai ulang sesi.",
     "account": {
-      "title": "Official Meta API",
-      "loading": "Loading the Meta account...",
-      "displayPhoneNumber": "Phone number",
-      "verifiedName": "Verified name",
-      "qualityRating": "Quality rating",
-      "messagingLimitTier": "Messaging limit",
-      "token": "Access token",
-      "tokenNone": "None stored",
-      "webhookUrl": "Webhook URL",
-      "copy": "Copy",
-      "copied": "Webhook URL copied",
-      "webhookHint": "Register this URL as the callback URL in your Meta app, with the verify token set in META_WEBHOOK_VERIFY_TOKEN on the gateway.",
-      "newToken": "New access token",
-      "changeToken": "Change token",
-      "tokenChanged": "Access token changed",
-      "tokenChangedDesc": "The session uses the new token on its next request. Restart it if it needs action.",
-      "errorTitle": "Could not update the Meta account"
+      "title": "API resmi Meta",
+      "loading": "Memuat akun Meta...",
+      "displayPhoneNumber": "Nomor telepon",
+      "verifiedName": "Nama terverifikasi",
+      "qualityRating": "Peringkat kualitas",
+      "messagingLimitTier": "Batas pesan",
+      "token": "Token akses",
+      "tokenNone": "Tidak ada yang tersimpan",
+      "webhookUrl": "URL webhook",
+      "copy": "Salin",
+      "copied": "URL webhook disalin",
+      "webhookHint": "Daftarkan URL ini sebagai URL callback di aplikasi Meta Anda, dengan token verifikasi yang diatur di META_WEBHOOK_VERIFY_TOKEN pada gateway.",
+      "newToken": "Token akses baru",
+      "changeToken": "Ganti token",
+      "tokenChanged": "Token akses diganti",
+      "tokenChangedDesc": "Sesi memakai token baru pada permintaan berikutnya. Mulai ulang jika sesi memerlukan tindakan."
     },
     "errors": {
-      "META_CLOUD_DISABLED": "Official Meta API sessions are turned off on this gateway. Set META_CLOUD_ENABLED=true and restart it.",
-      "META_CLOUD_NOT_CONFIGURED": "The gateway cannot store Meta tokens: set META_CLOUD_ENCRYPTION_KEY (32 bytes in base64) and restart it.",
-      "META_PHONE_NUMBER_IN_USE": "This Phone Number ID is already used by another session.",
-      "META_OUTSIDE_SERVICE_WINDOW": "The 24-hour window to reply has closed. Send an approved template instead.",
-      "META_RECIPIENT_UNAVAILABLE": "This number cannot receive WhatsApp messages from your business.",
-      "META_LIMIT_REACHED": "The messaging limit of this number has been reached. Try again later.",
-      "META_RATE_LIMITED": "Meta is limiting how fast this number sends. Try again in a moment.",
-      "META_TOKEN_INVALID": "Meta refused the access token. Change the token in the session details.",
-      "META_TOKEN_MISSING": "No access token is stored for this session. Change the token in the session details.",
-      "META_ACCOUNT_RESTRICTED": "Meta has restricted this WhatsApp Business account.",
-      "META_TEMPLATE_INVALID": "Meta did not accept this template. Check its name, language and parameters."
+      "META_CLOUD_DISABLED": "Sesi API resmi Meta dinonaktifkan di gateway ini. Atur META_CLOUD_ENABLED=true lalu mulai ulang.",
+      "META_CLOUD_NOT_CONFIGURED": "Gateway tidak dapat menyimpan token Meta: atur META_CLOUD_ENCRYPTION_KEY (32 byte dalam base64) lalu mulai ulang.",
+      "META_PHONE_NUMBER_IN_USE": "Phone Number ID ini sudah dipakai oleh sesi lain.",
+      "META_OUTSIDE_SERVICE_WINDOW": "Jendela 24 jam untuk membalas sudah tertutup. Kirim templat yang disetujui sebagai gantinya.",
+      "META_RECIPIENT_UNAVAILABLE": "Nomor ini tidak dapat menerima pesan WhatsApp dari bisnis Anda.",
+      "META_LIMIT_REACHED": "Batas pesan nomor ini telah tercapai. Coba lagi nanti.",
+      "META_RATE_LIMITED": "Meta membatasi kecepatan pengiriman nomor ini. Coba lagi sebentar lagi.",
+      "META_TOKEN_INVALID": "Meta menolak token akses. Ganti token di detail sesi.",
+      "META_TOKEN_MISSING": "Tidak ada token akses yang tersimpan untuk sesi ini. Ganti token di detail sesi.",
+      "META_ACCOUNT_RESTRICTED": "Meta telah membatasi akun WhatsApp Business ini.",
+      "META_TEMPLATE_INVALID": "Meta tidak menerima templat ini. Periksa nama, bahasa, dan parameternya."
     },
     "window": {
-      "closed": "The 24-hour window to reply to this customer has closed. Send an approved template to reopen the conversation."
+      "closed": "Jendela 24 jam untuk membalas pelanggan ini sudah tertutup. Kirim templat yang disetujui untuk membuka kembali percakapan."
     },
     "templates": {
-      "open": "Send template",
-      "title": "Send an approved template",
-      "refresh": "Refresh",
-      "loading": "Loading templates...",
-      "empty": "No approved templates. Templates are created and approved in Meta's WhatsApp Manager.",
-      "notSendable": "Not sendable from the dashboard: it has a header variable or media, or buttons with parameters.",
-      "choose": "Choose a template",
-      "preview": "Preview",
-      "send": "Send",
-      "sentTitle": "Template sent",
-      "errorTitle": "Could not send the template"
+      "open": "Kirim templat",
+      "title": "Kirim templat yang disetujui",
+      "refresh": "Muat ulang",
+      "loading": "Memuat templat...",
+      "empty": "Tidak ada templat yang disetujui. Templat dibuat dan disetujui di WhatsApp Manager milik Meta.",
+      "notSendable": "Tidak dapat dikirim dari dasbor: memiliki variabel atau media di header, atau tombol dengan parameter.",
+      "choose": "Pilih templat",
+      "preview": "Pratinjau",
+      "send": "Kirim",
+      "sentTitle": "Templat terkirim",
+      "errorTitle": "Tidak dapat mengirim templat"
     },
-    "campaignsNote": "Campaigns on an official Meta API session arrive with templates in a later version."
+    "campaignsNote": "Kampanye pada sesi API resmi Meta akan hadir bersama templat di versi mendatang."
   }
 }

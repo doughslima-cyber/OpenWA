@@ -1324,7 +1324,7 @@
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
       "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
-      "CAMPAIGN_ENGINE_UNSUPPORTED": "Campaigns are not available on an official Meta API session yet."
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Kampanyalar resmi Meta API oturumunda henüz kullanılamıyor."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1387,66 +1387,65 @@
   },
   "metaCloud": {
     "engine": {
-      "label": "Connection",
-      "qr": "Linked device (QR)",
-      "cloud": "Official Meta API"
+      "label": "Bağlantı",
+      "qr": "Bağlı cihaz (QR)",
+      "cloud": "Resmi Meta API"
     },
     "fields": {
       "phoneNumberId": "Phone Number ID",
       "wabaId": "WABA ID",
-      "accessToken": "Access token",
-      "hint": "Copy these from your Meta app in Meta for Developers. The token is stored encrypted and never shown again."
+      "accessToken": "Erişim belirteci",
+      "hint": "Bunları Meta for Developers'taki Meta uygulamanızdan kopyalayın. Belirteç şifreli saklanır ve bir daha gösterilmez."
     },
-    "badge": "Official API",
-    "tokenHint": "Meta refused the access token, or none is stored. Open the session details, change the token, then start the session again.",
+    "badge": "Resmi API",
+    "tokenHint": "Meta erişim belirtecini reddetti veya kayıtlı bir belirteç yok. Oturum detaylarını açın, belirteci değiştirin ve oturumu yeniden başlatın.",
     "account": {
-      "title": "Official Meta API",
-      "loading": "Loading the Meta account...",
-      "displayPhoneNumber": "Phone number",
-      "verifiedName": "Verified name",
-      "qualityRating": "Quality rating",
-      "messagingLimitTier": "Messaging limit",
-      "token": "Access token",
-      "tokenNone": "None stored",
+      "title": "Resmi Meta API",
+      "loading": "Meta hesabı yükleniyor...",
+      "displayPhoneNumber": "Telefon numarası",
+      "verifiedName": "Doğrulanmış ad",
+      "qualityRating": "Kalite puanı",
+      "messagingLimitTier": "Mesaj limiti",
+      "token": "Erişim belirteci",
+      "tokenNone": "Kayıtlı yok",
       "webhookUrl": "Webhook URL",
-      "copy": "Copy",
-      "copied": "Webhook URL copied",
-      "webhookHint": "Register this URL as the callback URL in your Meta app, with the verify token set in META_WEBHOOK_VERIFY_TOKEN on the gateway.",
-      "newToken": "New access token",
-      "changeToken": "Change token",
-      "tokenChanged": "Access token changed",
-      "tokenChangedDesc": "The session uses the new token on its next request. Restart it if it needs action.",
-      "errorTitle": "Could not update the Meta account"
+      "copy": "Kopyala",
+      "copied": "Webhook URL kopyalandı",
+      "webhookHint": "Bu URL'yi Meta uygulamanızda geri çağırma URL'si olarak kaydedin; doğrulama belirteci ağ geçidinde META_WEBHOOK_VERIFY_TOKEN ile ayarlanır.",
+      "newToken": "Yeni erişim belirteci",
+      "changeToken": "Belirteci değiştir",
+      "tokenChanged": "Erişim belirteci değiştirildi",
+      "tokenChangedDesc": "Oturum yeni belirteci bir sonraki istekte kullanır. İşlem gerektiriyorsa yeniden başlatın."
     },
     "errors": {
-      "META_CLOUD_DISABLED": "Official Meta API sessions are turned off on this gateway. Set META_CLOUD_ENABLED=true and restart it.",
-      "META_CLOUD_NOT_CONFIGURED": "The gateway cannot store Meta tokens: set META_CLOUD_ENCRYPTION_KEY (32 bytes in base64) and restart it.",
-      "META_PHONE_NUMBER_IN_USE": "This Phone Number ID is already used by another session.",
-      "META_OUTSIDE_SERVICE_WINDOW": "The 24-hour window to reply has closed. Send an approved template instead.",
-      "META_RECIPIENT_UNAVAILABLE": "This number cannot receive WhatsApp messages from your business.",
-      "META_LIMIT_REACHED": "The messaging limit of this number has been reached. Try again later.",
-      "META_RATE_LIMITED": "Meta is limiting how fast this number sends. Try again in a moment.",
-      "META_TOKEN_INVALID": "Meta refused the access token. Change the token in the session details.",
-      "META_TOKEN_MISSING": "No access token is stored for this session. Change the token in the session details.",
-      "META_ACCOUNT_RESTRICTED": "Meta has restricted this WhatsApp Business account.",
-      "META_TEMPLATE_INVALID": "Meta did not accept this template. Check its name, language and parameters."
+      "META_CLOUD_DISABLED": "Resmi Meta API oturumları bu ağ geçidinde kapalı. META_CLOUD_ENABLED=true ayarlayın ve yeniden başlatın.",
+      "META_CLOUD_NOT_CONFIGURED": "Ağ geçidi Meta belirteçlerini saklayamıyor: META_CLOUD_ENCRYPTION_KEY (base64 olarak 32 bayt) ayarlayın ve yeniden başlatın.",
+      "META_PHONE_NUMBER_IN_USE": "Bu Phone Number ID başka bir oturum tarafından kullanılıyor.",
+      "META_OUTSIDE_SERVICE_WINDOW": "Yanıt vermek için 24 saatlik pencere kapandı. Bunun yerine onaylı bir şablon gönderin.",
+      "META_RECIPIENT_UNAVAILABLE": "Bu numara işletmenizden WhatsApp mesajı alamaz.",
+      "META_LIMIT_REACHED": "Bu numaranın mesaj limitine ulaşıldı. Daha sonra tekrar deneyin.",
+      "META_RATE_LIMITED": "Meta bu numaranın gönderim hızını sınırlıyor. Birazdan tekrar deneyin.",
+      "META_TOKEN_INVALID": "Meta erişim belirtecini reddetti. Belirteci oturum detaylarından değiştirin.",
+      "META_TOKEN_MISSING": "Bu oturum için kayıtlı erişim belirteci yok. Belirteci oturum detaylarından değiştirin.",
+      "META_ACCOUNT_RESTRICTED": "Meta bu WhatsApp Business hesabını kısıtladı.",
+      "META_TEMPLATE_INVALID": "Meta bu şablonu kabul etmedi. Adını, dilini ve parametrelerini kontrol edin."
     },
     "window": {
-      "closed": "The 24-hour window to reply to this customer has closed. Send an approved template to reopen the conversation."
+      "closed": "Bu müşteriye yanıt vermek için 24 saatlik pencere kapandı. Görüşmeyi yeniden açmak için onaylı bir şablon gönderin."
     },
     "templates": {
-      "open": "Send template",
-      "title": "Send an approved template",
-      "refresh": "Refresh",
-      "loading": "Loading templates...",
-      "empty": "No approved templates. Templates are created and approved in Meta's WhatsApp Manager.",
-      "notSendable": "Not sendable from the dashboard: it has a header variable or media, or buttons with parameters.",
-      "choose": "Choose a template",
-      "preview": "Preview",
-      "send": "Send",
-      "sentTitle": "Template sent",
-      "errorTitle": "Could not send the template"
+      "open": "Şablon gönder",
+      "title": "Onaylı bir şablon gönder",
+      "refresh": "Yenile",
+      "loading": "Şablonlar yükleniyor...",
+      "empty": "Onaylı şablon yok. Şablonlar Meta'nın WhatsApp Manager'ında oluşturulur ve onaylanır.",
+      "notSendable": "Panelden gönderilemez: başlıkta değişken veya medya ya da parametreli düğmeler içeriyor.",
+      "choose": "Bir şablon seçin",
+      "preview": "Önizleme",
+      "send": "Gönder",
+      "sentTitle": "Şablon gönderildi",
+      "errorTitle": "Şablon gönderilemedi"
     },
-    "campaignsNote": "Campaigns on an official Meta API session arrive with templates in a later version."
+    "campaignsNote": "Resmi Meta API oturumunda kampanyalar, şablonlarla birlikte sonraki bir sürümde gelecek."
   }
 }

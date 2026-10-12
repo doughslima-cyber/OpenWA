@@ -1415,8 +1415,7 @@
       "newToken": "New access token",
       "changeToken": "Change token",
       "tokenChanged": "Access token changed",
-      "tokenChangedDesc": "The session uses the new token on its next request. Restart it if it needs action.",
-      "errorTitle": "Could not update the Meta account"
+      "tokenChangedDesc": "The session uses the new token on its next request. Restart it if it needs action."
     },
     "errors": {
       "META_CLOUD_DISABLED": "Official Meta API sessions are turned off on this gateway. Set META_CLOUD_ENABLED=true and restart it.",

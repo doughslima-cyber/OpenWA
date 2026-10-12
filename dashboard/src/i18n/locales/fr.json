@@ -1330,7 +1330,7 @@
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
       "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
-      "CAMPAIGN_ENGINE_UNSUPPORTED": "Campaigns are not available on an official Meta API session yet."
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Les campagnes ne sont pas encore disponibles sur une session de l'API officielle de Meta."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1393,66 +1393,65 @@
   },
   "metaCloud": {
     "engine": {
-      "label": "Connection",
-      "qr": "Linked device (QR)",
-      "cloud": "Official Meta API"
+      "label": "Connexion",
+      "qr": "Appareil associé (QR)",
+      "cloud": "API officielle de Meta"
     },
     "fields": {
       "phoneNumberId": "Phone Number ID",
       "wabaId": "WABA ID",
-      "accessToken": "Access token",
-      "hint": "Copy these from your Meta app in Meta for Developers. The token is stored encrypted and never shown again."
+      "accessToken": "Jeton d'accès",
+      "hint": "Copiez-les depuis votre app Meta dans Meta for Developers. Le jeton est stocké chiffré et n'est plus jamais affiché."
     },
-    "badge": "Official API",
-    "tokenHint": "Meta refused the access token, or none is stored. Open the session details, change the token, then start the session again.",
+    "badge": "API officielle",
+    "tokenHint": "Meta a refusé le jeton d'accès, ou aucun n'est stocké. Ouvrez les détails de la session, changez le jeton, puis redémarrez la session.",
     "account": {
-      "title": "Official Meta API",
-      "loading": "Loading the Meta account...",
-      "displayPhoneNumber": "Phone number",
-      "verifiedName": "Verified name",
-      "qualityRating": "Quality rating",
-      "messagingLimitTier": "Messaging limit",
-      "token": "Access token",
-      "tokenNone": "None stored",
-      "webhookUrl": "Webhook URL",
-      "copy": "Copy",
-      "copied": "Webhook URL copied",
-      "webhookHint": "Register this URL as the callback URL in your Meta app, with the verify token set in META_WEBHOOK_VERIFY_TOKEN on the gateway.",
-      "newToken": "New access token",
-      "changeToken": "Change token",
-      "tokenChanged": "Access token changed",
-      "tokenChangedDesc": "The session uses the new token on its next request. Restart it if it needs action.",
-      "errorTitle": "Could not update the Meta account"
+      "title": "API officielle de Meta",
+      "loading": "Chargement du compte Meta...",
+      "displayPhoneNumber": "Numéro de téléphone",
+      "verifiedName": "Nom vérifié",
+      "qualityRating": "Note de qualité",
+      "messagingLimitTier": "Limite d'envoi",
+      "token": "Jeton d'accès",
+      "tokenNone": "Aucun stocké",
+      "webhookUrl": "URL du webhook",
+      "copy": "Copier",
+      "copied": "URL du webhook copiée",
+      "webhookHint": "Enregistrez cette URL comme URL de rappel dans votre app Meta, avec le jeton de vérification défini dans META_WEBHOOK_VERIFY_TOKEN sur la passerelle.",
+      "newToken": "Nouveau jeton d'accès",
+      "changeToken": "Changer le jeton",
+      "tokenChanged": "Jeton d'accès changé",
+      "tokenChangedDesc": "La session utilise le nouveau jeton à sa prochaine requête. Redémarrez-la si elle demande une action."
     },
     "errors": {
-      "META_CLOUD_DISABLED": "Official Meta API sessions are turned off on this gateway. Set META_CLOUD_ENABLED=true and restart it.",
-      "META_CLOUD_NOT_CONFIGURED": "The gateway cannot store Meta tokens: set META_CLOUD_ENCRYPTION_KEY (32 bytes in base64) and restart it.",
-      "META_PHONE_NUMBER_IN_USE": "This Phone Number ID is already used by another session.",
-      "META_OUTSIDE_SERVICE_WINDOW": "The 24-hour window to reply has closed. Send an approved template instead.",
-      "META_RECIPIENT_UNAVAILABLE": "This number cannot receive WhatsApp messages from your business.",
-      "META_LIMIT_REACHED": "The messaging limit of this number has been reached. Try again later.",
-      "META_RATE_LIMITED": "Meta is limiting how fast this number sends. Try again in a moment.",
-      "META_TOKEN_INVALID": "Meta refused the access token. Change the token in the session details.",
-      "META_TOKEN_MISSING": "No access token is stored for this session. Change the token in the session details.",
-      "META_ACCOUNT_RESTRICTED": "Meta has restricted this WhatsApp Business account.",
-      "META_TEMPLATE_INVALID": "Meta did not accept this template. Check its name, language and parameters."
+      "META_CLOUD_DISABLED": "Les sessions de l'API officielle de Meta sont désactivées sur cette passerelle. Définissez META_CLOUD_ENABLED=true et redémarrez-la.",
+      "META_CLOUD_NOT_CONFIGURED": "La passerelle ne peut pas stocker les jetons Meta : définissez META_CLOUD_ENCRYPTION_KEY (32 octets en base64) et redémarrez-la.",
+      "META_PHONE_NUMBER_IN_USE": "Ce Phone Number ID est déjà utilisé par une autre session.",
+      "META_OUTSIDE_SERVICE_WINDOW": "La fenêtre de 24 heures pour répondre est fermée. Envoyez plutôt un template approuvé.",
+      "META_RECIPIENT_UNAVAILABLE": "Ce numéro ne peut pas recevoir de messages WhatsApp de votre entreprise.",
+      "META_LIMIT_REACHED": "La limite d'envoi de ce numéro est atteinte. Réessayez plus tard.",
+      "META_RATE_LIMITED": "Meta limite la cadence d'envoi de ce numéro. Réessayez dans un instant.",
+      "META_TOKEN_INVALID": "Meta a refusé le jeton d'accès. Changez le jeton dans les détails de la session.",
+      "META_TOKEN_MISSING": "Aucun jeton d'accès n'est stocké pour cette session. Changez le jeton dans les détails de la session.",
+      "META_ACCOUNT_RESTRICTED": "Meta a restreint ce compte WhatsApp Business.",
+      "META_TEMPLATE_INVALID": "Meta n'a pas accepté ce template. Vérifiez son nom, sa langue et ses paramètres."
     },
     "window": {
-      "closed": "The 24-hour window to reply to this customer has closed. Send an approved template to reopen the conversation."
+      "closed": "La fenêtre de 24 heures pour répondre à ce client est fermée. Envoyez un template approuvé pour rouvrir la conversation."
     },
     "templates": {
-      "open": "Send template",
-      "title": "Send an approved template",
-      "refresh": "Refresh",
-      "loading": "Loading templates...",
-      "empty": "No approved templates. Templates are created and approved in Meta's WhatsApp Manager.",
-      "notSendable": "Not sendable from the dashboard: it has a header variable or media, or buttons with parameters.",
-      "choose": "Choose a template",
-      "preview": "Preview",
-      "send": "Send",
-      "sentTitle": "Template sent",
-      "errorTitle": "Could not send the template"
+      "open": "Envoyer un template",
+      "title": "Envoyer un template approuvé",
+      "refresh": "Actualiser",
+      "loading": "Chargement des templates...",
+      "empty": "Aucun template approuvé. Les templates sont créés et approuvés dans le WhatsApp Manager de Meta.",
+      "notSendable": "Impossible à envoyer depuis le tableau de bord : il a une variable ou un média dans l'en-tête, ou des boutons avec paramètres.",
+      "choose": "Choisissez un template",
+      "preview": "Aperçu",
+      "send": "Envoyer",
+      "sentTitle": "Template envoyé",
+      "errorTitle": "Impossible d'envoyer le template"
     },
-    "campaignsNote": "Campaigns on an official Meta API session arrive with templates in a later version."
+    "campaignsNote": "Les campagnes sur une session de l'API officielle de Meta arriveront avec les templates dans une version ultérieure."
   }
 }
