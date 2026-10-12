@@ -13,9 +13,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-dashboard
-**Where**: C1-C52 closed; C1-C43 at `15310ffd` (builder A: S1-S4), C44-C52 at `2f62529a` (builder B: S5 and governance)
+**Where**: verification round 1 FAIL fixed: C1-C56 closed; round 1 fixes at `bf7f6241` (C53-C56 added, C52 gains a proof line; non-cloud fixtures carry real engine strings; `Session.engine` is `string`)
 **In progress**: none
-**Next step**: orchestrator dispatches the Verifier over C1-C52
+**Next step**: orchestrator dispatches the Verifier for round 2 over C1-C56
 **Blockers**: none for the build; go-live waits on plan open question 1
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-dashboard

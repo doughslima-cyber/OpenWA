@@ -322,3 +322,7 @@ Intended split, with the arithmetic, written before any code. Budget 150k tokens
 - Boundary: C44-C52 closed at `2f62529a` (builder B); C1-C52 all closed, ready for the Verifier.
 - Settled mid-build: none by the user. `metaCloud.account.errorTitle` was unused and is removed from all 15 catalogs. `check:contract-shapes` did not read `dashboard/src/services/metaCloud.ts`, so C49's account, template, window and send-body shapes were ungated; the gate now reads it with `api.ts` (4 pairs, floor 26). `Session.engine` stays ungated: the dashboard `Session` pair is excluded by design, and the hand type stays `engine?: string | null` because C1's test pins a `null` engine.
 - Abandoned: narrowing `Session.engine` to `string` (breaks C1's approved test).
+
+- Boundary: verification round 1 fixes closed at `bf7f6241`; C1-C56 all closed (C53-C56 new, C52 gains a proof line), ready for round 2.
+- Settled mid-build: by the user, non-cloud fixtures (C1, C7, C14, C21, C42) carry `engine: 'baileys'` or `'whatsapp-web.js'`, and `Session.engine` is narrowed to a required `string` (decision 2026-10-12), proven against `openapi.json` by C53. The templates route's no-token 409 carries no `code` (the service raises `EngineNotReadyError`), so C56 pins its `message`.
+- Abandoned: none. The earlier abandonment of narrowing `Session.engine` is reversed.
