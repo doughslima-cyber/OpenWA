@@ -12,10 +12,10 @@
 
 ## Handoff
 
-**Feature**: meta-cloud-api
-**Where**: C1-C99 verified - round 4 PASS (`c8f2363f`), cleanups in `79b92cae`; PR #6 open, all review threads resolved
+**Feature**: meta-cloud-dashboard
+**Where**: C1-C62 verified - round 6 PASS (`2f0ca69d`), human walk passed 2026-10-12, PR #7 review threads resolved
 **In progress**: none
-**Next step**: get CI to run on PR #6, then merge; go-live needs a Meta app, WABA and number (plan open questions 1 and 2), then doc 32 F0 to replace documented webhook fixtures with captured ones
-**Blockers**: CI has never run on the fork (no workflow runs); go-live waits on plan open questions 1 and 2
+**Next step**: merge PR #7 once CI (run by hand on this fork) is green on the head
+**Blockers**: none for merging; go-live waits on a Meta app, WABA, number and an approved template
 **Uncommitted**: none
-**Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
+**Branch**: claude/tlc-spec-lean-meta-cloud-dashboard

@@ -1348,7 +1348,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "الحملات غير متاحة بعد على جلسة واجهة Meta الرسمية."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1408,5 +1409,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "الاتصال",
+      "qr": "جهاز مرتبط (QR)",
+      "cloud": "واجهة Meta الرسمية"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "رمز الوصول",
+      "hint": "انسخ هذه القيم من تطبيقك في Meta for Developers. يُخزَّن الرمز مشفّرًا ولا يُعرض مرة أخرى."
+    },
+    "badge": "الواجهة الرسمية",
+    "tokenHint": "رفضت Meta رمز الوصول، أو لا يوجد رمز مخزَّن. افتح تفاصيل الجلسة، وغيّر الرمز، ثم ابدأ الجلسة من جديد.",
+    "account": {
+      "title": "واجهة Meta الرسمية",
+      "loading": "جارٍ تحميل حساب Meta...",
+      "displayPhoneNumber": "رقم الهاتف",
+      "verifiedName": "الاسم الموثَّق",
+      "qualityRating": "تقييم الجودة",
+      "messagingLimitTier": "حد الرسائل",
+      "token": "رمز الوصول",
+      "tokenNone": "لا يوجد رمز مخزَّن",
+      "webhookUrl": "رابط الويب هوك",
+      "copy": "نسخ",
+      "copied": "تم نسخ رابط الويب هوك",
+      "webhookHint": "سجّل هذا الرابط كرابط callback في تطبيق Meta، مع رمز التحقق المحدد في META_WEBHOOK_VERIFY_TOKEN على البوابة.",
+      "newToken": "رمز وصول جديد",
+      "changeToken": "تغيير الرمز",
+      "tokenChanged": "تم تغيير رمز الوصول",
+      "tokenChangedDesc": "تستخدم الجلسة الرمز الجديد في طلبها التالي. أعد تشغيلها إذا كانت تتطلب إجراءً."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "جلسات واجهة Meta الرسمية معطّلة على هذه البوابة. اضبط META_CLOUD_ENABLED=true ثم أعد تشغيلها.",
+      "META_CLOUD_NOT_CONFIGURED": "لا تستطيع البوابة تخزين رموز Meta: اضبط META_CLOUD_ENCRYPTION_KEY (32 بايت بترميز base64) ثم أعد تشغيلها.",
+      "META_PHONE_NUMBER_IN_USE": "معرّف Phone Number ID هذا مستخدم بالفعل في جلسة أخرى.",
+      "META_OUTSIDE_SERVICE_WINDOW": "أُغلقت نافذة الـ 24 ساعة للرد. أرسل قالبًا معتمدًا بدلًا من ذلك.",
+      "META_RECIPIENT_UNAVAILABLE": "لا يمكن لهذا الرقم استلام رسائل WhatsApp من نشاطك التجاري.",
+      "META_LIMIT_REACHED": "تم بلوغ حد الرسائل لهذا الرقم. حاول مرة أخرى لاحقًا.",
+      "META_RATE_LIMITED": "تحدّ Meta من سرعة الإرسال من هذا الرقم. حاول مرة أخرى بعد قليل.",
+      "META_TOKEN_INVALID": "رفضت Meta رمز الوصول. غيّر الرمز من تفاصيل الجلسة.",
+      "META_TOKEN_MISSING": "لا يوجد رمز وصول مخزَّن لهذه الجلسة. غيّر الرمز من تفاصيل الجلسة.",
+      "META_ACCOUNT_RESTRICTED": "قيّدت Meta حساب WhatsApp Business هذا.",
+      "META_TEMPLATE_INVALID": "لم تقبل Meta هذا القالب. تحقّق من اسمه ولغته ومعاملاته."
+    },
+    "window": {
+      "closed": "أُغلقت نافذة الـ 24 ساعة للرد على هذا العميل. أرسل قالبًا معتمدًا لإعادة فتح المحادثة."
+    },
+    "templates": {
+      "open": "إرسال قالب",
+      "title": "إرسال قالب معتمد",
+      "refresh": "تحديث",
+      "loading": "جارٍ تحميل القوالب...",
+      "empty": "لا توجد قوالب معتمدة. تُنشأ القوالب وتُعتمد في WhatsApp Manager من Meta.",
+      "notSendable": "لا يمكن إرساله من لوحة التحكم: يحتوي على متغير أو وسائط في الترويسة، أو أزرار بمعاملات.",
+      "choose": "اختر قالبًا",
+      "preview": "معاينة",
+      "send": "إرسال",
+      "sentTitle": "تم إرسال القالب",
+      "errorTitle": "تعذّر إرسال القالب"
+    },
+    "campaignsNote": "تصل الحملات على جلسة واجهة Meta الرسمية مع القوالب في إصدار لاحق."
   }
 }

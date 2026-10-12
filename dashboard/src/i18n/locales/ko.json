@@ -1323,7 +1323,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Meta 공식 API 세션에서는 아직 캠페인을 사용할 수 없습니다."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1383,5 +1384,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "연결 방식",
+      "qr": "연결된 기기 (QR)",
+      "cloud": "Meta 공식 API"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "액세스 토큰",
+      "hint": "Meta for Developers의 Meta 앱에서 복사하세요. 토큰은 암호화되어 저장되며 다시 표시되지 않습니다."
+    },
+    "badge": "공식 API",
+    "tokenHint": "Meta가 액세스 토큰을 거부했거나 저장된 토큰이 없습니다. 세션 상세 정보를 열어 토큰을 변경한 뒤 세션을 다시 시작하세요.",
+    "account": {
+      "title": "Meta 공식 API",
+      "loading": "Meta 계정 로딩 중...",
+      "displayPhoneNumber": "전화번호",
+      "verifiedName": "인증된 이름",
+      "qualityRating": "품질 등급",
+      "messagingLimitTier": "메시지 한도",
+      "token": "액세스 토큰",
+      "tokenNone": "저장된 토큰 없음",
+      "webhookUrl": "웹훅 URL",
+      "copy": "복사",
+      "copied": "웹훅 URL을 복사했습니다",
+      "webhookHint": "이 URL을 Meta 앱의 콜백 URL로 등록하고, 인증 토큰은 게이트웨이의 META_WEBHOOK_VERIFY_TOKEN에 설정된 값을 사용하세요.",
+      "newToken": "새 액세스 토큰",
+      "changeToken": "토큰 변경",
+      "tokenChanged": "액세스 토큰이 변경되었습니다",
+      "tokenChangedDesc": "세션은 다음 요청부터 새 토큰을 사용합니다. 조치가 필요하면 세션을 다시 시작하세요."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "이 게이트웨이에서 Meta 공식 API 세션이 꺼져 있습니다. META_CLOUD_ENABLED=true로 설정하고 다시 시작하세요.",
+      "META_CLOUD_NOT_CONFIGURED": "게이트웨이가 Meta 토큰을 저장할 수 없습니다. META_CLOUD_ENCRYPTION_KEY(base64로 32바이트)를 설정하고 다시 시작하세요.",
+      "META_PHONE_NUMBER_IN_USE": "이 Phone Number ID는 이미 다른 세션에서 사용 중입니다.",
+      "META_OUTSIDE_SERVICE_WINDOW": "답장 가능한 24시간 창이 닫혔습니다. 대신 승인된 템플릿을 보내세요.",
+      "META_RECIPIENT_UNAVAILABLE": "이 번호는 귀하의 비즈니스에서 보낸 WhatsApp 메시지를 받을 수 없습니다.",
+      "META_LIMIT_REACHED": "이 번호의 메시지 한도에 도달했습니다. 나중에 다시 시도하세요.",
+      "META_RATE_LIMITED": "Meta가 이 번호의 발송 속도를 제한하고 있습니다. 잠시 후 다시 시도하세요.",
+      "META_TOKEN_INVALID": "Meta가 액세스 토큰을 거부했습니다. 세션 상세 정보에서 토큰을 변경하세요.",
+      "META_TOKEN_MISSING": "이 세션에 저장된 액세스 토큰이 없습니다. 세션 상세 정보에서 토큰을 변경하세요.",
+      "META_ACCOUNT_RESTRICTED": "Meta가 이 WhatsApp Business 계정을 제한했습니다.",
+      "META_TEMPLATE_INVALID": "Meta가 이 템플릿을 받아들이지 않았습니다. 이름, 언어, 매개변수를 확인하세요."
+    },
+    "window": {
+      "closed": "이 고객에게 답장할 수 있는 24시간 창이 닫혔습니다. 대화를 다시 열려면 승인된 템플릿을 보내세요."
+    },
+    "templates": {
+      "open": "템플릿 보내기",
+      "title": "승인된 템플릿 보내기",
+      "refresh": "새로고침",
+      "loading": "템플릿 로딩 중...",
+      "empty": "승인된 템플릿이 없습니다. 템플릿은 Meta의 WhatsApp Manager에서 만들고 승인합니다.",
+      "notSendable": "대시보드에서 보낼 수 없음: 헤더에 변수나 미디어가 있거나 매개변수가 있는 버튼이 있습니다.",
+      "choose": "템플릿 선택",
+      "preview": "미리보기",
+      "send": "보내기",
+      "sentTitle": "템플릿을 보냈습니다",
+      "errorTitle": "템플릿을 보내지 못했습니다"
+    },
+    "campaignsNote": "Meta 공식 API 세션의 캠페인은 이후 버전에서 템플릿과 함께 제공됩니다."
   }
 }

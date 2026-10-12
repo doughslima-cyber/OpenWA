@@ -175,6 +175,27 @@ describe('MetaGraphClient', () => {
       },
     );
 
+    // F3 door 4: Meta's template errors (132000-132016) are the caller's mistake, never an unknown outcome.
+    it.each([132000, 132001, 132005, 132007, 132012, 132015, 132016])(
+      'C32 maps template error code %d to 400 META_TEMPLATE_INVALID with metaCode',
+      async metaCode => {
+        graph.script = () => graphError(400, metaCode, `Template error ${metaCode}`);
+
+        const answer = await rejection(client().send(PHONE, MESSAGES, TOKEN, BODY));
+
+        expect(answer.status).toBe(400);
+        expect(answer.body).toMatchObject({ statusCode: 400, code: 'META_TEMPLATE_INVALID', metaCode });
+      },
+    );
+
+    it('C32 leaves the codes around the template range on their F2 rows', async () => {
+      for (const metaCode of [131999, 132017]) {
+        graph.script = () => graphError(400, metaCode, `Meta error ${metaCode}`);
+        const answer = await rejection(client().send(PHONE, MESSAGES, TOKEN, BODY));
+        expect(answer).toMatchObject({ status: 502, body: { code: 'META_UPSTREAM_ERROR', metaCode } });
+      }
+    });
+
     it('C44 maps a bare Graph 500 to 502 META_UPSTREAM_ERROR', async () => {
       graph.script = () => ({ status: 500 });
 

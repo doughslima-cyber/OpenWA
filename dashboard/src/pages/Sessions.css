@@ -904,3 +904,108 @@
   font-size: 0.9375rem;
   box-sizing: border-box;
 }
+
+/* OpenMsg (docs/32 F3): official Meta API sessions — the create choice, the card badge and hint, and
+   the account section of the detail. */
+.sessions-page .meta-cloud-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.sessions-page .meta-cloud-engine-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.sessions-page .meta-cloud-engine-choice legend {
+  padding: 0 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.sessions-page .meta-cloud-engine-choice label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.sessions-page .meta-cloud-credentials {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sessions-page .meta-cloud-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sessions-page .meta-cloud-token-hint .info-value {
+  color: var(--warning-text);
+  font-size: 0.8rem;
+  white-space: normal;
+}
+
+.sessions-page .meta-cloud-account {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.sessions-page .meta-cloud-account-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.sessions-page .meta-cloud-account-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.sessions-page .meta-cloud-account-error {
+  margin: 0.5rem 0 0;
+  color: var(--error-text);
+}
+
+.sessions-page .meta-cloud-webhook,
+.sessions-page .meta-cloud-token-form {
+  grid-column: 1 / -1;
+}
+
+.sessions-page .meta-cloud-webhook-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sessions-page .meta-cloud-webhook-row .detail-value {
+  overflow-wrap: anywhere;
+}
+
+.sessions-page .meta-cloud-webhook-row input {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.sessions-page .meta-cloud-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}

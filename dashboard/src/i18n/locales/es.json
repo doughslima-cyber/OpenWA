@@ -1329,7 +1329,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Las campañas aún no están disponibles en una sesión de la API oficial de Meta."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1389,5 +1390,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "Conexión",
+      "qr": "Dispositivo vinculado (QR)",
+      "cloud": "API oficial de Meta"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "Token de acceso",
+      "hint": "Cópialos de tu app de Meta en Meta for Developers. El token se guarda cifrado y no se vuelve a mostrar."
+    },
+    "badge": "API oficial",
+    "tokenHint": "Meta rechazó el token de acceso, o no hay ninguno guardado. Abre los detalles de la sesión, cambia el token y vuelve a iniciar la sesión.",
+    "account": {
+      "title": "API oficial de Meta",
+      "loading": "Cargando la cuenta de Meta...",
+      "displayPhoneNumber": "Número de teléfono",
+      "verifiedName": "Nombre verificado",
+      "qualityRating": "Calificación de calidad",
+      "messagingLimitTier": "Límite de mensajes",
+      "token": "Token de acceso",
+      "tokenNone": "Ninguno guardado",
+      "webhookUrl": "URL del webhook",
+      "copy": "Copiar",
+      "copied": "URL del webhook copiada",
+      "webhookHint": "Registra esta URL como URL de callback en tu app de Meta, con el token de verificación definido en META_WEBHOOK_VERIFY_TOKEN en el gateway.",
+      "newToken": "Nuevo token de acceso",
+      "changeToken": "Cambiar token",
+      "tokenChanged": "Token de acceso cambiado",
+      "tokenChangedDesc": "La sesión usa el nuevo token en su próxima solicitud. Reiníciala si requiere acción."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "Las sesiones de la API oficial de Meta están desactivadas en este gateway. Define META_CLOUD_ENABLED=true y reinícialo.",
+      "META_CLOUD_NOT_CONFIGURED": "El gateway no puede guardar tokens de Meta: define META_CLOUD_ENCRYPTION_KEY (32 bytes en base64) y reinícialo.",
+      "META_PHONE_NUMBER_IN_USE": "Este Phone Number ID ya lo usa otra sesión.",
+      "META_OUTSIDE_SERVICE_WINDOW": "La ventana de 24 horas para responder se ha cerrado. Envía una plantilla aprobada.",
+      "META_RECIPIENT_UNAVAILABLE": "Este número no puede recibir mensajes de WhatsApp de tu empresa.",
+      "META_LIMIT_REACHED": "Se alcanzó el límite de mensajes de este número. Inténtalo de nuevo más tarde.",
+      "META_RATE_LIMITED": "Meta está limitando la velocidad de envío de este número. Inténtalo de nuevo en un momento.",
+      "META_TOKEN_INVALID": "Meta rechazó el token de acceso. Cambia el token en los detalles de la sesión.",
+      "META_TOKEN_MISSING": "No hay ningún token de acceso guardado para esta sesión. Cambia el token en los detalles de la sesión.",
+      "META_ACCOUNT_RESTRICTED": "Meta ha restringido esta cuenta de WhatsApp Business.",
+      "META_TEMPLATE_INVALID": "Meta no aceptó esta plantilla. Revisa su nombre, idioma y parámetros."
+    },
+    "window": {
+      "closed": "La ventana de 24 horas para responder a este cliente se ha cerrado. Envía una plantilla aprobada para reabrir la conversación."
+    },
+    "templates": {
+      "open": "Enviar plantilla",
+      "title": "Enviar una plantilla aprobada",
+      "refresh": "Actualizar",
+      "loading": "Cargando plantillas...",
+      "empty": "No hay plantillas aprobadas. Las plantillas se crean y aprueban en el WhatsApp Manager de Meta.",
+      "notSendable": "No se puede enviar desde el panel: tiene una variable o un medio en el encabezado, o botones con parámetros.",
+      "choose": "Elige una plantilla",
+      "preview": "Vista previa",
+      "send": "Enviar",
+      "sentTitle": "Plantilla enviada",
+      "errorTitle": "No se pudo enviar la plantilla"
+    },
+    "campaignsNote": "Las campañas en una sesión de la API oficial de Meta llegarán con las plantillas en una versión posterior."
   }
 }

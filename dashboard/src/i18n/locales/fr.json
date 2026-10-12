@@ -1329,7 +1329,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Les campagnes ne sont pas encore disponibles sur une session de l'API officielle de Meta."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1389,5 +1390,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "Connexion",
+      "qr": "Appareil associé (QR)",
+      "cloud": "API officielle de Meta"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "Jeton d'accès",
+      "hint": "Copiez-les depuis votre app Meta dans Meta for Developers. Le jeton est stocké chiffré et n'est plus jamais affiché."
+    },
+    "badge": "API officielle",
+    "tokenHint": "Meta a refusé le jeton d'accès, ou aucun n'est stocké. Ouvrez les détails de la session, changez le jeton, puis redémarrez la session.",
+    "account": {
+      "title": "API officielle de Meta",
+      "loading": "Chargement du compte Meta...",
+      "displayPhoneNumber": "Numéro de téléphone",
+      "verifiedName": "Nom vérifié",
+      "qualityRating": "Note de qualité",
+      "messagingLimitTier": "Limite d'envoi",
+      "token": "Jeton d'accès",
+      "tokenNone": "Aucun stocké",
+      "webhookUrl": "URL du webhook",
+      "copy": "Copier",
+      "copied": "URL du webhook copiée",
+      "webhookHint": "Enregistrez cette URL comme URL de rappel dans votre app Meta, avec le jeton de vérification défini dans META_WEBHOOK_VERIFY_TOKEN sur la passerelle.",
+      "newToken": "Nouveau jeton d'accès",
+      "changeToken": "Changer le jeton",
+      "tokenChanged": "Jeton d'accès changé",
+      "tokenChangedDesc": "La session utilise le nouveau jeton à sa prochaine requête. Redémarrez-la si elle demande une action."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "Les sessions de l'API officielle de Meta sont désactivées sur cette passerelle. Définissez META_CLOUD_ENABLED=true et redémarrez-la.",
+      "META_CLOUD_NOT_CONFIGURED": "La passerelle ne peut pas stocker les jetons Meta : définissez META_CLOUD_ENCRYPTION_KEY (32 octets en base64) et redémarrez-la.",
+      "META_PHONE_NUMBER_IN_USE": "Ce Phone Number ID est déjà utilisé par une autre session.",
+      "META_OUTSIDE_SERVICE_WINDOW": "La fenêtre de 24 heures pour répondre est fermée. Envoyez plutôt un template approuvé.",
+      "META_RECIPIENT_UNAVAILABLE": "Ce numéro ne peut pas recevoir de messages WhatsApp de votre entreprise.",
+      "META_LIMIT_REACHED": "La limite d'envoi de ce numéro est atteinte. Réessayez plus tard.",
+      "META_RATE_LIMITED": "Meta limite la cadence d'envoi de ce numéro. Réessayez dans un instant.",
+      "META_TOKEN_INVALID": "Meta a refusé le jeton d'accès. Changez le jeton dans les détails de la session.",
+      "META_TOKEN_MISSING": "Aucun jeton d'accès n'est stocké pour cette session. Changez le jeton dans les détails de la session.",
+      "META_ACCOUNT_RESTRICTED": "Meta a restreint ce compte WhatsApp Business.",
+      "META_TEMPLATE_INVALID": "Meta n'a pas accepté ce template. Vérifiez son nom, sa langue et ses paramètres."
+    },
+    "window": {
+      "closed": "La fenêtre de 24 heures pour répondre à ce client est fermée. Envoyez un template approuvé pour rouvrir la conversation."
+    },
+    "templates": {
+      "open": "Envoyer un template",
+      "title": "Envoyer un template approuvé",
+      "refresh": "Actualiser",
+      "loading": "Chargement des templates...",
+      "empty": "Aucun template approuvé. Les templates sont créés et approuvés dans le WhatsApp Manager de Meta.",
+      "notSendable": "Impossible à envoyer depuis le tableau de bord : il a une variable ou un média dans l'en-tête, ou des boutons avec paramètres.",
+      "choose": "Choisissez un template",
+      "preview": "Aperçu",
+      "send": "Envoyer",
+      "sentTitle": "Template envoyé",
+      "errorTitle": "Impossible d'envoyer le template"
+    },
+    "campaignsNote": "Les campagnes sur une session de l'API officielle de Meta arriveront avec les templates dans une version ultérieure."
   }
 }

@@ -58,6 +58,9 @@ import ChatThread from '../components/chats/ChatThread';
 import ChatComposer, { type StagedAttachment } from '../components/chats/ChatComposer';
 import StatusMedia from '../components/chats/StatusMedia';
 import StatusComposeModal from '../components/chats/StatusComposeModal';
+import TemplatePicker from '../components/chats/TemplatePicker';
+import { useMetaChatWindow } from '../hooks/useMetaCloud';
+import { isMetaCloudSession } from '../utils/sessionActions';
 import './Chats.css';
 
 // Quiet window for coalescing mark-as-read RPCs (see markReadCoalescer below).
@@ -157,6 +160,13 @@ export function Chats() {
   // both, so the query is gated off entirely (never fired) rather than left to fail per-request.
   // The engine comes from the sign-in validate response, which every role can read.
   const channelsSupported = engineType === 'whatsapp-web.js';
+  // OpenMsg (docs/32 F3): a Cloud API session has no status and no channels, and its free text is
+  // bounded by the 24-hour service window; the login engine above describes the QR sessions only.
+  const cloudSession = isMetaCloudSession(sessions.find(s => s.id === selectedSessionId));
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  useEffect(() => {
+    if (cloudSession && activeTab !== 'chats') switchTab('chats');
+  }, [cloudSession, activeTab, switchTab]);
   const channelsQuery = useQuery({
     queryKey: ['channels', selectedSessionId],
     queryFn: () => sessionApi.getSubscribedChannels(selectedSessionId!),
@@ -193,6 +203,7 @@ export function Chats() {
   } = useChatMessages(selectedSessionId, activeChat?.id ?? null);
   const { appendMessage, updateMessage } = useChatMessagesActions();
   const queryClient = useQueryClient();
+  const chatWindow = useMetaChatWindow(selectedSessionId, activeChat?.id, cloudSession);
 
   // Lightbox state for media viewer
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -467,6 +478,11 @@ export function Chats() {
       // up to date so re-opening them shows fresh data without a refetch.
       appendMessage(event.sessionId, newMsg.chatId, mappedMessage);
 
+      // A customer's message reopens a Cloud chat's 24-hour window; the query only exists for Cloud chats.
+      if (!newMsg.fromMe) {
+        void queryClient.invalidateQueries({ queryKey: ['meta-window', event.sessionId, newMsg.chatId] });
+      }
+
       // If the message belongs to the currently visible chat, mark-as-read and run the scroll heuristic.
       if (activeChat && newMsg.chatId === activeChat.id) {
         markChatRead(activeChat.id);
@@ -490,7 +506,17 @@ export function Chats() {
         void loadChats(selectedSessionId, { background: true });
       }
     },
-    [selectedSessionId, activeChat, canWrite, loadChats, markChatRead, appendMessage, onMessageAppended, t],
+    [
+      selectedSessionId,
+      activeChat,
+      canWrite,
+      loadChats,
+      markChatRead,
+      appendMessage,
+      onMessageAppended,
+      queryClient,
+      t,
+    ],
   );
 
   const handleIncomingMessageAck = useCallback(
@@ -1050,6 +1076,7 @@ export function Chats() {
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             onComposeStatus={() => setComposeOpen(true)}
+            tabs={cloudSession ? ['chats'] : undefined}
             formatChatTime={formatChatTime}
             chatsTab={{
               loading: loadingChats,
@@ -1136,6 +1163,7 @@ export function Chats() {
                   onReact={handleReactMessage}
                   onDelete={handleDeleteMessage}
                   onClickButton={handleClickButton}
+                  cloudSession={cloudSession}
                 />
 
                 {/* Composer: attachment preview, emoji panel, reply banner, input bar —
@@ -1153,7 +1181,28 @@ export function Chats() {
                   setAttachment={setAttachment}
                   previewUrl={previewUrl}
                   setPreviewUrl={setPreviewUrl}
+                  metaCloud={
+                    cloudSession
+                      ? {
+                          windowClosed: chatWindow.data?.open === false,
+                          onSendTemplate: () => setTemplatePickerOpen(true),
+                        }
+                      : undefined
+                  }
                 />
+                {cloudSession && templatePickerOpen && (
+                  <TemplatePicker
+                    sessionId={selectedSessionId}
+                    chatId={activeChat.id}
+                    onClose={() => setTemplatePickerOpen(false)}
+                    onSent={(_messageId, body) => {
+                      promoteSentChat(selectedSessionId, activeChat.id, body, Math.floor(Date.now() / 1000));
+                      void queryClient.invalidateQueries({
+                        queryKey: messagesQueryKey(selectedSessionId, activeChat.id),
+                      });
+                    }}
+                  />
+                )}
               </div>
             ) : activeChannel ? (
               // Read-only channel pane: no send footer, reactions, delete, reply, or markChatRead —

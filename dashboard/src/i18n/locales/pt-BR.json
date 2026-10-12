@@ -1329,7 +1329,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "Nenhuma das entradas é um número de telefone",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "Uma campanha aceita no máximo 5000 números",
       "CAMPAIGN_ALREADY_RUNNING": "Esta sessão já tem uma campanha em andamento",
-      "CAMPAIGN_NOT_RUNNING": "Esta campanha não está mais em andamento"
+      "CAMPAIGN_NOT_RUNNING": "Esta campanha não está mais em andamento",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Campanhas ainda não estão disponíveis em uma sessão da API oficial da Meta."
     },
     "openAria": "Abrir {{name}}",
     "detail": {
@@ -1389,5 +1390,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "Conexão",
+      "qr": "Aparelho vinculado (QR)",
+      "cloud": "API oficial da Meta"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "Token de acesso",
+      "hint": "Copie estes dados do seu app da Meta no Meta for Developers. O token é guardado criptografado e nunca mais é exibido."
+    },
+    "badge": "API oficial",
+    "tokenHint": "A Meta recusou o token de acesso, ou não há nenhum guardado. Abra os detalhes da sessão, troque o token e inicie a sessão de novo.",
+    "account": {
+      "title": "API oficial da Meta",
+      "loading": "Carregando a conta da Meta...",
+      "displayPhoneNumber": "Número de telefone",
+      "verifiedName": "Nome verificado",
+      "qualityRating": "Classificação de qualidade",
+      "messagingLimitTier": "Limite de mensagens",
+      "token": "Token de acesso",
+      "tokenNone": "Nenhum guardado",
+      "webhookUrl": "URL do webhook",
+      "copy": "Copiar",
+      "copied": "URL do webhook copiada",
+      "webhookHint": "Cadastre esta URL como URL de callback no seu app da Meta, com o token de verificação definido em META_WEBHOOK_VERIFY_TOKEN no gateway.",
+      "newToken": "Novo token de acesso",
+      "changeToken": "Trocar token",
+      "tokenChanged": "Token de acesso trocado",
+      "tokenChangedDesc": "A sessão usa o novo token na próxima requisição. Reinicie-a se ela pedir ação."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "As sessões da API oficial da Meta estão desativadas neste gateway. Defina META_CLOUD_ENABLED=true e reinicie-o.",
+      "META_CLOUD_NOT_CONFIGURED": "O gateway não consegue guardar tokens da Meta: defina META_CLOUD_ENCRYPTION_KEY (32 bytes em base64) e reinicie-o.",
+      "META_PHONE_NUMBER_IN_USE": "Este Phone Number ID já é usado por outra sessão.",
+      "META_OUTSIDE_SERVICE_WINDOW": "A janela de 24 horas para responder foi fechada. Envie um modelo aprovado.",
+      "META_RECIPIENT_UNAVAILABLE": "Este número não pode receber mensagens de WhatsApp da sua empresa.",
+      "META_LIMIT_REACHED": "O limite de mensagens deste número foi atingido. Tente novamente mais tarde.",
+      "META_RATE_LIMITED": "A Meta está limitando a velocidade de envio deste número. Tente novamente em instantes.",
+      "META_TOKEN_INVALID": "A Meta recusou o token de acesso. Troque o token nos detalhes da sessão.",
+      "META_TOKEN_MISSING": "Não há token de acesso guardado para esta sessão. Troque o token nos detalhes da sessão.",
+      "META_ACCOUNT_RESTRICTED": "A Meta restringiu esta conta do WhatsApp Business.",
+      "META_TEMPLATE_INVALID": "A Meta não aceitou este modelo. Confira o nome, o idioma e os parâmetros."
+    },
+    "window": {
+      "closed": "A janela de 24 horas para responder a este cliente foi fechada. Envie um modelo aprovado para reabrir a conversa."
+    },
+    "templates": {
+      "open": "Enviar modelo",
+      "title": "Enviar um modelo aprovado",
+      "refresh": "Atualizar",
+      "loading": "Carregando modelos...",
+      "empty": "Nenhum modelo aprovado. Os modelos são criados e aprovados no WhatsApp Manager da Meta.",
+      "notSendable": "Não pode ser enviado pelo painel: tem variável ou mídia no cabeçalho, ou botões com parâmetros.",
+      "choose": "Escolha um modelo",
+      "preview": "Pré-visualização",
+      "send": "Enviar",
+      "sentTitle": "Modelo enviado",
+      "errorTitle": "Não foi possível enviar o modelo"
+    },
+    "campaignsNote": "Campanhas em uma sessão da API oficial da Meta chegam junto com os modelos em uma versão futura."
   }
 }

@@ -1323,7 +1323,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Meta 官方 API 会话暂不支持营销活动。"
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1383,5 +1384,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "连接方式",
+      "qr": "已关联设备 (QR)",
+      "cloud": "Meta 官方 API"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "访问令牌",
+      "hint": "请从 Meta for Developers 中你的 Meta 应用复制这些值。令牌加密存储，之后不再显示。"
+    },
+    "badge": "官方 API",
+    "tokenHint": "Meta 拒绝了访问令牌，或尚未存储令牌。请打开会话详情，更换令牌，然后重新启动会话。",
+    "account": {
+      "title": "Meta 官方 API",
+      "loading": "正在加载 Meta 账号...",
+      "displayPhoneNumber": "电话号码",
+      "verifiedName": "已验证名称",
+      "qualityRating": "质量评级",
+      "messagingLimitTier": "消息限额",
+      "token": "访问令牌",
+      "tokenNone": "未存储",
+      "webhookUrl": "Webhook URL",
+      "copy": "复制",
+      "copied": "Webhook URL 已复制",
+      "webhookHint": "请在你的 Meta 应用中将此 URL 注册为回调 URL，验证令牌为网关上 META_WEBHOOK_VERIFY_TOKEN 所设置的值。",
+      "newToken": "新访问令牌",
+      "changeToken": "更换令牌",
+      "tokenChanged": "访问令牌已更换",
+      "tokenChangedDesc": "会话将在下一次请求时使用新令牌。如需处理，请重新启动会话。"
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "此网关已关闭 Meta 官方 API 会话。请设置 META_CLOUD_ENABLED=true 并重启网关。",
+      "META_CLOUD_NOT_CONFIGURED": "网关无法存储 Meta 令牌：请设置 META_CLOUD_ENCRYPTION_KEY（base64 编码的 32 字节）并重启网关。",
+      "META_PHONE_NUMBER_IN_USE": "此 Phone Number ID 已被另一个会话使用。",
+      "META_OUTSIDE_SERVICE_WINDOW": "24 小时回复窗口已关闭。请改为发送已批准的模板。",
+      "META_RECIPIENT_UNAVAILABLE": "此号码无法接收你企业发送的 WhatsApp 消息。",
+      "META_LIMIT_REACHED": "此号码已达到消息限额。请稍后重试。",
+      "META_RATE_LIMITED": "Meta 正在限制此号码的发送速度。请稍后重试。",
+      "META_TOKEN_INVALID": "Meta 拒绝了访问令牌。请在会话详情中更换令牌。",
+      "META_TOKEN_MISSING": "此会话未存储访问令牌。请在会话详情中更换令牌。",
+      "META_ACCOUNT_RESTRICTED": "Meta 已限制此 WhatsApp Business 账号。",
+      "META_TEMPLATE_INVALID": "Meta 未接受此模板。请检查其名称、语言和参数。"
+    },
+    "window": {
+      "closed": "回复此客户的 24 小时窗口已关闭。请发送已批准的模板以重新开启对话。"
+    },
+    "templates": {
+      "open": "发送模板",
+      "title": "发送已批准的模板",
+      "refresh": "刷新",
+      "loading": "正在加载模板...",
+      "empty": "没有已批准的模板。模板需在 Meta 的 WhatsApp Manager 中创建并获批。",
+      "notSendable": "无法从控制台发送：其标题含变量或媒体，或含带参数的按钮。",
+      "choose": "选择模板",
+      "preview": "预览",
+      "send": "发送",
+      "sentTitle": "模板已发送",
+      "errorTitle": "无法发送模板"
+    },
+    "campaignsNote": "Meta 官方 API 会话的营销活动将在后续版本中随模板一同推出。"
   }
 }

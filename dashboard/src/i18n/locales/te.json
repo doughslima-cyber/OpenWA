@@ -1323,7 +1323,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "అధికారిక Meta API సెషన్‌లో క్యాంపెయిన్‌లు ఇంకా అందుబాటులో లేవు."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1383,5 +1384,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "కనెక్షన్",
+      "qr": "లింక్ చేసిన పరికరం (QR)",
+      "cloud": "అధికారిక Meta API"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "యాక్సెస్ టోకెన్",
+      "hint": "వీటిని Meta for Developers లోని మీ Meta యాప్ నుండి కాపీ చేయండి. టోకెన్ ఎన్‌క్రిప్ట్ చేసి నిల్వ చేయబడుతుంది, మళ్లీ ఎప్పుడూ చూపబడదు."
+    },
+    "badge": "అధికారిక API",
+    "tokenHint": "Meta యాక్సెస్ టోకెన్‌ను తిరస్కరించింది, లేదా ఏదీ నిల్వ లేదు. సెషన్ వివరాలను తెరిచి, టోకెన్‌ను మార్చి, సెషన్‌ను మళ్లీ ప్రారంభించండి.",
+    "account": {
+      "title": "అధికారిక Meta API",
+      "loading": "Meta ఖాతా లోడ్ అవుతోంది...",
+      "displayPhoneNumber": "ఫోన్ నంబర్",
+      "verifiedName": "ధృవీకరించిన పేరు",
+      "qualityRating": "నాణ్యత రేటింగ్",
+      "messagingLimitTier": "సందేశ పరిమితి",
+      "token": "యాక్సెస్ టోకెన్",
+      "tokenNone": "ఏదీ నిల్వ లేదు",
+      "webhookUrl": "వెబ్‌హుక్ URL",
+      "copy": "కాపీ చేయి",
+      "copied": "వెబ్‌హుక్ URL కాపీ అయింది",
+      "webhookHint": "గేట్‌వేలో META_WEBHOOK_VERIFY_TOKEN లో సెట్ చేసిన వెరిఫై టోకెన్‌తో, ఈ URL ను మీ Meta యాప్‌లో callback URL గా నమోదు చేయండి.",
+      "newToken": "కొత్త యాక్సెస్ టోకెన్",
+      "changeToken": "టోకెన్ మార్చు",
+      "tokenChanged": "యాక్సెస్ టోకెన్ మార్చబడింది",
+      "tokenChangedDesc": "సెషన్ తన తదుపరి అభ్యర్థనలో కొత్త టోకెన్‌ను ఉపయోగిస్తుంది. చర్య అవసరమైతే దాన్ని పునఃప్రారంభించండి."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "ఈ గేట్‌వేలో అధికారిక Meta API సెషన్‌లు ఆఫ్‌లో ఉన్నాయి. META_CLOUD_ENABLED=true సెట్ చేసి దాన్ని పునఃప్రారంభించండి.",
+      "META_CLOUD_NOT_CONFIGURED": "గేట్‌వే Meta టోకెన్‌లను నిల్వ చేయలేదు: META_CLOUD_ENCRYPTION_KEY (base64 లో 32 బైట్‌లు) సెట్ చేసి దాన్ని పునఃప్రారంభించండి.",
+      "META_PHONE_NUMBER_IN_USE": "ఈ Phone Number ID ను ఇప్పటికే మరో సెషన్ ఉపయోగిస్తోంది.",
+      "META_OUTSIDE_SERVICE_WINDOW": "జవాబు ఇవ్వడానికి 24 గంటల విండో మూసివేయబడింది. బదులుగా ఆమోదించిన టెంప్లేట్‌ను పంపండి.",
+      "META_RECIPIENT_UNAVAILABLE": "ఈ నంబర్ మీ వ్యాపారం నుండి WhatsApp సందేశాలను స్వీకరించలేదు.",
+      "META_LIMIT_REACHED": "ఈ నంబర్ సందేశ పరిమితిని చేరుకుంది. తర్వాత మళ్లీ ప్రయత్నించండి.",
+      "META_RATE_LIMITED": "Meta ఈ నంబర్ పంపే వేగాన్ని పరిమితం చేస్తోంది. కాసేపట్లో మళ్లీ ప్రయత్నించండి.",
+      "META_TOKEN_INVALID": "Meta యాక్సెస్ టోకెన్‌ను తిరస్కరించింది. సెషన్ వివరాలలో టోకెన్‌ను మార్చండి.",
+      "META_TOKEN_MISSING": "ఈ సెషన్‌కు యాక్సెస్ టోకెన్ ఏదీ నిల్వ లేదు. సెషన్ వివరాలలో టోకెన్‌ను మార్చండి.",
+      "META_ACCOUNT_RESTRICTED": "Meta ఈ WhatsApp Business ఖాతాను పరిమితం చేసింది.",
+      "META_TEMPLATE_INVALID": "Meta ఈ టెంప్లేట్‌ను అంగీకరించలేదు. దాని పేరు, భాష మరియు పారామితులను తనిఖీ చేయండి."
+    },
+    "window": {
+      "closed": "ఈ కస్టమర్‌కు జవాబు ఇవ్వడానికి 24 గంటల విండో మూసివేయబడింది. సంభాషణను మళ్లీ తెరవడానికి ఆమోదించిన టెంప్లేట్‌ను పంపండి."
+    },
+    "templates": {
+      "open": "టెంప్లేట్ పంపు",
+      "title": "ఆమోదించిన టెంప్లేట్‌ను పంపండి",
+      "refresh": "రిఫ్రెష్",
+      "loading": "టెంప్లేట్‌లు లోడ్ అవుతున్నాయి...",
+      "empty": "ఆమోదించిన టెంప్లేట్‌లు లేవు. టెంప్లేట్‌లు Meta యొక్క WhatsApp Manager లో సృష్టించబడి ఆమోదించబడతాయి.",
+      "notSendable": "డాష్‌బోర్డ్ నుండి పంపలేరు: దీని హెడర్‌లో వేరియబుల్ లేదా మీడియా ఉంది, లేదా పారామితులతో బటన్‌లు ఉన్నాయి.",
+      "choose": "ఒక టెంప్లేట్‌ను ఎంచుకోండి",
+      "preview": "ప్రివ్యూ",
+      "send": "పంపు",
+      "sentTitle": "టెంప్లేట్ పంపబడింది",
+      "errorTitle": "టెంప్లేట్‌ను పంపలేకపోయాము"
+    },
+    "campaignsNote": "అధికారిక Meta API సెషన్‌లో క్యాంపెయిన్‌లు టెంప్లేట్‌లతో పాటు తర్వాతి వెర్షన్‌లో వస్తాయి."
   }
 }

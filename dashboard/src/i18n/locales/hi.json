@@ -1323,7 +1323,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "आधिकारिक Meta API सत्र पर अभियान अभी उपलब्ध नहीं हैं।"
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1383,5 +1384,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "कनेक्शन",
+      "qr": "लिंक किया गया डिवाइस (QR)",
+      "cloud": "आधिकारिक Meta API"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "एक्सेस टोकन",
+      "hint": "इन्हें Meta for Developers में अपने Meta ऐप से कॉपी करें। टोकन एन्क्रिप्ट करके सहेजा जाता है और फिर कभी नहीं दिखाया जाता।"
+    },
+    "badge": "आधिकारिक API",
+    "tokenHint": "Meta ने एक्सेस टोकन अस्वीकार कर दिया, या कोई टोकन सहेजा नहीं है। सत्र विवरण खोलें, टोकन बदलें, फिर सत्र को दोबारा शुरू करें।",
+    "account": {
+      "title": "आधिकारिक Meta API",
+      "loading": "Meta खाता लोड हो रहा है...",
+      "displayPhoneNumber": "फ़ोन नंबर",
+      "verifiedName": "सत्यापित नाम",
+      "qualityRating": "गुणवत्ता रेटिंग",
+      "messagingLimitTier": "संदेश सीमा",
+      "token": "एक्सेस टोकन",
+      "tokenNone": "कोई सहेजा नहीं गया",
+      "webhookUrl": "वेबहुक URL",
+      "copy": "कॉपी करें",
+      "copied": "वेबहुक URL कॉपी किया गया",
+      "webhookHint": "इस URL को अपने Meta ऐप में callback URL के रूप में दर्ज करें, गेटवे पर META_WEBHOOK_VERIFY_TOKEN में सेट किए गए सत्यापन टोकन के साथ।",
+      "newToken": "नया एक्सेस टोकन",
+      "changeToken": "टोकन बदलें",
+      "tokenChanged": "एक्सेस टोकन बदला गया",
+      "tokenChangedDesc": "सत्र अपने अगले अनुरोध पर नया टोकन उपयोग करता है। यदि उसे कार्रवाई चाहिए तो उसे पुनः आरंभ करें।"
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "इस गेटवे पर आधिकारिक Meta API सत्र बंद हैं। META_CLOUD_ENABLED=true सेट करें और इसे पुनः आरंभ करें।",
+      "META_CLOUD_NOT_CONFIGURED": "गेटवे Meta टोकन सहेज नहीं सकता: META_CLOUD_ENCRYPTION_KEY (base64 में 32 बाइट) सेट करें और इसे पुनः आरंभ करें।",
+      "META_PHONE_NUMBER_IN_USE": "यह Phone Number ID पहले से किसी दूसरे सत्र में उपयोग हो रहा है।",
+      "META_OUTSIDE_SERVICE_WINDOW": "जवाब देने की 24 घंटे की विंडो बंद हो गई है। इसके बजाय एक स्वीकृत टेम्पलेट भेजें।",
+      "META_RECIPIENT_UNAVAILABLE": "यह नंबर आपके व्यवसाय से WhatsApp संदेश प्राप्त नहीं कर सकता।",
+      "META_LIMIT_REACHED": "इस नंबर की संदेश सीमा पूरी हो गई है। बाद में फिर से प्रयास करें।",
+      "META_RATE_LIMITED": "Meta इस नंबर की भेजने की गति सीमित कर रहा है। थोड़ी देर में फिर से प्रयास करें।",
+      "META_TOKEN_INVALID": "Meta ने एक्सेस टोकन अस्वीकार कर दिया। सत्र विवरण में टोकन बदलें।",
+      "META_TOKEN_MISSING": "इस सत्र के लिए कोई एक्सेस टोकन सहेजा नहीं गया है। सत्र विवरण में टोकन बदलें।",
+      "META_ACCOUNT_RESTRICTED": "Meta ने इस WhatsApp Business खाते को प्रतिबंधित कर दिया है।",
+      "META_TEMPLATE_INVALID": "Meta ने यह टेम्पलेट स्वीकार नहीं किया। इसका नाम, भाषा और पैरामीटर जाँचें।"
+    },
+    "window": {
+      "closed": "इस ग्राहक को जवाब देने की 24 घंटे की विंडो बंद हो गई है। बातचीत फिर से खोलने के लिए एक स्वीकृत टेम्पलेट भेजें।"
+    },
+    "templates": {
+      "open": "टेम्पलेट भेजें",
+      "title": "एक स्वीकृत टेम्पलेट भेजें",
+      "refresh": "रीफ़्रेश करें",
+      "loading": "टेम्पलेट लोड हो रहे हैं...",
+      "empty": "कोई स्वीकृत टेम्पलेट नहीं। टेम्पलेट Meta के WhatsApp Manager में बनाए और स्वीकृत किए जाते हैं।",
+      "notSendable": "डैशबोर्ड से नहीं भेजा जा सकता: इसके हेडर में वेरिएबल या मीडिया है, या पैरामीटर वाले बटन हैं।",
+      "choose": "एक टेम्पलेट चुनें",
+      "preview": "पूर्वावलोकन",
+      "send": "भेजें",
+      "sentTitle": "टेम्पलेट भेजा गया",
+      "errorTitle": "टेम्पलेट नहीं भेजा जा सका"
+    },
+    "campaignsNote": "आधिकारिक Meta API सत्र पर अभियान, टेम्पलेट के साथ बाद के संस्करण में आएँगे।"
   }
 }

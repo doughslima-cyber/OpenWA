@@ -9,6 +9,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
   return {
     id: 's1',
     name: 'session-1',
+    engine: 'baileys',
     status: 'ready',
     phone: '+155512345',
     pushName: 'Alice',

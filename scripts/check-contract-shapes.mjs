@@ -160,9 +160,13 @@ const MAPPINGS = {
     CreatedApiKey: 'ApiKeyCreatedResponseDto',
     EngineHistoryMessage: 'ChatHistoryMessageDto',
     MessageResponse: 'MessageResponseDto',
+    MetaChatWindow: 'MetaChatWindowResponseDto',
+    MetaCloudAccount: 'MetaCloudAccountResponseDto',
+    MetaTemplate: 'MetaTemplateDto',
     ParticipantPresence: 'ParticipantPresenceDto',
     ProfilePictureResponse: 'ProfilePictureResponseDto',
     SearchHit: 'SearchHitDto',
+    SendMetaTemplateBody: 'SendMetaTemplateDto',
     Session: 'SessionResponseDto',
     SessionConfig: 'SessionConfigResponseDto',
     SessionProxy: 'SessionProxyResponseDto',
@@ -178,10 +182,19 @@ const MAPPINGS = {
  */
 const MINIMUM_MAPPED = {
   'sdk/javascript/src/types.ts': 85,
-  'dashboard/src/services/api.ts': 22,
+  'dashboard/src/services/api.ts': 26,
   'sdk/python/openwa/types.py': 81,
   'sdk/go': 81,
   'sdk/java': 85,
+};
+
+/**
+ * Hand files read together with a MAPPINGS file. OpenMsg keeps the dashboard's WhatsApp Cloud API
+ * types (docs/32 F3) in their own file so upstream merges of api.ts stay clean; they are the same
+ * client and are gated with it.
+ */
+const COMPANION_FILES = {
+  'dashboard/src/services/api.ts': ['dashboard/src/services/metaCloud.ts'],
 };
 
 /** Known drift, deliberately not gated yet — each line is a to-adjudicate follow-up. */
@@ -1128,7 +1141,10 @@ if (isDirectRun) {
   const CLIENTS = [
     ...Object.entries(MAPPINGS).map(([file, mapping]) => ({
       label: file,
-      load: () => parseHandTypes(readFileSync(`${REPO_ROOT}${file}`, 'utf8')),
+      load: () =>
+        parseHandTypes(
+          [file, ...(COMPANION_FILES[file] ?? [])].map(f => readFileSync(`${REPO_ROOT}${f}`, 'utf8')).join('\n'),
+        ),
       mapping,
       excluded: EXCLUDED[file] ?? {},
       floor: MINIMUM_MAPPED[file],

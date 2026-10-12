@@ -1324,6 +1324,7 @@ When Graph refuses a send, the answer carries the fork `code` below, with Meta's
 | `130429` (after 3 attempts)        | `429` | `META_RATE_LIMITED`           |
 | `131026`, `131021`                 | `400` | `META_RECIPIENT_UNAVAILABLE`  |
 | `131008`, `131009`                 | `400` | `META_INVALID_PARAMETER`      |
+| `132000` to `132016` (template)    | `400` | `META_TEMPLATE_INVALID`       |
 | `133010`, `131031`                 | `409` | `META_ACCOUNT_RESTRICTED`     |
 | any other code, or a Graph `5xx`   | `502` | `META_UPSTREAM_ERROR`         |
 
@@ -7377,6 +7378,113 @@ Replace the session's access token. Only `accessToken` can change: another numbe
 The session's next Graph call sends the new token. A session in `action_required` because Meta refused the old token needs `POST /stop` and `POST /start` to return to `ready`.
 
 **Errors:** `400` validation (missing or empty `accessToken`, or any other field) or `META_CLOUD_NOT_CONFIGURED` · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted to specific sessions · `404` no session with this id, or it has no Cloud API account · `501` the session is not a `meta-cloud` session
+
+The three routes below are what the dashboard uses to reach a customer once the 24-hour customer service window has closed (`MetaCloudTemplatesController`, same prefix; docs/32 F3). Outside that window Meta accepts only an approved message template. They live under `meta`, the resource docs/32 F4 adds to the SDKs, rather than as `messages/send-template-meta`, so the engine-neutral `messages` resource keeps no Cloud-only verb.
+
+#### GET /api/sessions/:sessionId/meta/templates
+
+Every message template of the session's WhatsApp Business Account, read from Graph a page at a time up to 500, with Meta's `components` passed through unchanged. The list is kept in memory per session for 5 minutes; `refresh=true` reads Graph again. A template's status changes on Meta's side (approval takes minutes to days), so a client filters on `status` itself: only `APPROVED` templates can be sent.
+
+**Auth:** API key (any role) that is not restricted to specific sessions
+
+**Query parameters**
+
+| Name    | Type    | Required | Default | Description                                |
+| ------- | ------- | -------- | ------- | ------------------------------------------ |
+| refresh | boolean | No       | false   | `true` or `1` bypasses the 5-minute cache. |
+
+**Response** `200`
+
+```json
+{
+  "templates": [
+    {
+      "name": "order_shipped",
+      "language": "pt_BR",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "parameterFormat": "POSITIONAL",
+      "components": [{ "type": "BODY", "text": "Olá {{1}}, seu pedido {{2}} saiu" }]
+    },
+    {
+      "name": "greeting",
+      "language": "pt_BR",
+      "status": "APPROVED",
+      "category": "MARKETING",
+      "parameterFormat": "NAMED",
+      "components": [{ "type": "BODY", "text": "Oi {{first_name}}" }]
+    }
+  ]
+}
+```
+
+`parameterFormat` is Meta's `parameter_format`: `POSITIONAL` (`{{1}}`, `{{2}}`) or `NAMED` (`{{first_name}}`), `POSITIONAL` when Meta omits it.
+
+**Errors:** `400` the session id is not a UUID · `401` missing/invalid key · `403` the key is restricted to specific sessions · `404` no session with this id · `409` `META_TOKEN_INVALID` (Meta refused the token), or `META_TOKEN_MISSING` (the session has no usable token stored) · `501` the session is not a `meta-cloud` session · `502` `META_UPSTREAM_ERROR`: Graph answered with an error the gateway does not map; `metaCode` names it · `503` Graph did not answer (refused, reset or timed out)
+
+#### GET /api/sessions/:sessionId/meta/chats/:chatId/window
+
+The chat's 24-hour customer service window, from the time of the customer's last inbound message, which the gateway records when Meta delivers it. A local reading: Meta remains the authority, and a send outside the window still answers `409` `META_OUTSIDE_SERVICE_WINDOW`.
+
+**Auth:** API key (any role); a key restricted with `allowedChats` must name an allowed chat
+
+**Path parameters**
+
+| Name      | Type   | Description                                        |
+| --------- | ------ | -------------------------------------------------- |
+| sessionId | string | Session ID                                         |
+| chatId    | string | The customer's chat, `<digits>@c.us` (URL-encoded) |
+
+**Response** `200`
+
+```json
+{
+  "lastInboundAt": "2026-10-12T14:03:00.000Z",
+  "open": true,
+  "closesAt": "2026-10-13T14:03:00.000Z"
+}
+```
+
+`closesAt` is `lastInboundAt` plus 24 hours and `open` is `closesAt` later than now, both ISO 8601 UTC. A chat whose customer never wrote answers `{ "lastInboundAt": null, "open": false, "closesAt": null }`.
+
+**Errors:** `400` the session id is not a UUID · `401` missing/invalid key · `403` the key is restricted to other chats or sessions · `404` no session with this id · `501` the session is not a `meta-cloud` session
+
+#### POST /api/sessions/:sessionId/meta/send-template
+
+Send an approved message template, the only message Meta accepts outside the 24-hour window. It runs through the same send pipeline as `send-text`: the `message:sending` plugin hook can block it, it takes an `Idempotency-Key` (see [Idempotent sends](#idempotent-sends)), and a key restricted with `allowedChats` must name an allowed chat. The stored message's `body` is the template's body text with the parameters filled in (the template's name when the list cannot be read), and a successful send dispatches one `message.sent`.
+
+**Auth:** API key (OPERATOR); a key restricted with `allowedChats` must name an allowed chat
+
+**Request body**
+
+| Field      | Type                         | Required | Description                                                                                                                                                          |
+| ---------- | ---------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| chatId     | string                       | Yes      | The customer's chat, `<digits>@c.us`                                                                                                                                 |
+| name       | string                       | Yes      | The template's name, at most 512 characters                                                                                                                          |
+| language   | string                       | Yes      | The template's language code as listed (`pt_BR`), at most 32 characters                                                                                              |
+| parameters | string[] or object of string | No       | The body parameters: an array for a positional template (`{{1}}`, `{{2}}`, in order), an object keyed by placeholder name for a named one. Omit when there are none. |
+
+```json
+{
+  "chatId": "5511988887777@c.us",
+  "name": "order_shipped",
+  "language": "pt_BR",
+  "parameters": ["Ana", "42"]
+}
+```
+
+Graph receives `type: "template"` with `template.name`, `template.language.code` and, when parameters are given, one `body` component whose `parameters` are `{ type: "text", text }` in order, or `{ type: "text", parameter_name, text }` for an object. Templates with a header variable or media, or with button parameters, cannot be filled here (docs/32 F4).
+
+**Response** `201`
+
+```json
+{
+  "messageId": "wamid.HBgNNTUxMTk4ODg4Nzc3NxUCABEYEjQ4",
+  "timestamp": 1760277780
+}
+```
+
+**Errors:** `400` validation (missing `chatId`, `name` or `language`, `parameters` neither a string array nor an object of strings, or an unknown field), a plugin blocked the send, or Meta refused it with `META_TEMPLATE_INVALID` (Graph `132000` to `132016`: unknown template, wrong language or parameter count, paused template) or `META_RECIPIENT_UNAVAILABLE`, with `metaCode` · `401` missing/invalid key · `403` key role below OPERATOR, or the key is restricted to other chats or sessions · `404` no session with this id · `409` the session is not `ready` (retryable), or `META_TOKEN_INVALID` or `META_ACCOUNT_RESTRICTED` · `422` the `Idempotency-Key` was already used for a different request (see [Idempotent sends](#idempotent-sends)) · `429` `META_LIMIT_REACHED` or `META_RATE_LIMITED` · `501` the session is not a `meta-cloud` session · `502` `META_UPSTREAM_ERROR`: Graph answered with an error the gateway does not map; the outcome is unknown and an `Idempotency-Key` stays held · `503` Graph did not answer (refused, reset or timed out); the outcome is unknown and an `Idempotency-Key` stays held
 
 ### 6.4.20 WhatsApp Cloud API webhook (OpenMsg)
 

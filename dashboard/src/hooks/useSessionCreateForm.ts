@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sessionApi, type Session } from '../services/api';
+import { metaCloudApi, metaErrorText, type SessionCreateMetaCloud } from '../services/metaCloud';
+import type { SessionEngineChoice } from '../components/sessions/MetaCloudFields';
 import { isValidProxyUrl } from '../utils/sessionForm';
 import { useToast } from './useToast';
 
@@ -20,7 +22,15 @@ export interface SessionCreateForm {
   setProxyUrl: (url: string) => void;
   creating: boolean;
   handleCreate: () => Promise<void>;
+  /** OpenMsg (docs/32 F3): a QR session or an official Meta API one, and the latter's credentials. */
+  engine: SessionEngineChoice;
+  setEngine: (engine: SessionEngineChoice) => void;
+  metaCloud: SessionCreateMetaCloud;
+  setMetaCloud: (value: SessionCreateMetaCloud) => void;
+  metaCloudIncomplete: boolean;
 }
+
+const NO_META_CLOUD: SessionCreateMetaCloud = { phoneNumberId: '', wabaId: '', accessToken: '' };
 
 /**
  * Owns the "New Session" modal: its open/closed state, the typed name, and the in-flight `creating`
@@ -37,10 +47,18 @@ export function useSessionCreateForm({ onCreated, onFailed }: UseSessionCreateFo
   const [useProxy, setUseProxy] = useState(false);
   const [proxyUrl, setProxyUrl] = useState('');
   const [creating, setCreating] = useState(false);
+  const [engine, setEngine] = useState<SessionEngineChoice>('qr');
+  const [metaCloud, setMetaCloud] = useState<SessionCreateMetaCloud>(NO_META_CLOUD);
+  const metaCloudIncomplete =
+    engine === 'meta-cloud' &&
+    !(metaCloud.phoneNumberId.trim() && metaCloud.wabaId.trim() && metaCloud.accessToken.trim());
 
   const resetProxyFields = () => {
     setUseProxy(false);
     setProxyUrl('');
+    // The Cloud API token is a credential too: never kept past the modal.
+    setEngine('qr');
+    setMetaCloud(NO_META_CLOUD);
   };
 
   // Anything typed into the proxy fields is dropped when the modal closes, however it closes. A
@@ -54,20 +72,28 @@ export function useSessionCreateForm({ onCreated, onFailed }: UseSessionCreateFo
     if (!newSessionName.trim()) return;
     // Guarded here rather than only on the Create button: the name field's Enter key calls this
     // directly, so a button-only check creates a session with no proxy while the toggle says on.
-    if (useProxy && !isValidProxyUrl(proxyUrl.trim())) return;
+    if (engine === 'qr' && useProxy && !isValidProxyUrl(proxyUrl.trim())) return;
+    if (metaCloudIncomplete) return;
     try {
       setCreating(true);
-      const newSession = await sessionApi.create(
-        newSessionName,
-        useProxy && proxyUrl.trim() ? { proxyUrl: proxyUrl.trim() } : undefined,
-      );
+      const newSession =
+        engine === 'meta-cloud'
+          ? await metaCloudApi.createSession(newSessionName, {
+              phoneNumberId: metaCloud.phoneNumberId.trim(),
+              wabaId: metaCloud.wabaId.trim(),
+              accessToken: metaCloud.accessToken.trim(),
+            })
+          : await sessionApi.create(
+              newSessionName,
+              useProxy && proxyUrl.trim() ? { proxyUrl: proxyUrl.trim() } : undefined,
+            );
       setNewSessionName('');
       resetProxyFields();
       setShowCreateModal(false);
       toast.success(t('sessions.create.successTitle'), t('sessions.create.successDesc', { name: newSession.name }));
       onCreated(newSession);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t('sessions.create.errorDefault');
+      const msg = metaErrorText(t, err) ?? t('sessions.create.errorDefault');
       toast.error(t('sessions.create.errorTitle'), msg);
       onFailed(msg);
     } finally {
@@ -86,5 +112,10 @@ export function useSessionCreateForm({ onCreated, onFailed }: UseSessionCreateFo
     setProxyUrl,
     creating,
     handleCreate,
+    engine,
+    setEngine,
+    metaCloud,
+    setMetaCloud,
+    metaCloudIncomplete,
   };
 }

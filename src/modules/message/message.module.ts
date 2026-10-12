@@ -43,6 +43,14 @@ import { PLUGIN_MESSAGE_PORT } from '../../core/plugins/plugin-host-ports';
     // An alias, not a factory, so lifecycle hooks are not dispatched twice on the same instance.
     { provide: PLUGIN_MESSAGE_PORT, useExisting: MessageService },
   ],
-  exports: [MessageService, BulkMessageService, SendPacingService],
+  // OpenMsg: MessageSendService and the idempotency pair serve the Cloud API template send (docs/32 F3).
+  exports: [
+    MessageService,
+    BulkMessageService,
+    SendPacingService,
+    MessageSendService,
+    SendIdempotencyService,
+    SendIdempotencyInterceptor,
+  ],
 })
 export class MessageModule {}

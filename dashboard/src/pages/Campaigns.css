@@ -513,3 +513,13 @@
   color: var(--success-text);
   font-weight: 600;
 }
+
+/* OpenMsg (docs/32 F3): the note shown in place of New campaign on an official Meta API session. */
+.campaigns-page .meta-cloud-campaigns-note {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 3px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+  color: var(--text-primary);
+}

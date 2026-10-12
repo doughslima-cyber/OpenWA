@@ -1336,7 +1336,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Campaigns עדיין לא זמינים ב-Session של ה-API הרשמי של Meta."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1396,5 +1397,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "חיבור",
+      "qr": "מכשיר מקושר (QR)",
+      "cloud": "ה-API הרשמי של Meta"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "טוקן גישה",
+      "hint": "העתיקו אותם מהאפליקציה שלכם ב-Meta for Developers. הטוקן נשמר מוצפן ולא מוצג שוב."
+    },
+    "badge": "API רשמי",
+    "tokenHint": "Meta דחתה את טוקן הגישה, או שאין טוקן שמור. פתחו את פרטי ה-Session, החליפו את הטוקן והפעילו את ה-Session מחדש.",
+    "account": {
+      "title": "ה-API הרשמי של Meta",
+      "loading": "טוען את חשבון Meta...",
+      "displayPhoneNumber": "מספר טלפון",
+      "verifiedName": "שם מאומת",
+      "qualityRating": "דירוג איכות",
+      "messagingLimitTier": "מגבלת הודעות",
+      "token": "טוקן גישה",
+      "tokenNone": "אין טוקן שמור",
+      "webhookUrl": "כתובת ה-webhook",
+      "copy": "העתקה",
+      "copied": "כתובת ה-webhook הועתקה",
+      "webhookHint": "רשמו את הכתובת הזו ככתובת ה-callback באפליקציית Meta שלכם, עם טוקן האימות שמוגדר ב-META_WEBHOOK_VERIFY_TOKEN בשער.",
+      "newToken": "טוקן גישה חדש",
+      "changeToken": "החלפת טוקן",
+      "tokenChanged": "טוקן הגישה הוחלף",
+      "tokenChangedDesc": "ה-Session ישתמש בטוקן החדש בבקשה הבאה. הפעילו אותו מחדש אם הוא דורש פעולה."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "Sessions של ה-API הרשמי של Meta כבויים בשער הזה. הגדירו META_CLOUD_ENABLED=true והפעילו אותו מחדש.",
+      "META_CLOUD_NOT_CONFIGURED": "השער לא יכול לשמור טוקנים של Meta: הגדירו META_CLOUD_ENCRYPTION_KEY (32 בתים ב-base64) והפעילו אותו מחדש.",
+      "META_PHONE_NUMBER_IN_USE": "ה-Phone Number ID הזה כבר בשימוש ב-Session אחר.",
+      "META_OUTSIDE_SERVICE_WINDOW": "חלון 24 השעות למענה נסגר. שלחו במקום זאת תבנית מאושרת.",
+      "META_RECIPIENT_UNAVAILABLE": "המספר הזה לא יכול לקבל הודעות WhatsApp מהעסק שלכם.",
+      "META_LIMIT_REACHED": "מגבלת ההודעות של המספר הזה הושגה. נסו שוב מאוחר יותר.",
+      "META_RATE_LIMITED": "Meta מגבילה את קצב השליחה של המספר הזה. נסו שוב בעוד רגע.",
+      "META_TOKEN_INVALID": "Meta דחתה את טוקן הגישה. החליפו את הטוקן בפרטי ה-Session.",
+      "META_TOKEN_MISSING": "אין טוקן גישה שמור ל-Session הזה. החליפו את הטוקן בפרטי ה-Session.",
+      "META_ACCOUNT_RESTRICTED": "Meta הגבילה את חשבון WhatsApp Business הזה.",
+      "META_TEMPLATE_INVALID": "Meta לא קיבלה את התבנית הזו. בדקו את השם, השפה והפרמטרים שלה."
+    },
+    "window": {
+      "closed": "חלון 24 השעות למענה ללקוח הזה נסגר. שלחו תבנית מאושרת כדי לפתוח מחדש את השיחה."
+    },
+    "templates": {
+      "open": "שליחת תבנית",
+      "title": "שליחת תבנית מאושרת",
+      "refresh": "רענון",
+      "loading": "טוען תבניות...",
+      "empty": "אין תבניות מאושרות. תבניות נוצרות ומאושרות ב-WhatsApp Manager של Meta.",
+      "notSendable": "לא ניתן לשלוח מלוח הבקרה: יש לה משתנה או מדיה בכותרת, או כפתורים עם פרמטרים.",
+      "choose": "בחרו תבנית",
+      "preview": "תצוגה מקדימה",
+      "send": "שלח",
+      "sentTitle": "התבנית נשלחה",
+      "errorTitle": "לא ניתן היה לשלוח את התבנית"
+    },
+    "campaignsNote": "Campaigns ב-Session של ה-API הרשמי של Meta יגיעו יחד עם התבניות בגרסה מאוחרת יותר."
   }
 }

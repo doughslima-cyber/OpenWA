@@ -26,6 +26,7 @@ import { holdConnect, lastSocket, resetSocketDouble } from '../test-helpers/sock
 const SESSION_QR: Session = {
   id: 'sess-qr-1',
   name: 'new-device',
+  engine: 'whatsapp-web.js',
   status: 'qr_ready',
   engineLoaded: true,
   phone: null,
@@ -40,6 +41,7 @@ const SESSION_QR: Session = {
 const SESSION_STALE_ENGINE: Session = {
   id: 'sess-stale-1',
   name: 'stale-engine',
+  engine: 'whatsapp-web.js',
   status: 'disconnected',
   engineLoaded: true,
   phone: '15550009999',
@@ -53,6 +55,7 @@ const SESSION_STALE_ENGINE: Session = {
 const SESSION_RECONNECTING: Session = {
   id: 'sess-reconnecting-1',
   name: 'reconnecting-bot',
+  engine: 'whatsapp-web.js',
   status: 'initializing',
   engineLoaded: true,
   phone: '15550002222',
@@ -67,6 +70,7 @@ const SESSION_RECONNECTING: Session = {
 const SESSION_TIMELOCKED: Session = {
   id: 'sess-limited-1',
   name: 'limited-bot',
+  engine: 'whatsapp-web.js',
   status: 'ready',
   engineLoaded: true,
   phone: '15550001111',

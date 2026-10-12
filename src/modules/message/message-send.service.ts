@@ -39,6 +39,22 @@ function isUrlPointerMetadata(metadata: Record<string, unknown> | undefined): bo
   return typeof data === 'string' && /^https?:\/\//i.test(data);
 }
 
+/** OpenMsg (docs/32 F3): a Meta template send, as the `meta-cloud` adapter's sendTemplateMessage takes it. */
+export interface CloudTemplateSendDto {
+  chatId: string;
+  name: string;
+  language: string;
+  parameters?: string[] | Record<string, string>;
+}
+
+interface CloudTemplateSender {
+  sendTemplateMessage(
+    chatId: string,
+    template: Omit<CloudTemplateSendDto, 'chatId'>,
+    body: string,
+  ): Promise<MessageResult>;
+}
+
 /** Persistence payload for one outbound row written by {@link MessageSendService.saveOutgoingMessage}. */
 export interface SaveOutgoingMessageData {
   waMessageId?: string;
@@ -291,6 +307,34 @@ export class MessageSendService {
       mentions: dto.mentions,
       linkPreview: dto.linkPreview,
     });
+  }
+
+  /**
+   * OpenMsg (docs/32 F3): an approved Meta template on a `meta-cloud` session. The same gate, pending
+   * row and echo as {@link sendText}; `render` turns the (possibly plugin-modified) input into the
+   * text the customer receives, which the row stores.
+   */
+  async sendCloudTemplate(
+    sessionId: string,
+    dto: CloudTemplateSendDto,
+    render: (input: CloudTemplateSendDto) => Promise<string>,
+  ): Promise<MessageResponseDto> {
+    const { finalDto, engine } = await this.applySendingGate(sessionId, 'template', dto);
+    const body = await render(finalDto);
+    const message = await this.saveOutgoingMessage(sessionId, { chatId: finalDto.chatId, body, type: 'text' });
+
+    let result: MessageResult;
+    try {
+      const { chatId, name, language, parameters } = finalDto;
+      result = await (engine as unknown as CloudTemplateSender).sendTemplateMessage(
+        chatId,
+        { name, language, parameters },
+        body,
+      );
+    } catch (error) {
+      return this.failSend(sessionId, 'template', message, finalDto, error);
+    }
+    return this.persistSentState(message, result);
   }
 
   async sendImage(sessionId: string, dto: SendMediaMessageDto): Promise<MessageResponseDto> {

@@ -39,6 +39,7 @@ import { StatusStoreModule } from './modules/status-store/status-store.module';
 import { ChatMediaModule } from './modules/chat-media/chat-media.module';
 import { AutomationModule } from './modules/automation/automation.module';
 import { CampaignModule } from './modules/campaign/campaign.module';
+import { MetaCloudTemplatesModule } from './modules/meta-cloud/meta-cloud-templates.module';
 import { TakeoverModule } from './modules/takeover/takeover.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { HooksModule } from './core/hooks';
@@ -297,6 +298,7 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
     ChatMediaModule, // opt-in chat-media archive (retention purge + orphan sweep)
     AutomationModule, // single-message autoreply rules, evaluated on the inbound dispatch
     CampaignModule, // OpenMsg: paced campaigns to a list of numbers, replies marked on message.received
+    MetaCloudTemplatesModule, // OpenMsg: Cloud API templates and the 24-hour window (docs/32 F3)
     TakeoverModule, // adopts sessions whose holder's lease lapsed (crashed peer / recreated node)
     CatalogModule, // Phase 3: Catalog API (WhatsApp Business)
     PluginsApiModule, // Phase 5: Plugins API

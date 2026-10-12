@@ -1323,7 +1323,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Kampanyalar resmi Meta API oturumunda henüz kullanılamıyor."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1383,5 +1384,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "Bağlantı",
+      "qr": "Bağlı cihaz (QR)",
+      "cloud": "Resmi Meta API"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "Erişim belirteci",
+      "hint": "Bunları Meta for Developers'taki Meta uygulamanızdan kopyalayın. Belirteç şifreli saklanır ve bir daha gösterilmez."
+    },
+    "badge": "Resmi API",
+    "tokenHint": "Meta erişim belirtecini reddetti veya kayıtlı bir belirteç yok. Oturum detaylarını açın, belirteci değiştirin ve oturumu yeniden başlatın.",
+    "account": {
+      "title": "Resmi Meta API",
+      "loading": "Meta hesabı yükleniyor...",
+      "displayPhoneNumber": "Telefon numarası",
+      "verifiedName": "Doğrulanmış ad",
+      "qualityRating": "Kalite puanı",
+      "messagingLimitTier": "Mesaj limiti",
+      "token": "Erişim belirteci",
+      "tokenNone": "Kayıtlı yok",
+      "webhookUrl": "Webhook URL",
+      "copy": "Kopyala",
+      "copied": "Webhook URL kopyalandı",
+      "webhookHint": "Bu URL'yi Meta uygulamanızda geri çağırma URL'si olarak kaydedin; doğrulama belirteci ağ geçidinde META_WEBHOOK_VERIFY_TOKEN ile ayarlanır.",
+      "newToken": "Yeni erişim belirteci",
+      "changeToken": "Belirteci değiştir",
+      "tokenChanged": "Erişim belirteci değiştirildi",
+      "tokenChangedDesc": "Oturum yeni belirteci bir sonraki istekte kullanır. İşlem gerektiriyorsa yeniden başlatın."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "Resmi Meta API oturumları bu ağ geçidinde kapalı. META_CLOUD_ENABLED=true ayarlayın ve yeniden başlatın.",
+      "META_CLOUD_NOT_CONFIGURED": "Ağ geçidi Meta belirteçlerini saklayamıyor: META_CLOUD_ENCRYPTION_KEY (base64 olarak 32 bayt) ayarlayın ve yeniden başlatın.",
+      "META_PHONE_NUMBER_IN_USE": "Bu Phone Number ID başka bir oturum tarafından kullanılıyor.",
+      "META_OUTSIDE_SERVICE_WINDOW": "Yanıt vermek için 24 saatlik pencere kapandı. Bunun yerine onaylı bir şablon gönderin.",
+      "META_RECIPIENT_UNAVAILABLE": "Bu numara işletmenizden WhatsApp mesajı alamaz.",
+      "META_LIMIT_REACHED": "Bu numaranın mesaj limitine ulaşıldı. Daha sonra tekrar deneyin.",
+      "META_RATE_LIMITED": "Meta bu numaranın gönderim hızını sınırlıyor. Birazdan tekrar deneyin.",
+      "META_TOKEN_INVALID": "Meta erişim belirtecini reddetti. Belirteci oturum detaylarından değiştirin.",
+      "META_TOKEN_MISSING": "Bu oturum için kayıtlı erişim belirteci yok. Belirteci oturum detaylarından değiştirin.",
+      "META_ACCOUNT_RESTRICTED": "Meta bu WhatsApp Business hesabını kısıtladı.",
+      "META_TEMPLATE_INVALID": "Meta bu şablonu kabul etmedi. Adını, dilini ve parametrelerini kontrol edin."
+    },
+    "window": {
+      "closed": "Bu müşteriye yanıt vermek için 24 saatlik pencere kapandı. Görüşmeyi yeniden açmak için onaylı bir şablon gönderin."
+    },
+    "templates": {
+      "open": "Şablon gönder",
+      "title": "Onaylı bir şablon gönder",
+      "refresh": "Yenile",
+      "loading": "Şablonlar yükleniyor...",
+      "empty": "Onaylı şablon yok. Şablonlar Meta'nın WhatsApp Manager'ında oluşturulur ve onaylanır.",
+      "notSendable": "Panelden gönderilemez: başlıkta değişken veya medya ya da parametreli düğmeler içeriyor.",
+      "choose": "Bir şablon seçin",
+      "preview": "Önizleme",
+      "send": "Gönder",
+      "sentTitle": "Şablon gönderildi",
+      "errorTitle": "Şablon gönderilemedi"
+    },
+    "campaignsNote": "Resmi Meta API oturumunda kampanyalar, şablonlarla birlikte sonraki bir sürümde gelecek."
   }
 }

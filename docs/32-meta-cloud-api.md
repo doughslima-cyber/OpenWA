@@ -1,7 +1,7 @@
 # 32 - API oficial da Meta (WhatsApp Cloud API): plano de adoção
 
-> **Status:** F1 e F2 implementadas no ramo `claude/tlc-spec-lean-meta-cloud-api-5902e1` (OpenMsg); F3, F4 e F5
-> continuam propostas. O documento descreve como o OpenMsg passa a
+> **Status:** F1 e F2 implementadas e no `main` (OpenMsg, PR #6); F3 (painel) implementada no ramo
+> `claude/tlc-spec-lean-meta-cloud-dashboard`; F4 e F5 continuam propostas. O documento descreve como o OpenMsg passa a
 > aceitar, lado a lado com as sessões de dispositivo vinculado (Baileys e whatsapp-web.js), sessões ligadas à
 > **WhatsApp Business Platform / Cloud API**, a API oficial da Meta. O documento é em português porque é parte
 > do fork; os documentos do projeto original continuam em inglês.
@@ -198,8 +198,19 @@ Em vez disso, o adapter implementa uma interface **opcional** do fork, `MetaClou
 | `POST /api/sessions/:id/messages/send-interactive`   | `{ chatId, body, buttons[] \| list }` → `type: interactive`                                                                                               |
 
 O nome `send-template-meta` evita colidir com o `send-template` atual (modelos locais com variáveis), que continua
-funcionando em qualquer sessão. Cada rota entra em `docs/06`, no `openapi.json`, nos cinco SDKs (um recurso
-`meta` por SDK, com `templates.list`, `account.get`, `sendTemplate`, `sendInteractive`) e no `check:sdk-*`.
+funcionando em qualquer sessão.
+
+> **Mudança na F3:** o envio de modelo saiu como `POST /api/sessions/:id/meta/send-template`, não como
+> `POST /api/sessions/:id/messages/send-template-meta`, ao lado de `GET /api/sessions/:id/meta/templates` e de uma
+> rota nova, `GET /api/sessions/:id/meta/chats/:chatId/window` (a janela de 24 horas, ver D10). Motivo:
+> `scripts/check-sdk-coverage.mjs` agrupa as rotas em recursos pelo segmento depois da sessão, e uma rota em
+> `messages` obrigaria o método nos cinco SDKs já na F3, quando os SDKs ficaram para a F4; o recurso `meta` já está
+> na lista "Deliberately not exposed" do `sdk/README.md` e é o recurso que a F4 leva aos SDKs. Também evita um verbo
+> só da Cloud API no recurso `messages`, que vale para todos os motores. O corpo é
+> `{ chatId, name, language, parameters? }`: `parameters` é uma lista (modelo posicional, `{{1}}`) ou um objeto
+> (modelo nomeado, `{{first_name}}`) e vira um componente `body`; `components` livres e mensagens interativas
+> continuam na F4. Os códigos Graph `132000` a `132016` respondem 400 `META_TEMPLATE_INVALID`. Cada rota entra em `docs/06`, no `openapi.json`, nos cinco SDKs (um recurso
+> `meta` por SDK, com `templates.list`, `account.get`, `sendTemplate`, `sendInteractive`) e no `check:sdk-*`.
 
 ### D8. Anti-banimento e limites da Meta
 
@@ -254,7 +265,8 @@ as sessões de QR.
   qualidade, faixa de limite, token mascarado, a URL do webhook e o verify token para colar na Meta, e um botão
   **Trocar token**. `awaitsPairing()` e `canUnlinkSession()` em `utils/sessionActions.ts` aprendem o motor.
 - **Conversas:** compositor com o aviso "janela de 24 h fechada: envie um modelo" (calculado de
-  `lastInboundAt` do chat, que o `GET .../chats` da sessão passa a devolver) e a ação **Enviar modelo** (D7).
+  `lastInboundAt` do chat, que o `GET .../chats` da sessão passa a devolver; na F3 saiu como a rota
+  `GET .../meta/chats/:chatId/window`, ver D7) e a ação **Enviar modelo** (D7).
   Ações sem suporte (apagar, editar, encaminhar, enquete) ficam ocultas; as abas Grupos, Status e Canais também.
 - **Campanhas:** D9.
 - Regras do fork: toda string nos 15 catálogos de `dashboard/src/i18n/locales/`; CSS novo dentro da classe raiz
@@ -375,9 +387,21 @@ painel, `typecheck`, `lint`, `format:check`, `i18n:check` e `npm test`.
 ### F3. Painel
 
 - D10, exceto a parte de campanhas. Inclui o aviso de janela de 24 horas e o botão **Enviar modelo** (que depende
-  de `GET .../meta/templates`, entregue aqui junto com `send-template-meta`).
+  de `GET .../meta/templates`, entregue aqui junto com o envio de modelo).
 - Critério: um operador cria, liga e usa uma sessão Cloud só pelo painel, sem tocar na API; `i18n:check` passa
   nos 15 idiomas.
+- **Implementada** (ramo `claude/tlc-spec-lean-meta-cloud-dashboard`, plano em
+  `.specs/features/meta-cloud-dashboard/`): criação com Phone Number ID, WABA ID e token; selo "API oficial" e
+  nenhum QR ou **Desvincular** no cartão; detalhe com a conta, o token mascarado, a URL do webhook e **Trocar
+  token** (o verify token não aparece, só o nome da variável); em **Conversas**, sem as abas Status e Canais, sem
+  **Apagar** e com botões recebidos sem clique, o aviso de janela fechada e o seletor de modelos aprovados; em
+  **Campanhas**, sem **Nova campanha** e com uma nota sobre a F4. As rotas ficaram em `/api/sessions/:id/meta/*`
+  (`templates`, `chats/:chatId/window`, `send-template`), não em `messages/send-template-meta`: ver a mudança
+  registrada em D7. A janela vem dessa rota nova, que lê o último recebimento já gravado pela F2, e não de um
+  `lastInboundAt` no `GET .../chats`, o que mudaria a interface do motor, o DTO do upstream e os cinco SDKs. A
+  lista de modelos fica 5 minutos em memória por sessão (`refresh=true` ignora o cache); a invalidação pelo webhook
+  `message_template_status_update` continua na F5. Falta o critério com um número real, que depende de uma WABA
+  com modelo aprovado.
 
 ### F4. Modelos e campanhas
 

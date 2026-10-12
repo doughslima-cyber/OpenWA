@@ -1323,7 +1323,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Meta 官方 API 工作階段暫不支援推廣活動。"
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1383,5 +1384,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "連線方式",
+      "qr": "已連結裝置 (QR)",
+      "cloud": "Meta 官方 API"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "存取權杖",
+      "hint": "請從 Meta for Developers 中你的 Meta 應用程式複製這些值。權杖會加密儲存，之後不會再顯示。"
+    },
+    "badge": "官方 API",
+    "tokenHint": "Meta 拒絕了存取權杖，或尚未儲存權杖。請開啟工作階段詳情，更換權杖，然後重新啟動工作階段。",
+    "account": {
+      "title": "Meta 官方 API",
+      "loading": "正在載入 Meta 帳戶...",
+      "displayPhoneNumber": "電話號碼",
+      "verifiedName": "已驗證名稱",
+      "qualityRating": "質素評級",
+      "messagingLimitTier": "訊息上限",
+      "token": "存取權杖",
+      "tokenNone": "未儲存",
+      "webhookUrl": "Webhook URL",
+      "copy": "複製",
+      "copied": "已複製 Webhook URL",
+      "webhookHint": "請在你的 Meta 應用程式中將此 URL 登記為回呼 URL，驗證權杖為閘道上 META_WEBHOOK_VERIFY_TOKEN 所設定的值。",
+      "newToken": "新存取權杖",
+      "changeToken": "更換權杖",
+      "tokenChanged": "存取權杖已更換",
+      "tokenChangedDesc": "工作階段會在下一次請求時使用新權杖。如需處理，請重新啟動工作階段。"
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "此閘道已關閉 Meta 官方 API 工作階段。請設定 META_CLOUD_ENABLED=true 並重新啟動閘道。",
+      "META_CLOUD_NOT_CONFIGURED": "閘道無法儲存 Meta 權杖：請設定 META_CLOUD_ENCRYPTION_KEY（base64 編碼的 32 位元組）並重新啟動閘道。",
+      "META_PHONE_NUMBER_IN_USE": "此 Phone Number ID 已被另一個工作階段使用。",
+      "META_OUTSIDE_SERVICE_WINDOW": "24 小時回覆時段已關閉。請改為傳送已批核的範本。",
+      "META_RECIPIENT_UNAVAILABLE": "此號碼無法接收你企業傳送的 WhatsApp 訊息。",
+      "META_LIMIT_REACHED": "此號碼已達訊息上限。請稍後再試。",
+      "META_RATE_LIMITED": "Meta 正在限制此號碼的傳送速度。請稍後再試。",
+      "META_TOKEN_INVALID": "Meta 拒絕了存取權杖。請在工作階段詳情中更換權杖。",
+      "META_TOKEN_MISSING": "此工作階段未儲存存取權杖。請在工作階段詳情中更換權杖。",
+      "META_ACCOUNT_RESTRICTED": "Meta 已限制此 WhatsApp Business 帳戶。",
+      "META_TEMPLATE_INVALID": "Meta 不接受此範本。請檢查其名稱、語言和參數。"
+    },
+    "window": {
+      "closed": "回覆此客戶的 24 小時時段已關閉。請傳送已批核的範本以重新開啟對話。"
+    },
+    "templates": {
+      "open": "傳送範本",
+      "title": "傳送已批核的範本",
+      "refresh": "重新整理",
+      "loading": "正在載入範本...",
+      "empty": "沒有已批核的範本。範本需在 Meta 的 WhatsApp Manager 中建立並獲批核。",
+      "notSendable": "無法從控制台傳送：其標題含變數或媒體，或含帶參數的按鈕。",
+      "choose": "選擇範本",
+      "preview": "預覽",
+      "send": "傳送",
+      "sentTitle": "範本已傳送",
+      "errorTitle": "無法傳送範本"
+    },
+    "campaignsNote": "Meta 官方 API 工作階段的推廣活動將於之後的版本隨範本一同推出。"
   }
 }

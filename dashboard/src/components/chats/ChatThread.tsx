@@ -45,6 +45,8 @@ interface ChatThreadProps {
   onDelete: (message: ChatMessageView) => void;
   /** Tap a choice on an inbound business button/list prompt (Baileys click-button). */
   onClickButton: (message: ChatMessageView, button: { id: string; text: string }) => Promise<void>;
+  /** A Cloud API session: no delete for everyone, and prompt buttons cannot be clicked (OpenMsg, docs/32 F3). */
+  cloudSession?: boolean;
 }
 
 // The messages area of the active chat room: the bubble list (media, quotes, reactions, hover
@@ -68,6 +70,7 @@ function ChatThread({
   onReact,
   onDelete,
   onClickButton,
+  cloudSession = false,
 }: ChatThreadProps) {
   const { t } = useTranslation();
   // Reply, react, delete and prompt taps all need an operator key, like the composer; a viewer
@@ -484,6 +487,13 @@ function ChatThread({
                   {!isMe && !isRevoked && !isMasked && (msg.metadata?.buttons?.length ?? 0) > 0 && (
                     <div className="message-prompt-buttons" role="group" aria-label={t('chats.promptButtons')}>
                       {msg.metadata!.buttons!.map((btn, idx) => {
+                        if (cloudSession) {
+                          return (
+                            <span key={`${idx}:${btn.id}`} className="message-prompt-button">
+                              {btn.text}
+                            </span>
+                          );
+                        }
                         const clickKey = msg.waMessageId || msg.id;
                         const state = buttonClick[clickKey];
                         const loading = state?.loadingId === btn.id;
@@ -568,7 +578,7 @@ function ChatThread({
                       </div>
                     </div>
 
-                    {isMe && msg.status !== 'pending' && (
+                    {isMe && msg.status !== 'pending' && !cloudSession && (
                       <button
                         type="button"
                         className="action-btn delete-btn"

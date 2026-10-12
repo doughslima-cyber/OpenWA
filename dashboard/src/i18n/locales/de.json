@@ -1323,7 +1323,8 @@
       "CAMPAIGN_NO_RECIPIENTS": "None of the entries is a phone number",
       "CAMPAIGN_TOO_MANY_RECIPIENTS": "A campaign holds at most 5000 numbers",
       "CAMPAIGN_ALREADY_RUNNING": "This session already has a running campaign",
-      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running"
+      "CAMPAIGN_NOT_RUNNING": "This campaign is no longer running",
+      "CAMPAIGN_ENGINE_UNSUPPORTED": "Kampagnen sind in einer Sitzung über die offizielle Meta-API noch nicht verfügbar."
     },
     "openAria": "Open {{name}}",
     "detail": {
@@ -1383,5 +1384,68 @@
         "days": "{{days}} d {{hours}} h"
       }
     }
+  },
+  "metaCloud": {
+    "engine": {
+      "label": "Verbindung",
+      "qr": "Verknüpftes Gerät (QR)",
+      "cloud": "Offizielle Meta-API"
+    },
+    "fields": {
+      "phoneNumberId": "Phone Number ID",
+      "wabaId": "WABA ID",
+      "accessToken": "Zugriffstoken",
+      "hint": "Kopieren Sie diese Werte aus Ihrer Meta-App in Meta for Developers. Das Token wird verschlüsselt gespeichert und nie wieder angezeigt."
+    },
+    "badge": "Offizielle API",
+    "tokenHint": "Meta hat das Zugriffstoken abgelehnt, oder es ist keins gespeichert. Öffnen Sie die Sitzungsdetails, ändern Sie das Token und starten Sie die Sitzung erneut.",
+    "account": {
+      "title": "Offizielle Meta-API",
+      "loading": "Meta-Konto wird geladen...",
+      "displayPhoneNumber": "Telefonnummer",
+      "verifiedName": "Verifizierter Name",
+      "qualityRating": "Qualitätsbewertung",
+      "messagingLimitTier": "Nachrichtenlimit",
+      "token": "Zugriffstoken",
+      "tokenNone": "Keins gespeichert",
+      "webhookUrl": "Webhook-URL",
+      "copy": "Kopieren",
+      "copied": "Webhook-URL kopiert",
+      "webhookHint": "Tragen Sie diese URL als Callback-URL in Ihrer Meta-App ein, mit dem Verifizierungstoken, das am Gateway in META_WEBHOOK_VERIFY_TOKEN gesetzt ist.",
+      "newToken": "Neues Zugriffstoken",
+      "changeToken": "Token ändern",
+      "tokenChanged": "Zugriffstoken geändert",
+      "tokenChangedDesc": "Die Sitzung verwendet das neue Token bei der nächsten Anfrage. Starten Sie sie neu, falls sie eine Aktion erfordert."
+    },
+    "errors": {
+      "META_CLOUD_DISABLED": "Sitzungen über die offizielle Meta-API sind auf diesem Gateway ausgeschaltet. Setzen Sie META_CLOUD_ENABLED=true und starten Sie es neu.",
+      "META_CLOUD_NOT_CONFIGURED": "Das Gateway kann keine Meta-Tokens speichern: Setzen Sie META_CLOUD_ENCRYPTION_KEY (32 Bytes in Base64) und starten Sie es neu.",
+      "META_PHONE_NUMBER_IN_USE": "Diese Phone Number ID wird bereits von einer anderen Sitzung verwendet.",
+      "META_OUTSIDE_SERVICE_WINDOW": "Das 24-Stunden-Fenster zum Antworten ist geschlossen. Senden Sie stattdessen eine genehmigte Vorlage.",
+      "META_RECIPIENT_UNAVAILABLE": "Diese Nummer kann keine WhatsApp-Nachrichten von Ihrem Unternehmen empfangen.",
+      "META_LIMIT_REACHED": "Das Nachrichtenlimit dieser Nummer ist erreicht. Versuchen Sie es später erneut.",
+      "META_RATE_LIMITED": "Meta begrenzt, wie schnell diese Nummer sendet. Versuchen Sie es gleich noch einmal.",
+      "META_TOKEN_INVALID": "Meta hat das Zugriffstoken abgelehnt. Ändern Sie das Token in den Sitzungsdetails.",
+      "META_TOKEN_MISSING": "Für diese Sitzung ist kein Zugriffstoken gespeichert. Ändern Sie das Token in den Sitzungsdetails.",
+      "META_ACCOUNT_RESTRICTED": "Meta hat dieses WhatsApp-Business-Konto eingeschränkt.",
+      "META_TEMPLATE_INVALID": "Meta hat diese Vorlage nicht akzeptiert. Prüfen Sie Name, Sprache und Parameter."
+    },
+    "window": {
+      "closed": "Das 24-Stunden-Fenster zum Antworten an diesen Kunden ist geschlossen. Senden Sie eine genehmigte Vorlage, um die Unterhaltung wieder zu öffnen."
+    },
+    "templates": {
+      "open": "Vorlage senden",
+      "title": "Genehmigte Vorlage senden",
+      "refresh": "Aktualisieren",
+      "loading": "Vorlagen werden geladen...",
+      "empty": "Keine genehmigten Vorlagen. Vorlagen werden im WhatsApp Manager von Meta erstellt und genehmigt.",
+      "notSendable": "Nicht aus dem Dashboard sendbar: Sie hat eine Kopfzeilenvariable oder Medien oder Schaltflächen mit Parametern.",
+      "choose": "Vorlage auswählen",
+      "preview": "Vorschau",
+      "send": "Senden",
+      "sentTitle": "Vorlage gesendet",
+      "errorTitle": "Die Vorlage konnte nicht gesendet werden"
+    },
+    "campaignsNote": "Kampagnen in einer Sitzung über die offizielle Meta-API kommen mit den Vorlagen in einer späteren Version."
   }
 }
