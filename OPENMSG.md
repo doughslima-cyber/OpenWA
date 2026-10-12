@@ -209,7 +209,8 @@ No painel da Meta, o webhook do app aponta para `https://openmsg.devsrun.com/api
 - Enquanto uma sessão Cloud com conta salva não está pronta neste processo (durante um reinício, ou antes de ser
   iniciada), o `POST /api/meta-webhook` com mensagens para o número dela responde 503 e não processa nada do corpo;
   a Meta reenvia mais tarde e a mensagem chega quando a sessão estiver pronta. Uma sessão parada de propósito faz a
-  Meta reenviar por até 7 dias.
+  Meta reenviar até desistir; a Meta não documenta por quanto tempo tenta, então mensagens que chegarem com a sessão
+  parada por muito tempo podem se perder.
 
 ## Implantação
 
