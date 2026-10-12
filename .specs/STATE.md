@@ -13,9 +13,9 @@
 ## Handoff
 
 **Feature**: meta-cloud-api
-**Where**: C1-C90 verified (round 2 PASS, `fffbb8e0`); C91-C92 (`a9f6e003`) and the PR review decisions C93-C98 (`5c035908`, `9af46dfe`) built, not yet verified
+**Where**: C1-C98 verified as claims in round 3 (FAIL on a coverage gap and a Test policy row, `43137586`); both gaps and the undeclared 500 fixed (`2669d0c5`, `0f87ad1f`, `fc6f1f50`, C99 added), not yet re-verified
 **In progress**: none
-**Next step**: the orchestrator re-verifies (C81 amended, C91-C98) and pushes to PR #6; go-live needs a Meta app, WABA and number (plan open questions 1 and 2), then doc 32 F0 to replace documented webhook fixtures with captured ones
+**Next step**: the orchestrator re-verifies (round 4, scoped to the round-3 fixes and C99) and pushes to PR #6; go-live needs a Meta app, WABA and number (plan open questions 1 and 2), then doc 32 F0 to replace documented webhook fixtures with captured ones
 **Blockers**: none for merging; go-live waits on plan open questions 1 and 2
 **Uncommitted**: none
 **Branch**: claude/tlc-spec-lean-meta-cloud-api-5902e1
