@@ -288,8 +288,9 @@ test('C60 a template with a CAROUSEL component, and one with a component type th
   renderPicker();
   for (const name of ['carousel_offer', 'flash_sale']) {
     await rtl.screen.findByText(/carousel_offer/);
-    rtl.fireEvent.click(item(name));
-    assert.ok(rtl.screen.getAllByText(en.metaCloud.templates.notSendable).length > 0);
-    assert.equal(sendButton().disabled, true);
+    const row = item(name);
+    assert.ok(row.textContent?.includes(en.metaCloud.templates.notSendable), `${name} is marked in the list`);
+    rtl.fireEvent.click(row);
+    assert.equal(sendButton().disabled, true, `${name} cannot be sent`);
   }
 });

@@ -3,7 +3,7 @@
 Profile: standard
 Plan: `.specs/features/meta-cloud-dashboard/plan.md`
 
-60 checks in 5 slices plus governance and verification round 1 additions · 5 one-way doors · 1 open, which blocks go-live only
+62 checks in 5 slices plus governance and verification round 1 additions · 5 one-way doors · 1 open, which blocks go-live only
 
 Proof commands, from `package.json`, `dashboard/package.json` and `.github/workflows/ci.yml`:
 
@@ -236,31 +236,42 @@ Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=12
 **C60** - A template with a `CAROUSEL` component (cards nesting an image header and a URL button with a parameter), and one with a component type outside `HEADER`, `BODY`, `FOOTER`, `BUTTONS` (`LIMITED_TIME_OFFER`), are listed with the not-sendable text and **Send** disabled (MCT-03, AC 33) ✅
 Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C60 " src/components/chats/TemplatePicker.test.ts`
 
+### Verification round 5 additions
+
+Added after verification round 5 (`verification.md`, gaps 1-2): the other branches of the decisions C58 and C59 added.
+
+**C61** - On a Cloud chat, a closed window and an open one with `closesAt: null` are not read again within 2.5 s; an open window whose `closesAt` has already passed is read again exactly once, no sooner than about 1 s after the first read, and not again once it answers closed; switching from Ana (open window, `closesAt` 1.5 s away) to Bruno leaves Ana's window read once and Bruno's read once after 3.5 s (MCD-05, AC 18, 19) ✅
+Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C61 " src/pages/Chats.metaCloud.test.ts`
+
+**C62** - With a Cloud chat open, a `message.received` that is our own (`fromMe: true`) makes no further window request; with a QR session selected, a customer message makes no window request at all (MCD-04, AC 21 · MCD-05, AC 17) ✅
+Proof: `cd dashboard && node --experimental-strip-types --test --test-timeout=120000 --test-name-pattern="C62 " src/pages/Chats.metaCloud.test.ts`
+
 ## Coverage
 
-| Set (size)                                                            | Member -> proof                                                                                                                                                                       | Unproven |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `GET /api/sessions/:sessionId/meta/templates` statuses (6)            | 200 C23 · 404 C25 · 409 C26, C56, C57 · 501 C25 · 502 C26 · 503 C26                                                                                                                   | -        |
-| `GET /api/sessions/:sessionId/meta/templates` 409 causes (2)          | `META_TOKEN_INVALID` C26 · no usable stored token C56, C57                                                                                                                            | -        |
-| `GET /api/sessions/:sessionId/meta/chats/:chatId/window` statuses (4) | 200 C27, C54 · 403 C54 · 404 C25 · 501 C25                                                                                                                                            | -        |
-| `POST /api/sessions/:sessionId/meta/send-template` statuses (9)       | 201 C29, C54 · 400 C33, C34 · 403 C31, C54 · 404 C56 · 409 C34 · 429 C56 · 501 C34 · 502 C56 · 503 C56                                                                                | -        |
-| `POST /api/sessions` statuses the dashboard handles (3)               | 201 C4 · 400 C6 · 409 C6                                                                                                                                                              | -        |
-| create error codes (3)                                                | `META_CLOUD_DISABLED` C6 · `META_CLOUD_NOT_CONFIGURED` C6 · `META_PHONE_NUMBER_IN_USE` C6                                                                                             | -        |
-| send error codes shown in Chats (6)                                   | C20, table-driven over all 6                                                                                                                                                          | -        |
-| template error codes 132000-132016 named by Meta (7)                  | C32, table-driven over all 7; boundary 132001 C33                                                                                                                                     | -        |
-| template parameter shapes (3)                                         | none C28, C39 · positional C28, C29, C30, C39 · named C28, C30, C39                                                                                                                   | -        |
-| stored template body outcomes (3)                                     | rendered C30, C55 · list unreadable C55 · template absent C55                                                                                                                         | -        |
-| window answers (3)                                                    | open C27 · closed C27 · no contact C27                                                                                                                                                | -        |
-| template list behaviours (4)                                          | paging C22 · 500 cap C22 · cache hit C24 · `refresh=true` C24                                                                                                                         | -        |
-| picker template kinds (8)                                             | body-only positional C36 · body-only named C36 · no placeholders C39 · header media C37 · header text variable C37 · button parameter C37 · carousel C60 · unknown component type C60 | -        |
-| session card states for Cloud (4)                                     | initializing C7 · ready C7 · action_required token invalid C9 · action_required token missing C9                                                                                      | -        |
-| Chats engine gates (5)                                                | Status tab C15, C21 · Channels tab C15, C21 · Delete C16, C21 · interactive buttons C16 · window request C17, C21                                                                     | -        |
-| composer window states (5)                                            | closed C18 · open C19 · request failed C19 · refreshed on inbound C58 · refreshed at closesAt C59                                                                                     | -        |
-| Landing doors (5)                                                     | 1 C23, C29, C46, C48 · 2 C28, C39 · 3 C22, C24 · 4 C32, C33 · 5 C27                                                                                                                   | -        |
-| `Session.engine` values the dashboard branches on (3)                 | `meta-cloud` C1, C7, C15, C42 · `whatsapp-web.js` C1, C21 · `baileys` C1, C7, C14, C21, C42                                                                                           | -        |
-| dashboard contract shapes this feature reads (5)                      | account C49 · template C49 · window C49 · send body C49 · `Session.engine` C53                                                                                                        | -        |
-| Relations entities (0)                                                | none - no stored-data change                                                                                                                                                          | -        |
-| startup config (1 place)                                              | the meta-cloud module registers the new controller and services, booted by every e2e suite through `AppModule` C23                                                                    | -        |
+| Set (size)                                                            | Member -> proof                                                                                                                                                                                                              | Unproven |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `GET /api/sessions/:sessionId/meta/templates` statuses (6)            | 200 C23 · 404 C25 · 409 C26, C56, C57 · 501 C25 · 502 C26 · 503 C26                                                                                                                                                          | -        |
+| `GET /api/sessions/:sessionId/meta/templates` 409 causes (2)          | `META_TOKEN_INVALID` C26 · no usable stored token C56, C57                                                                                                                                                                   | -        |
+| `GET /api/sessions/:sessionId/meta/chats/:chatId/window` statuses (4) | 200 C27, C54 · 403 C54 · 404 C25 · 501 C25                                                                                                                                                                                   | -        |
+| `POST /api/sessions/:sessionId/meta/send-template` statuses (9)       | 201 C29, C54 · 400 C33, C34 · 403 C31, C54 · 404 C56 · 409 C34 · 429 C56 · 501 C34 · 502 C56 · 503 C56                                                                                                                       | -        |
+| `POST /api/sessions` statuses the dashboard handles (3)               | 201 C4 · 400 C6 · 409 C6                                                                                                                                                                                                     | -        |
+| create error codes (3)                                                | `META_CLOUD_DISABLED` C6 · `META_CLOUD_NOT_CONFIGURED` C6 · `META_PHONE_NUMBER_IN_USE` C6                                                                                                                                    | -        |
+| send error codes shown in Chats (6)                                   | C20, table-driven over all 6                                                                                                                                                                                                 | -        |
+| template error codes 132000-132016 named by Meta (7)                  | C32, table-driven over all 7; boundary 132001 C33                                                                                                                                                                            | -        |
+| template parameter shapes (3)                                         | none C28, C39 · positional C28, C29, C30, C39 · named C28, C30, C39                                                                                                                                                          | -        |
+| stored template body outcomes (3)                                     | rendered C30, C55 · list unreadable C55 · template absent C55                                                                                                                                                                | -        |
+| window answers (3)                                                    | open C27 · closed C27 · no contact C27                                                                                                                                                                                       | -        |
+| template list behaviours (4)                                          | paging C22 · 500 cap C22 · cache hit C24 · `refresh=true` C24                                                                                                                                                                | -        |
+| picker template kinds (8)                                             | body-only positional C36 · body-only named C36 · no placeholders C39 · header media C37 · header text variable C37 · button parameter C37 · carousel C60 · unknown component type C60                                        | -        |
+| session card states for Cloud (4)                                     | initializing C7 · ready C7 · action_required token invalid C9 · action_required token missing C9                                                                                                                             | -        |
+| Chats engine gates (5)                                                | Status tab C15, C21 · Channels tab C15, C21 · Delete C16, C21 · interactive buttons C16 · window request C17, C21                                                                                                            | -        |
+| composer window states (9)                                            | closed C18 · open C19 · request failed C19 · refreshed on inbound C58 · refreshed at closesAt C59 · closed not re-read C61 · no closesAt not re-read C61 · past closesAt re-read once C61 · timer cleared on chat change C61 | -        |
+| `message.received` window re-read (3)                                 | customer message on the open Cloud chat C58 · own message C62 · QR session C62                                                                                                                                               | -        |
+| Landing doors (5)                                                     | 1 C23, C29, C46, C48 · 2 C28, C39 · 3 C22, C24 · 4 C32, C33 · 5 C27                                                                                                                                                          | -        |
+| `Session.engine` values the dashboard branches on (3)                 | `meta-cloud` C1, C7, C15, C42 · `whatsapp-web.js` C1, C21 · `baileys` C1, C7, C14, C21, C42                                                                                                                                  | -        |
+| dashboard contract shapes this feature reads (5)                      | account C49 · template C49 · window C49 · send body C49 · `Session.engine` C53                                                                                                                                               | -        |
+| Relations entities (0)                                                | none - no stored-data change                                                                                                                                                                                                 | -        |
+| startup config (1 place)                                              | the meta-cloud module registers the new controller and services, booted by every e2e suite through `AppModule` C23                                                                                                           | -        |
 
 - Claims naming a status code, route or response shape: C4, C6, C10, C12, C13, C17, C23, C25, C26, C27, C29, C30,
   C31, C33, C34, C35, C39, C42, C43, C54, C55, C56. The backend ones have an e2e proof across HTTP; the dashboard ones are proven
@@ -293,8 +304,9 @@ Evidence (planned files, classified by the shape the plan fixes):
 - `meta-cloud-window.service.ts` (or the chat-store method): 3 outcomes -> decides, reached across a boundary (C27 both)
 - adapter `sendTemplateMessage`: 3 parameter shapes -> decides (C28), reached across a boundary (C29, C30)
 - Graph client table rows `132xxx`: 7 codes -> decides (C32), boundary C33
-- `TemplatePicker.tsx`: approved filter, placeholder extraction (positional and named), sendability rule over 3
-  disqualifying kinds, enablement -> decides (C35-C39, C41 at its own layer through its render test; C40 at the Chats
+- `TemplatePicker.tsx`: approved filter, placeholder extraction (positional and named), sendability rule over 4
+  disqualifying kinds (header media or variable, button parameter, and any component type outside HEADER, BODY,
+  FOOTER, BUTTONS), enablement -> decides (C35-C39, C41, C60 at its own layer through its render test; C40 at the Chats
   page)
 - `sessionActions.ts`: engine branch in two helpers -> decides (C1, with `meta-cloud`, `baileys` and `whatsapp-web.js`
   engines, the strings the API sends)
@@ -302,8 +314,13 @@ Evidence (planned files, classified by the shape the plan fixes):
   -> entry point that decides nothing. Templates: 200 C23, 404 and 501 C25, 409 C26 and C56, 502 and 503 C26.
   Window: 200 C27, 403 C54, 404 and 501 C25. Send: 201 C29, 400 C33 and C34, 403 C31 and C54, 404 C56, 409 and 501
   C34, 429, 502 and 503 C56
-- `services/metaCloud.ts` and `hooks/useMetaCloud.ts`: one request or query each -> instrumentation (covered by the
-  page and picker proofs)
+- `services/metaCloud.ts` and the account and template hooks in `hooks/useMetaCloud.ts`: one request or query each
+  -> instrumentation (covered by the page and picker proofs)
+- `useMetaChatWindow` in `hooks/useMetaCloud.ts`: re-read timer with 4 outcomes (open with `closesAt` ahead, open with
+  `closesAt` already past and the 1 s floor, closed or no `closesAt`, cleared on chat change) -> decides, proven at the
+  Chats page, which is the only consumer (C59, C61; reclassified after verification round 5, lesson L-005)
+- the `message.received` branch in `Chats.tsx`: customer message re-reads the Cloud window, own message and non-Cloud
+  session do not -> decides (C58, C62)
 - closest analogues: `meta-cloud-graph.client.spec.ts` (`it.each` over the F2 error table) and
   `dashboard/src/pages/Users.test.ts` (form posts and error-code text through a stubbed `fetch`)
 

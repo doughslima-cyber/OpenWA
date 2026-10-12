@@ -88,6 +88,8 @@ const SENT_TEMPLATE: ChatMessage = {
 
 let session: Session = CLOUD;
 let messages: ChatMessage[] = [];
+const BRUNO: Chat = { ...CHAT, id: '5511977776666@c.us', name: 'Bruno' };
+let chatList: Chat[] = [CHAT];
 let windowReply: () => Response = () => jsonResponse({ lastInboundAt: null, open: false, closesAt: null });
 let sendReply: () => Response = () => jsonResponse({ messageId: 'wamid.OUT', timestamp: 1_760_000_100 }, 201);
 let calls: Array<{ method: string; path: string; body?: unknown }> = [];
@@ -104,7 +106,7 @@ function installFetchStub(): void {
     if (method === 'GET' && path === '/api/infra/engines/current') {
       return Promise.resolve(jsonResponse({ engineType: window.sessionStorage.getItem('openwa_engine_type') }));
     }
-    if (method === 'GET' && path === `/api/sessions/${sid}/chats`) return Promise.resolve(jsonResponse([CHAT]));
+    if (method === 'GET' && path === `/api/sessions/${sid}/chats`) return Promise.resolve(jsonResponse(chatList));
     if (method === 'GET' && path.startsWith(`/api/sessions/${sid}/contacts/profile-pictures`)) {
       return Promise.resolve(jsonResponse({ pictures: {} }));
     }
@@ -176,6 +178,7 @@ afterEach(async () => {
   queryClient = undefined;
   session = CLOUD;
   messages = [];
+  chatList = [CHAT];
   windowReply = () => jsonResponse({ lastInboundAt: null, open: false, closesAt: null });
   sendReply = () => jsonResponse({ messageId: 'wamid.OUT', timestamp: 1_760_000_100 }, 201);
   calls = [];
@@ -410,4 +413,116 @@ test('C59 an open window is read again once its closesAt passes, and the closed 
     });
   await rtl.waitFor(() => assert.equal(windowCalls().length, 2), { timeout: 6000 });
   assert.ok(await rtl.screen.findByText(en.metaCloud.window.closed));
+});
+
+const windowCallsFor = (chatId: string) => windowCalls().filter(c => c.path.includes(encodeURIComponent(chatId)));
+const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const DAY_MS = 24 * 3600 * 1000;
+
+test('C61 a closed window, and an open one with no closesAt, are not read again', async () => {
+  windowReply = () =>
+    jsonResponse({ lastInboundAt: '2026-10-10T10:00:00.000Z', open: false, closesAt: '2026-10-11T10:00:00.000Z' });
+  await renderChats();
+  await openChat();
+  await rtl.waitFor(() => assert.equal(windowCalls().length, 1));
+  await pause(2500);
+  assert.equal(windowCalls().length, 1, 'a closed window was read again');
+
+  rtl.cleanup();
+  calls = [];
+  windowReply = () => jsonResponse({ lastInboundAt: null, open: true, closesAt: null });
+  await renderChats();
+  await openChat();
+  await rtl.waitFor(() => assert.equal(windowCalls().length, 1));
+  await pause(2500);
+  assert.equal(windowCalls().length, 1, 'an open window with no closesAt was read again');
+});
+
+test('C61 an open window whose closesAt has already passed is read again once, after the 1 s floor', async () => {
+  const closedAt = new Date(Date.now() - 10_000);
+  let reads = 0;
+  windowReply = () => {
+    reads += 1;
+    return jsonResponse({
+      lastInboundAt: new Date(closedAt.getTime() - DAY_MS).toISOString(),
+      open: reads === 1,
+      closesAt: closedAt.toISOString(),
+    });
+  };
+  await renderChats();
+  await openChat();
+  await rtl.waitFor(() => assert.equal(windowCalls().length, 1));
+  const firstRead = Date.now();
+  await rtl.waitFor(() => assert.equal(windowCalls().length, 2), { timeout: 4000 });
+  assert.ok(Date.now() - firstRead >= 900, 'the re-read came before the 1 s floor');
+  await pause(2500);
+  assert.equal(windowCalls().length, 2, 'the window kept being read after it answered closed');
+});
+
+test('C61 switching chats cancels the pending re-read of the previous chat window', async () => {
+  chatList = [CHAT, BRUNO];
+  windowReply = () =>
+    jsonResponse({
+      lastInboundAt: new Date(Date.now() - DAY_MS + 1500).toISOString(),
+      open: true,
+      closesAt: new Date(Date.now() + 1500).toISOString(),
+    });
+  await renderChats();
+  await openChat();
+  await rtl.waitFor(() => assert.equal(windowCallsFor(CHAT.id).length, 1));
+
+  windowReply = () => jsonResponse({ lastInboundAt: null, open: false, closesAt: null });
+  rtl.fireEvent.click(rtl.screen.getByText('Bruno'));
+  await rtl.waitFor(() => assert.equal(windowCallsFor(BRUNO.id).length, 1));
+  await pause(3500);
+  assert.equal(windowCallsFor(CHAT.id).length, 1, "Ana's window was read again after switching to Bruno");
+  // A leftover timer would fire through the same query observer, which now follows Bruno's chat.
+  assert.equal(windowCallsFor(BRUNO.id).length, 1, "a timer from Ana's chat read Bruno's window again");
+});
+
+const liveFrame = (sessionId: string, fromMe: boolean) => ({
+  type: 'event',
+  timestamp: new Date().toISOString(),
+  payload: {
+    event: 'message.received',
+    sessionId,
+    data: {
+      id: `wamid.live.${fromMe ? 'own' : 'in'}.${Date.now()}`,
+      chatId: CHAT.id,
+      from: fromMe ? 'me' : CHAT.id,
+      to: fromMe ? CHAT.id : 'me',
+      body: fromMe ? 'sent from the phone' : 'customer text',
+      type: 'text',
+      fromMe,
+      timestamp: Math.floor(Date.now() / 1000),
+    },
+  },
+});
+
+test('C62 our own message in the open Cloud chat does not read its window again', async () => {
+  windowReply = () =>
+    jsonResponse({ lastInboundAt: '2026-10-10T10:00:00.000Z', open: false, closesAt: '2026-10-11T10:00:00.000Z' });
+  await renderChats();
+  await openChat();
+  await rtl.waitFor(() => assert.equal(windowCalls().length, 1));
+
+  const socket = lastSocket();
+  assert.ok(socket, 'expected the page to have opened a socket');
+  socket.receive('message', liveFrame(CLOUD.id, true));
+  await rtl.waitFor(() => assert.ok(rtl.screen.queryAllByText('sent from the phone').length > 0));
+  await pause(500);
+  assert.equal(windowCalls().length, 1);
+});
+
+test('C62 a customer message on a QR session makes no window request', async () => {
+  session = QR;
+  await renderChats();
+  await openChat();
+
+  const socket = lastSocket();
+  assert.ok(socket, 'expected the page to have opened a socket');
+  socket.receive('message', liveFrame(QR.id, false));
+  await rtl.waitFor(() => assert.ok(rtl.screen.queryAllByText('customer text').length > 0));
+  await pause(500);
+  assert.equal(windowCalls().length, 0);
 });

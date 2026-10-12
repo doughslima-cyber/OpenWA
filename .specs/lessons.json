@@ -85,17 +85,19 @@
       "text": "Reclassify a file in the Test policy evidence when a fix adds a conditional to it",
       "signal": "spec_precision_gap",
       "scope": "coverage",
-      "status": "candidate",
+      "status": "confirmed",
       "features": [
-        "meta-cloud-api"
+        "meta-cloud-api",
+        "meta-cloud-dashboard"
       ],
-      "recurrence": 1,
+      "recurrence": 2,
       "harmful": 0,
       "evidence": [
-        "verification.md round 3 gap 2 - meta-cloud-account.controller.ts:67 (coverage)"
+        "verification.md round 3 gap 2 - meta-cloud-account.controller.ts:67 (coverage)",
+        "verification.md round 5 gap 1 - dashboard/src/hooks/useMetaCloud.ts:52 (coverage)"
       ],
       "created": "2026-10-12T04:31:23Z",
-      "last_seen": "2026-10-12T04:31:23Z"
+      "last_seen": "2026-10-12T19:42:39Z"
     },
     {
       "id": "L-006",
