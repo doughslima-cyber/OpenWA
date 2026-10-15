@@ -219,14 +219,6 @@
   padding: 0.25rem;
 }
 
-.sidebar.collapsed .sidebar-section-toggle svg {
-  transform: rotate(-90deg);
-}
-
-.sidebar.collapsed .sidebar-section-toggle svg.collapsed {
-  transform: rotate(90deg);
-}
-
 .nav-item {
   display: flex;
   align-items: center;
