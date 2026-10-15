@@ -13,7 +13,7 @@ let RoleContext: (typeof import('../hooks/useRole.tsx'))['RoleContext'];
 const requested: string[] = [];
 
 /** The layout for an admin key, restricted to selected sessions when `scoped` is set. */
-function renderLayout(scoped = false): ReturnType<typeof import('@testing-library/react').render> {
+function renderLayout(scoped = false, initialEntry = '/'): ReturnType<typeof import('@testing-library/react').render> {
   const role = {
     role: 'admin' as const,
     setRole: () => undefined,
@@ -30,7 +30,11 @@ function renderLayout(scoped = false): ReturnType<typeof import('@testing-librar
     createElement(
       RoleContext.Provider,
       { value: role },
-      createElement(MemoryRouter, null, createElement(Layout, { onLogout: () => undefined, userRole: 'admin' })),
+      createElement(
+        MemoryRouter,
+        { initialEntries: [initialEntry] },
+        createElement(Layout, { onLogout: () => undefined, userRole: 'admin' }),
+      ),
     ),
   );
 }
@@ -86,6 +90,7 @@ test('the theme button can return to following the system', () => {
 test('an admin key scoped to sessions is not offered the pages that refuse it', async () => {
   renderLayout(true);
   const { screen } = rtl;
+  rtl.fireEvent.click(screen.getByRole('button', { name: 'Administration' }));
   assert.equal(screen.queryByRole('link', { name: 'API Keys' }) === null, true);
   assert.equal(screen.queryByRole('link', { name: 'Infrastructure' }) === null, true);
   assert.equal(screen.queryByRole('link', { name: 'Plugins' }) === null, true);
@@ -100,6 +105,30 @@ test('an admin key scoped to sessions is not offered the pages that refuse it', 
 
 test('an unscoped admin key still checks for a newer release', async () => {
   renderLayout();
+  rtl.fireEvent.click(rtl.screen.getByRole('button', { name: 'Administration' }));
   assert.ok(rtl.screen.getByRole('link', { name: 'Plugins' }));
   await rtl.waitFor(() => assert.ok(requested.some(url => url.includes('/infra/update-check'))));
+});
+
+test('the sidebar groups navigation and keeps administration collapsed until it is needed', () => {
+  renderLayout();
+  const { screen } = rtl;
+  assert.ok(screen.getByRole('heading', { name: 'Operation' }));
+  assert.ok(screen.getByRole('heading', { name: 'Messages' }));
+
+  const administration = screen.getByRole('button', { name: 'Administration' });
+  assert.equal(administration.getAttribute('aria-expanded'), 'false');
+  assert.equal(screen.queryByRole('link', { name: 'API Keys' }), null);
+
+  rtl.fireEvent.click(administration);
+  assert.equal(administration.getAttribute('aria-expanded'), 'true');
+  assert.ok(screen.getByRole('link', { name: 'API Keys' }));
+  assert.equal(screen.getByRole('link', { name: 'My account' }).closest('.sidebar-footer') === null, false);
+});
+
+test('the administration group opens for an active administration route', () => {
+  renderLayout(false, '/users');
+  const { screen } = rtl;
+  assert.equal(screen.getByRole('button', { name: 'Administration' }).getAttribute('aria-expanded'), 'true');
+  assert.ok(screen.getByRole('link', { name: 'Users' }));
 });

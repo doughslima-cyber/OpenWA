@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
@@ -23,7 +23,9 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Languages,
+  type LucideIcon,
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useRole, type UserRole } from '../hooks/useRole';
@@ -39,28 +41,53 @@ interface LayoutProps {
 }
 
 // unscopedOnly: every route behind the page refuses a key restricted to selected sessions, whatever its role.
-const allNavItems = [
-  { to: '/', icon: LayoutDashboard, key: 'dashboard' as const, adminOnly: false },
-  { to: '/sessions', icon: Smartphone, key: 'sessions' as const, adminOnly: false },
-  { to: '/chats', icon: MessageSquare, key: 'chats' as const, adminOnly: false },
-  { to: '/webhooks', icon: Webhook, key: 'webhooks' as const, adminOnly: false },
-  { to: '/templates', icon: ClipboardList, key: 'templates' as const, adminOnly: false },
-  { to: '/api-keys', icon: Key, key: 'apiKeys' as const, adminOnly: true, unscopedOnly: true },
-  { to: '/users', icon: Users, key: 'users' as const, adminOnly: true, unscopedOnly: true },
-  { to: '/message-tester', icon: Send, key: 'messageTester' as const, adminOnly: false },
-  { to: '/campaigns', icon: Megaphone, key: 'campaigns' as const, adminOnly: false },
-  // Backend /infra/* is ADMIN-only; hide the nav item from non-admins (UX + defense-in-depth).
-  { to: '/infrastructure', icon: Server, key: 'infrastructure' as const, adminOnly: true, unscopedOnly: true },
-  { to: '/plugins', icon: Puzzle, key: 'plugins' as const, adminOnly: true, unscopedOnly: true },
-  // Backend /audit is ADMIN-only too.
-  { to: '/logs', icon: FileText, key: 'logs' as const, adminOnly: true },
-  { to: '/account', icon: UserRound, key: 'account' as const, adminOnly: false },
+interface NavItem {
+  to: string;
+  icon: LucideIcon;
+  key: string;
+  adminOnly: boolean;
+  unscopedOnly?: boolean;
+}
+
+const navSections: { key: string; items: NavItem[] }[] = [
+  {
+    key: 'operation' as const,
+    items: [
+      { to: '/', icon: LayoutDashboard, key: 'dashboard' as const, adminOnly: false },
+      { to: '/sessions', icon: Smartphone, key: 'sessions' as const, adminOnly: false },
+      { to: '/chats', icon: MessageSquare, key: 'chats' as const, adminOnly: false },
+      { to: '/campaigns', icon: Megaphone, key: 'campaigns' as const, adminOnly: false },
+    ],
+  },
+  {
+    key: 'messages' as const,
+    items: [
+      { to: '/templates', icon: ClipboardList, key: 'templates' as const, adminOnly: false },
+      { to: '/webhooks', icon: Webhook, key: 'webhooks' as const, adminOnly: false },
+      { to: '/message-tester', icon: Send, key: 'messageTester' as const, adminOnly: false },
+    ],
+  },
+  {
+    key: 'administration' as const,
+    items: [
+      { to: '/api-keys', icon: Key, key: 'apiKeys' as const, adminOnly: true, unscopedOnly: true },
+      { to: '/users', icon: Users, key: 'users' as const, adminOnly: true, unscopedOnly: true },
+      // Backend /infra/* is ADMIN-only; hide the nav item from non-admins (UX + defense-in-depth).
+      { to: '/infrastructure', icon: Server, key: 'infrastructure' as const, adminOnly: true, unscopedOnly: true },
+      { to: '/plugins', icon: Puzzle, key: 'plugins' as const, adminOnly: true, unscopedOnly: true },
+      // Backend /audit is ADMIN-only too.
+      { to: '/logs', icon: FileText, key: 'logs' as const, adminOnly: true },
+    ],
+  },
 ];
+
+const accountNavItem = { to: '/account', icon: UserRound, key: 'account' as const };
 
 const themeIcons = { light: Sun, dark: Moon, system: Monitor };
 
 export function Layout({ onLogout, userRole }: LayoutProps) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const ThemeIcon = themeIcons[theme];
   const themeLabel = t(`theme.${theme}`);
@@ -70,13 +97,15 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
   });
 
   const { scoped } = useRole();
-  const navItems = allNavItems.filter(
-    item => (!item.adminOnly || userRole === 'admin') && (!item.unscopedOnly || !scoped),
-  );
+  const visibleNavSections = navSections.map(section => ({
+    ...section,
+    items: section.items.filter(item => (!item.adminOnly || userRole === 'admin') && (!item.unscopedOnly || !scoped)),
+  }));
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isAdministrationOpen, setIsAdministrationOpen] = useState(false);
   // Show the build-time version immediately, then replace it with the live running version from the
   // backend so a stale-built bundle can't display the wrong number. Falls back silently on error.
   const [version, setVersion] = useState(__APP_VERSION__);
@@ -129,6 +158,15 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
     };
   }, [userRole, scoped]);
 
+  useEffect(() => {
+    const administration = navSections.find(section => section.key === 'administration')!;
+    if (
+      administration.items.some(item => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
+    ) {
+      setIsAdministrationOpen(true);
+    }
+  }, [location.pathname]);
+
   const handleNavClick = () => {
     if (isMobile) setIsMobileOpen(false);
   };
@@ -165,6 +203,7 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
 
   const currentLang = resolveSupportedLanguage(i18n.resolvedLanguage || i18n.language);
   const languageLabel = languageOptions.find(option => option.value === currentLang)?.compactLabel ?? 'EN';
+  const AccountIcon = accountNavItem.icon;
   const changeLanguage = (language: SupportedLanguage) => {
     setIsLanguageMenuOpen(false);
     void i18n.changeLanguage(language);
@@ -227,26 +266,64 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
           </button>
         )}
 
-        <nav className="sidebar-nav">
-          {navItems.map(({ to, icon: Icon, key }) => {
-            const label = t(`nav.${key}`);
+        <nav className="sidebar-nav" aria-label={t('common.appName')}>
+          {visibleNavSections.map(section => {
+            const isAdministration = section.key === 'administration';
+            if (section.items.length === 0) return null;
+
             return (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                end={to === '/'}
-                onClick={handleNavClick}
-                title={isCollapsed ? label : undefined}
-              >
-                <Icon size={20} />
-                {!isCollapsed && <span>{label}</span>}
-              </NavLink>
+              <section className="sidebar-section" key={section.key}>
+                {isAdministration ? (
+                  <button
+                    className="sidebar-section-toggle"
+                    onClick={() => setIsAdministrationOpen(open => !open)}
+                    aria-expanded={isAdministrationOpen}
+                    aria-controls="administration-navigation"
+                    title={isCollapsed ? t('nav.sections.administration') : undefined}
+                  >
+                    {!isCollapsed && <span>{t('nav.sections.administration')}</span>}
+                    <ChevronDown className={isAdministrationOpen ? '' : 'collapsed'} size={16} aria-hidden="true" />
+                  </button>
+                ) : (
+                  !isCollapsed && <h2 className="sidebar-section-title">{t(`nav.sections.${section.key}`)}</h2>
+                )}
+                <div
+                  id={isAdministration ? 'administration-navigation' : undefined}
+                  className={`sidebar-section-items ${isAdministration && !isAdministrationOpen ? 'hidden' : ''}`}
+                  hidden={isAdministration && !isAdministrationOpen}
+                >
+                  {section.items.map(({ to, icon: Icon, key }) => {
+                    const label = t(`nav.${key}`);
+                    return (
+                      <NavLink
+                        key={to}
+                        to={to}
+                        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                        end={to === '/'}
+                        onClick={handleNavClick}
+                        title={isCollapsed ? label : undefined}
+                      >
+                        <Icon size={20} />
+                        {!isCollapsed && <span>{label}</span>}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </section>
             );
           })}
         </nav>
 
         <div className="sidebar-footer">
+          <NavLink
+            to={accountNavItem.to}
+            className={({ isActive }) => `nav-item account-nav-item ${isActive ? 'active' : ''}`}
+            onClick={handleNavClick}
+            title={isCollapsed ? t(`nav.${accountNavItem.key}`) : undefined}
+          >
+            <AccountIcon size={20} />
+            {!isCollapsed && <span>{t(`nav.${accountNavItem.key}`)}</span>}
+          </NavLink>
           <div className="language-menu" ref={languageMenuRef}>
             <button
               className="theme-toggle-btn"
