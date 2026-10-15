@@ -74,7 +74,12 @@
     "logs": "లాగ్స్",
     "users": "Users",
     "account": "My account",
-    "campaigns": "Campaigns"
+    "campaigns": "Campaigns",
+    "sections": {
+      "operation": "Operation",
+      "messages": "Messages",
+      "administration": "Administration"
+    }
   },
   "chats": {
     "media": {

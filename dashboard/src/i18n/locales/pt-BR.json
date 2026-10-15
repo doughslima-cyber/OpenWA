@@ -76,7 +76,12 @@
     "templates": "Modelos",
     "users": "Usuários",
     "account": "Minha conta",
-    "campaigns": "Campanhas"
+    "campaigns": "Campanhas",
+    "sections": {
+      "operation": "Operação",
+      "messages": "Mensagens",
+      "administration": "Administração"
+    }
   },
   "chats": {
     "media": {
