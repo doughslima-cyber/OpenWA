@@ -49,9 +49,11 @@ interface NavItem {
   unscopedOnly?: boolean;
 }
 
-const navSections: { key: string; items: NavItem[] }[] = [
+type NavSectionKey = 'operation' | 'messages' | 'administration';
+
+const navSections: { key: NavSectionKey; items: NavItem[] }[] = [
   {
-    key: 'operation' as const,
+    key: 'operation',
     items: [
       { to: '/', icon: LayoutDashboard, key: 'dashboard' as const, adminOnly: false },
       { to: '/sessions', icon: Smartphone, key: 'sessions' as const, adminOnly: false },
@@ -60,7 +62,7 @@ const navSections: { key: string; items: NavItem[] }[] = [
     ],
   },
   {
-    key: 'messages' as const,
+    key: 'messages',
     items: [
       { to: '/templates', icon: ClipboardList, key: 'templates' as const, adminOnly: false },
       { to: '/webhooks', icon: Webhook, key: 'webhooks' as const, adminOnly: false },
@@ -68,7 +70,7 @@ const navSections: { key: string; items: NavItem[] }[] = [
     ],
   },
   {
-    key: 'administration' as const,
+    key: 'administration',
     items: [
       { to: '/api-keys', icon: Key, key: 'apiKeys' as const, adminOnly: true, unscopedOnly: true },
       { to: '/users', icon: Users, key: 'users' as const, adminOnly: true, unscopedOnly: true },
@@ -80,6 +82,16 @@ const navSections: { key: string; items: NavItem[] }[] = [
     ],
   },
 ];
+
+// Administration stays folded until it is needed; the everyday sections start open.
+const initialOpenSections: Record<NavSectionKey, boolean> = {
+  operation: true,
+  messages: true,
+  administration: false,
+};
+
+const isRouteInSection = (pathname: string, items: NavItem[]) =>
+  items.some(item => (item.to === '/' ? pathname === '/' : pathname === item.to || pathname.startsWith(`${item.to}/`)));
 
 const accountNavItem = { to: '/account', icon: UserRound, key: 'account' as const };
 
@@ -105,7 +117,7 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [isAdministrationOpen, setIsAdministrationOpen] = useState(false);
+  const [openSections, setOpenSections] = useState(initialOpenSections);
   // Show the build-time version immediately, then replace it with the live running version from the
   // backend so a stale-built bundle can't display the wrong number. Falls back silently on error.
   const [version, setVersion] = useState(__APP_VERSION__);
@@ -158,14 +170,13 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
     };
   }, [userRole, scoped]);
 
+  // A section opens when the current route is inside it, so the active link is never hidden.
   useEffect(() => {
-    const administration = navSections.find(section => section.key === 'administration')!;
-    if (
-      administration.items.some(item => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`))
-    ) {
-      setIsAdministrationOpen(true);
-    }
+    const active = navSections.find(section => isRouteInSection(location.pathname, section.items));
+    if (active) setOpenSections(open => (open[active.key] ? open : { ...open, [active.key]: true }));
   }, [location.pathname]);
+
+  const toggleSection = (key: NavSectionKey) => setOpenSections(open => ({ ...open, [key]: !open[key] }));
 
   const handleNavClick = () => {
     if (isMobile) setIsMobileOpen(false);
@@ -268,30 +279,28 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
 
         <nav className="sidebar-nav" aria-label={t('common.appName')}>
           {visibleNavSections.map(section => {
-            const isAdministration = section.key === 'administration';
             if (section.items.length === 0) return null;
+            const isOpen = openSections[section.key];
+            const title = t(`nav.sections.${section.key}`);
+            const itemsId = `${section.key}-navigation`;
 
             return (
               <section className="sidebar-section" key={section.key}>
-                {isAdministration ? (
+                {/* The heading keeps the group names in screen-reader heading navigation (WAI-ARIA accordion). */}
+                <h2 className="sidebar-section-heading">
                   <button
                     className="sidebar-section-toggle"
-                    onClick={() => setIsAdministrationOpen(open => !open)}
-                    aria-expanded={isAdministrationOpen}
-                    aria-controls="administration-navigation"
-                    title={isCollapsed ? t('nav.sections.administration') : undefined}
+                    onClick={() => toggleSection(section.key)}
+                    aria-expanded={isOpen}
+                    aria-controls={itemsId}
+                    title={isCollapsed ? title : undefined}
                   >
-                    {!isCollapsed && <span>{t('nav.sections.administration')}</span>}
-                    <ChevronDown className={isAdministrationOpen ? '' : 'collapsed'} size={16} aria-hidden="true" />
+                    {/* Icons-only mode keeps the name for assistive tech: a heading is not named by its button's title. */}
+                    <span className={isCollapsed ? 'sidebar-section-label-hidden' : undefined}>{title}</span>
+                    <ChevronDown className={isOpen ? '' : 'collapsed'} size={16} aria-hidden="true" />
                   </button>
-                ) : (
-                  !isCollapsed && <h2 className="sidebar-section-title">{t(`nav.sections.${section.key}`)}</h2>
-                )}
-                <div
-                  id={isAdministration ? 'administration-navigation' : undefined}
-                  className={`sidebar-section-items ${isAdministration && !isAdministrationOpen ? 'hidden' : ''}`}
-                  hidden={isAdministration && !isAdministrationOpen}
-                >
+                </h2>
+                <div id={itemsId} className={`sidebar-section-items ${isOpen ? '' : 'hidden'}`} hidden={!isOpen}>
                   {section.items.map(({ to, icon: Icon, key }) => {
                     const label = t(`nav.${key}`);
                     return (
